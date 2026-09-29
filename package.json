@@ -7,9 +7,10 @@
     "doc": "docs"
   },
   "scripts": {
-  "dev": "nodemon src/index.js",
-  "test": "echo \"Error: no test specified\" && exit 1"
-},
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",	
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/PlaGesEtic-Utem/PlaGesEtic.git"
@@ -24,5 +25,9 @@
   "homepage": "https://github.com/PlaGesEtic-Utem/PlaGesEtic#readme",
   "devDependencies": {
     "nodemon": "^3.1.14"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.4",
+    "express": "^5.2.1"
   }
 }
