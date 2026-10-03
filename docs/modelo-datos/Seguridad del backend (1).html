@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Middlewares de Seguridad · plaGesEtic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue-deep: #000B78; --blue-mid: #1C2FB9; --blue-electric: #253FF6; --lime: #B9E20E; --ink: #131315;
+    --bg: #F3F5FC; --card: #FFFFFF; --line: #E1E5F5; --muted: #4B4F6B;
+    --hero-bg: #000B78; --hero-ink: #FFFFFF; --heading: #000B78; --link: #1C2FB9; --lime-ink: #131315;
+    --font-head: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+    --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#0A0C24; --card:#12153A; --ink:#EEF0FF; --line:#262B63; --muted:#A9AED6; --heading:#DDE2FF; --link:#8FA0FF; }
+  }
+  :root[data-theme="dark"] { --bg:#0A0C24; --card:#12153A; --ink:#EEF0FF; --line:#262B63; --muted:#A9AED6; --heading:#DDE2FF; --link:#8FA0FF; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.65; }
+  .page { max-width: 1040px; margin: 0 auto; padding: 0 24px 64px; }
+  h1,h2,h3 { font-family: var(--font-head); color: var(--heading); line-height: 1.2; margin: 0; }
+  h2 { font-size: 23px; font-weight: 800; letter-spacing: -0.01em; }
+  h3 { font-size: 16.5px; font-weight: 700; margin: 0; }
+  p { margin: 0 0 14px; }
+  code { font-family: var(--font-mono); font-size: 0.88em; background: color-mix(in srgb, var(--blue-electric) 10%, transparent); color: var(--blue-mid); padding: 1px 6px; border-radius: 5px; }
+  @media (prefers-color-scheme: dark) { code { color: #C4CDFF; } }
+
+  .hero { background: var(--hero-bg); color: var(--hero-ink); margin: 0 -24px; padding: 52px 40px 38px; position: relative; overflow: hidden; border-bottom: 6px solid var(--lime); }
+  .hero::before { content:""; position:absolute; right:-120px; top:-120px; width:360px; height:360px; border-radius:50%; background:var(--blue-electric); opacity:.35; }
+  .hero::after { content:""; position:absolute; right:90px; bottom:-70px; width:170px; height:170px; border-radius:50%; border:3px solid var(--lime); opacity:.8; }
+  .hero > * { position: relative; z-index: 1; }
+  .brand { display:flex; align-items:center; gap:12px; margin-bottom:32px; font-family:var(--font-head); font-weight:700; font-size:15px; }
+  .brand .mark { width:34px; height:34px; border-radius:9px; background:var(--lime); color:var(--blue-deep); display:grid; place-items:center; font-weight:800; }
+  .badge { display:inline-block; background:var(--lime); color:var(--lime-ink); font-family:var(--font-head); font-weight:700; font-size:12px; padding:4px 12px; border-radius:999px; margin-bottom:16px; margin-right:8px; }
+  .badge.alt { background:#fff; color:var(--blue-deep); }
+  .hero h1 { color:#fff; font-size:32px; font-weight:800; letter-spacing:-0.02em; max-width:740px; }
+  .hero .subtitle { margin:14px 0 0; font-family:var(--font-head); font-weight:500; font-size:16.5px; color:#C9D0FF; max-width:700px; }
+
+  .meta { display:grid; grid-template-columns:1fr 1fr; gap:0; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-top:28px; box-shadow:0 1px 0 var(--line); }
+  .meta div { padding:14px 20px; border-bottom:1px solid var(--line); }
+  .meta div:nth-child(odd) { border-right:1px solid var(--line); }
+  .meta .full { grid-column:1/-1; border-right:0 !important; }
+  .meta div:nth-last-child(-n+2):nth-child(odd), .meta div:last-child { border-bottom:0; }
+  .meta dt { font-family:var(--font-head); font-size:12px; font-weight:700; color:var(--blue-electric); margin-bottom:2px; }
+  @media (prefers-color-scheme: dark) { .meta dt { color: var(--lime); } }
+  .meta dd { margin:0; font-size:14px; color:var(--ink); }
+
+  section { margin-top: 46px; }
+  .sec-head { display:flex; align-items:center; gap:14px; padding-bottom:12px; margin-bottom:20px; border-bottom:2px solid var(--line); }
+  .sec-head .n { flex:none; width:38px; height:38px; border-radius:10px; background:var(--blue-deep); color:var(--lime); font-family:var(--font-head); font-weight:800; font-size:17px; display:grid; place-items:center; }
+  @media (prefers-color-scheme: dark) { .sec-head .n { background: var(--blue-electric); color: #fff; } }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 22px; }
+  .callout { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--blue-electric); border-radius:10px; padding:14px 18px; margin:18px 0; }
+  .callout.pending { border-left-color: var(--lime); }
+  .callout strong { font-family:var(--font-head); color:var(--heading); }
+
+  ul.clean { padding-left:20px; margin:0 0 14px; }
+  ul.clean li { margin-bottom:6px; }
+  ul.clean li::marker { color: var(--blue-electric); }
+
+  table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; font-size:13.5px; }
+  th { background:var(--blue-deep); color:#fff; font-family:var(--font-head); font-weight:700; text-align:left; padding:10px 14px; font-size:12.5px; }
+  td { padding:10px 14px; border-top:1px solid var(--line); vertical-align:top; }
+  td:first-child { font-weight:600; font-family:var(--font-head); color:var(--heading); }
+  .table-scroll { overflow-x:auto; border-radius:14px; }
+
+  /* ============ DIAGRAMA ============ */
+  .diagram-wrap { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; overflow-x:auto; }
+  .diagram-wrap svg { display:block; margin:0 auto; width:100%; height:auto; max-width:1000px; }
+
+  /* ============ TARJETAS DE MIDDLEWARE ============ */
+  .mw-list { display:flex; flex-direction:column; gap:16px; }
+  .mw { background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+  .mw-head { display:flex; align-items:center; gap:12px; padding:14px 18px; background: color-mix(in srgb, var(--blue-electric) 6%, var(--card)); border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .mw-head .num { flex:none; width:28px; height:28px; border-radius:8px; background:var(--blue-deep); color:var(--lime); font-family:var(--font-head); font-weight:800; font-size:13px; display:grid; place-items:center; }
+  .mw-head h3 { flex:1; min-width:180px; }
+  .mw-tag { font-family:var(--font-head); font-weight:700; font-size:10.5px; padding:3px 10px; border-radius:999px; background:var(--blue-mid); color:#fff; white-space:nowrap; }
+  .mw-body { padding:16px 18px; display:grid; gap:12px; }
+  .mw-row { display:grid; grid-template-columns:130px 1fr; gap:10px; align-items:start; }
+  .mw-row .label { font-family:var(--font-head); font-weight:700; font-size:12px; color:var(--blue-electric); text-transform:uppercase; letter-spacing:.02em; padding-top:2px; }
+  @media (prefers-color-scheme: dark) { .mw-row .label { color: var(--lime); } }
+  .mw-row .val { font-size:14px; }
+  .mw-row .val code { margin:0 2px; }
+
+  footer { margin-top:52px; padding-top:18px; border-top:2px solid var(--line); font-size:12.5px; color:var(--muted); display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+
+  @media (max-width: 680px) {
+    .hero { padding: 40px 22px 30px; }
+    .hero h1 { font-size: 25px; }
+    .meta { grid-template-columns: 1fr; }
+    .meta div:nth-child(odd) { border-right: 0; }
+    .meta div { border-bottom: 1px solid var(--line) !important; }
+    .meta div:last-child { border-bottom: 0 !important; }
+    .mw-row { grid-template-columns: 1fr; }
+    .mw-row .label { padding-top:0; }
+  }
+
+  @page { size: A4 landscape; margin: 12mm; }
+  @media print {
+    :root { --bg:#F3F5FC; --card:#FFFFFF; --ink:#131315; --line:#E1E5F5; --muted:#4B4F6B; --heading:#000B78; --link:#1C2FB9; }
+    body { font-size:13px; background:var(--bg); }
+    .page { max-width:none; padding:0; }
+    .hero { margin:0; }
+    section { margin-top:28px; }
+    .card, table, tr, .mw, .callout, .diagram-wrap { break-inside: avoid; }
+    h2, h3, .sec-head { break-after: avoid; }
+    .sec-head .n { background:#000B78; color:#B9E20E; }
+    .meta dt, .mw-row .label { color:#253FF6; }
+    code { color:#1C2FB9; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <div class="brand"><span class="mark">UX</span> Observatorio UX · UXLab UTEM</div>
+    <span class="badge">Diseño de middlewares</span><span class="badge alt">Backend Node/Express</span>
+    <h1>Middlewares de Seguridad del Backend</h1>
+    <p class="subtitle">Diseño de los cuatro middlewares que protegen cada solicitud a la API: autenticación, control de acceso por rol y estudio, auditoría y seudonimización — con su orden de ejecución y la entrada/salida de cada uno.</p>
+  </header>
+
+  <dl class="meta">
+    <div class="full"><dt>Proyecto</dt><dd>Plataforma de Gestión Ética de Participantes y Datos de Investigación (plaGesEtic) — Observatorio UX / UXLab UTEM</dd></div>
+    <div><dt>Cubre</dt><dd>RNF-SEC-04 (MFA/sesión) · RNF-SEC-05 (RBAC) · RNF-SEC-06 (auditoría) · RNF-SEC-02 (privacy by design)</dd></div>
+    <div><dt>Stack</dt><dd>Node.js + Express (ADR-001)</dd></div>
+    <div><dt>Responsable</dt><dd>Benjamín Arias (Desarrollador)</dd></div>
+    <div><dt>Fecha</dt><dd>30 de septiembre de 2026</dd></div>
+  </dl>
+
+  <!-- ============ 1. CONTEXTO ============ -->
+  <section>
+    <div class="sec-head"><span class="n">1</span><h2>Contexto</h2></div>
+    <div class="card">
+      <p style="margin:0">Toda solicitud a un endpoint protegido de la API pasa por una cadena de cuatro middlewares antes (y después) de llegar al controlador. El orden importa: cada middleware depende de datos que deja el anterior en el objeto <code>req</code>, y dos de ellos —auditoría y seudonimización— actúan sobre la <em>salida</em> de la solicitud, no solo sobre la entrada.</p>
+    </div>
+  </section>
+
+  <!-- ============ 2. ORDEN DE EJECUCIÓN ============ -->
+  <section>
+    <div class="sec-head"><span class="n">2</span><h2>Orden de ejecución</h2></div>
+    <div class="diagram-wrap">
+<svg viewBox="0 0 1110 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pipeline de middlewares: autenticación, auditoría, control de acceso, controlador, seudonimización">
+  <defs>
+    <marker id="crow" markerWidth="14" markerHeight="14" refX="10" refY="5" orient="auto">
+      <path d="M0,1 L9,5 L0,9" fill="none" stroke="#253FF6" stroke-width="1.6"/>
+    </marker>
+    <marker id="crow-lime" markerWidth="14" markerHeight="14" refX="10" refY="5" orient="auto">
+      <path d="M0,1 L9,5 L0,9" fill="none" stroke="#8a9900" stroke-width="1.6"/>
+    </marker>
+  </defs>
+  <style>
+    .node { fill:#FFFFFF; stroke:#E1E5F5; stroke-width:1.4; rx:12; }
+    .node.end { fill:#000B78; stroke:#000B78; }
+    .node-title { font-family:'Plus Jakarta Sans', sans-serif; font-weight:700; font-size:12.5px; fill:#000B78; }
+    .node-title.end { fill:#fff; }
+    .node-sub { font-family:'Inter', sans-serif; font-size:10px; fill:#4B4F6B; }
+    .rel { stroke:#253FF6; stroke-width:1.8; fill:none; }
+    .rel.dashed { stroke-dasharray:5 4; stroke:#8a9900; }
+    .rel-label { font-family:'Inter', sans-serif; font-weight:600; font-size:10.5px; fill:#000B78; }
+  </style>
+
+  <!-- Request -->
+  <g transform="translate(10,90)">
+    <rect class="node end" width="90" height="60"/>
+    <text x="45" y="28" text-anchor="middle" class="node-title end">Solicitud</text>
+    <text x="45" y="44" text-anchor="middle" class="node-sub" style="fill:#C9D0FF">HTTP + JWT</text>
+  </g>
+
+  <!-- 1. Autenticación -->
+  <g transform="translate(150,80)">
+    <rect class="node" width="160" height="80"/>
+    <text x="80" y="26" text-anchor="middle" class="node-title">1 · Autenticación</text>
+    <text x="80" y="44" text-anchor="middle" class="node-sub">Verifica JWT de sesión</text>
+    <text x="80" y="58" text-anchor="middle" class="node-sub">adjunta req.usuario</text>
+  </g>
+
+  <!-- 2. Auditoría (arma) -->
+  <g transform="translate(360,80)">
+    <rect class="node" width="160" height="80"/>
+    <text x="80" y="26" text-anchor="middle" class="node-title">2 · Auditoría (arma)</text>
+    <text x="80" y="44" text-anchor="middle" class="node-sub">Registra intento</text>
+    <text x="80" y="58" text-anchor="middle" class="node-sub">se enlaza a "finish"</text>
+  </g>
+
+  <!-- 3. RBAC -->
+  <g transform="translate(570,80)">
+    <rect class="node" width="160" height="80"/>
+    <text x="80" y="26" text-anchor="middle" class="node-title">3 · Acceso por rol/estudio</text>
+    <text x="80" y="44" text-anchor="middle" class="node-sub">Verifica membresía</text>
+    <text x="80" y="58" text-anchor="middle" class="node-sub">adjunta req.membresia</text>
+  </g>
+
+  <!-- Controlador -->
+  <g transform="translate(790,80)">
+    <rect class="node" width="140" height="80" style="stroke-dasharray:4 3"/>
+    <text x="70" y="26" text-anchor="middle" class="node-title">Controlador</text>
+    <text x="70" y="44" text-anchor="middle" class="node-sub">Lógica del endpoint</text>
+    <text x="70" y="58" text-anchor="middle" class="node-sub">(no es middleware)</text>
+  </g>
+
+  <!-- Respuesta -->
+  <g transform="translate(1000,90)">
+    <rect class="node end" width="100" height="60"/>
+    <text x="50" y="28" text-anchor="middle" class="node-title end">Respuesta</text>
+    <text x="50" y="44" text-anchor="middle" class="node-sub" style="fill:#C9D0FF">JSON al cliente</text>
+  </g>
+
+  <!-- 4. Seudonimización, debajo del Controlador -->
+  <g transform="translate(790,220)">
+    <rect class="node" width="160" height="80"/>
+    <text x="80" y="26" text-anchor="middle" class="node-title">4 · Seudonimización</text>
+    <text x="80" y="44" text-anchor="middle" class="node-sub">Transforma el payload</text>
+    <text x="80" y="58" text-anchor="middle" class="node-sub">antes de responder</text>
+  </g>
+
+  <!-- Flechas principales -->
+  <path class="rel" d="M100,120 L150,120" marker-end="url(#crow)"/>
+  <path class="rel" d="M310,120 L360,120" marker-end="url(#crow)"/>
+  <path class="rel" d="M520,120 L570,120" marker-end="url(#crow)"/>
+  <path class="rel" d="M730,120 L790,120" marker-end="url(#crow)"/>
+  <path class="rel" d="M865,160 L865,220" marker-end="url(#crow)"/>
+  <path class="rel" d="M950,250 C 1010,250 1030,180 1012,160" marker-end="url(#crow)"/>
+
+  <!-- Bucle de cierre de auditoría: polilínea recta, bien por debajo de todas las cajas -->
+  <path class="rel dashed" d="M1050,150 L1050,340 L440,340 L440,160" marker-end="url(#crow-lime)"/>
+  <rect x="440" y="330" width="400" height="20" rx="6" fill="#FFFFFF" stroke="#E1E5F5"/>
+  <text x="452" y="344" class="rel-label" style="fill:#6b7a00">Evento "finish": escribe el registro de auditoría con el resultado</text>
+
+  <!-- Etiquetas de corte -->
+  <text x="230" y="64" text-anchor="middle" class="rel-label">401 si falla</text>
+  <text x="650" y="64" text-anchor="middle" class="rel-label">403 si no hay membresía/rol</text>
+</svg>
+    </div>
+    <p style="margin-top:12px; font-size:13px; color:var(--muted);">Autenticación y control de acceso pueden cortar la cadena (401/403); aun así, el registro de auditoría se completa porque quedó enlazado al evento <code>finish</code> de la respuesta desde el paso 2, antes de que ocurra el corte.</p>
+  </section>
+
+  <!-- ============ 3. MIDDLEWARES ============ -->
+  <section>
+    <div class="sec-head"><span class="n">3</span><h2>Middlewares</h2></div>
+    <div class="mw-list">
+
+      <div class="mw">
+        <div class="mw-head">
+          <span class="num">1</span>
+          <h3>Autenticación</h3>
+          <span class="mw-tag">RNF-SEC-04</span>
+        </div>
+        <div class="mw-body">
+          <div class="mw-row"><span class="label">Qué hace</span><span class="val">Verifica el JWT de sesión emitido tras el login (que ya validó contraseña + MFA/TOTP). No vuelve a pedir el código MFA en cada solicitud, solo confirma que el token siga vigente.</span></div>
+          <div class="mw-row"><span class="label">Entrada</span><span class="val">Header <code>Authorization: Bearer &lt;token&gt;</code>.</span></div>
+          <div class="mw-row"><span class="label">Salida</span><span class="val">Adjunta <code>req.usuario</code> (id_usuario, nombre, correo) para los middlewares siguientes.</span></div>
+          <div class="mw-row"><span class="label">Si falla</span><span class="val">Corta la cadena con <code>401 Unauthorized</code>; no llega a auditoría ni a RBAC.</span></div>
+        </div>
+      </div>
+
+      <div class="mw">
+        <div class="mw-head">
+          <span class="num">2</span>
+          <h3>Auditoría</h3>
+          <span class="mw-tag">RNF-SEC-06</span>
+        </div>
+        <div class="mw-body">
+          <div class="mw-row"><span class="label">Qué hace</span><span class="val">Se ejecuta justo después de autenticar, para capturar incluso los intentos que luego son rechazados por falta de permisos. No escribe de inmediato: registra los datos base del intento y se suscribe al evento <code>finish</code> de la respuesta para escribir el registro cuando la solicitud termine (éxito o error).</span></div>
+          <div class="mw-row"><span class="label">Entrada</span><span class="val"><code>req.usuario</code>, método HTTP, ruta, y el <code>id_estudio</code>/entidad afectada cuando corresponda.</span></div>
+          <div class="mw-row"><span class="label">Salida</span><span class="val">Un registro en <code>Auditoría</code> (id_usuario, accion, entidad_afectada, fecha_hora, código de resultado) escrito de forma append-only al finalizar la solicitud.</span></div>
+          <div class="mw-row"><span class="label">Si falla</span><span class="val">No debe bloquear la solicitud: un error al escribir el log se registra aparte (log de sistema), nunca interrumpe la respuesta al usuario.</span></div>
+        </div>
+      </div>
+
+      <div class="mw">
+        <div class="mw-head">
+          <span class="num">3</span>
+          <h3>Control de acceso por rol y estudio (RBAC)</h3>
+          <span class="mw-tag">RNF-SEC-05</span>
+        </div>
+        <div class="mw-body">
+          <div class="mw-row"><span class="label">Qué hace</span><span class="val">Verifica que <code>req.usuario</code> tenga una <code>Membresía de Estudio</code> para el <code>id_estudio</code> de la ruta, y que el <code>rol_en_estudio</code> de esa membresía sea uno de los roles que el endpoint permite. Un rol no da acceso por sí solo: siempre se valida junto con el estudio.</span></div>
+          <div class="mw-row"><span class="label">Entrada</span><span class="val"><code>req.usuario</code> + <code>id_estudio</code> (de params o body) + lista de roles permitidos definida en la ruta.</span></div>
+          <div class="mw-row"><span class="label">Salida</span><span class="val">Adjunta <code>req.membresia</code> (id_membresia, rol_en_estudio) para que el controlador sepa con qué rol está operando el usuario en ese estudio.</span></div>
+          <div class="mw-row"><span class="label">Si falla</span><span class="val">Corta la cadena con <code>403 Forbidden</code>. El intento ya quedó registrado por el middleware de auditoría (paso 2).</span></div>
+        </div>
+      </div>
+
+      <div class="mw">
+        <div class="mw-head">
+          <span class="num">4</span>
+          <h3>Seudonimización</h3>
+          <span class="mw-tag">RNF-SEC-02</span>
+        </div>
+        <div class="mw-body">
+          <div class="mw-row"><span class="label">Qué hace</span><span class="val">Se ejecuta sobre la salida, no la entrada: toma el payload que arma el controlador y, si el endpoint expone datos de <code>Participante</code> o <code>Registro de Datos</code> a un rol que no debe ver identidad real, reemplaza toda referencia a <code>Identidad</code> por el <code>codigo_seudonimo</code> de la <code>Participación</code> correspondiente.</span></div>
+          <div class="mw-row"><span class="label">Entrada</span><span class="val">El objeto de respuesta ya armado por el controlador + <code>req.membresia</code> (para saber si ese rol tiene autorización para ver PII).</span></div>
+          <div class="mw-row"><span class="label">Salida</span><span class="val">El mismo payload, con los campos de <code>Identidad</code> filtrados o sustituidos por el seudónimo antes de que Express llame a <code>res.json()</code>.</span></div>
+          <div class="mw-row"><span class="label">Si falla</span><span class="val">Ante cualquier duda debe fallar cerrado: si no puede determinar si el rol tiene permiso para ver PII, omite el dato identificable en vez de mostrarlo.</span></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ 4. RESUMEN ENTRADA/SALIDA ============ -->
+  <section>
+    <div class="sec-head"><span class="n">4</span><h2>Resumen de entrada/salida</h2></div>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Middleware</th><th>Entrada</th><th>Salida</th><th>Corte si falla</th></tr></thead>
+      <tbody>
+        <tr><td>1. Autenticación</td><td>Header Authorization (JWT)</td><td>req.usuario</td><td>401</td></tr>
+        <tr><td>2. Auditoría (arma)</td><td>req.usuario, método, ruta</td><td>Suscripción a "finish" (escribe al final)</td><td>No corta — solo registra</td></tr>
+        <tr><td>3. RBAC por estudio</td><td>req.usuario + id_estudio + roles permitidos</td><td>req.membresia</td><td>403</td></tr>
+        <tr><td>4. Seudonimización</td><td>Payload de salida + req.membresia</td><td>Payload filtrado/seudonimizado</td><td>Falla cerrado (omite el dato)</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- ============ 5. PENDIENTES ============ -->
+  <section>
+    <div class="sec-head"><span class="n">5</span><h2>Pendiente de validación</h2></div>
+    <div class="callout pending">
+      <strong>Por revisar con el equipo:</strong> qué códigos de acción exactos registra auditoría (crear/leer/exportar, o solo mutaciones), qué endpoints exponen datos de <code>Registro de Datos</code> sin seudonimizar (si alguno), y si la seudonimización necesita una lista explícita de campos "siempre PII" o se basa solo en el rol de la membresía.
+    </div>
+  </section>
+
+  <footer>
+    <span>plaGesEtic · Observatorio UX / UXLab UTEM</span>
+    <span>Gestión de Proyectos de Ingeniería (2026-II) · Septiembre 2026</span>
+  </footer>
+</div>
+</body>
+</html>
