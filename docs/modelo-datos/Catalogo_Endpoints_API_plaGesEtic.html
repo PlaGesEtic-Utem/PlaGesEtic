@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Catálogo de Endpoints de la API · plaGesEtic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue-deep: #000B78; --blue-mid: #1C2FB9; --blue-electric: #253FF6; --lime: #B9E20E; --ink: #131315;
+    --bg: #F3F5FC; --card: #FFFFFF; --line: #E1E5F5; --muted: #4B4F6B;
+    --hero-bg: #000B78; --hero-ink: #FFFFFF; --heading: #000B78; --link: #1C2FB9; --lime-ink: #131315;
+    --font-head: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+    --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#0A0C24; --card:#12153A; --ink:#EEF0FF; --line:#262B63; --muted:#A9AED6; --heading:#DDE2FF; --link:#8FA0FF; }
+  }
+  :root[data-theme="dark"] { --bg:#0A0C24; --card:#12153A; --ink:#EEF0FF; --line:#262B63; --muted:#A9AED6; --heading:#DDE2FF; --link:#8FA0FF; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.65; }
+  .page { max-width: 1040px; margin: 0 auto; padding: 0 24px 64px; }
+  h1,h2,h3 { font-family: var(--font-head); color: var(--heading); line-height: 1.2; margin: 0; }
+  h2 { font-size: 21px; font-weight: 800; letter-spacing: -0.01em; }
+  h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 4px; }
+  p { margin: 0 0 12px; }
+  code { font-family: var(--font-mono); font-size: 0.86em; background: color-mix(in srgb, var(--blue-electric) 10%, transparent); color: var(--blue-mid); padding: 1px 6px; border-radius: 5px; white-space: nowrap; }
+  @media (prefers-color-scheme: dark) { code { color: #C4CDFF; } }
+
+  .hero { background: var(--hero-bg); color: var(--hero-ink); margin: 0 -24px; padding: 52px 40px 38px; position: relative; overflow: hidden; border-bottom: 6px solid var(--lime); }
+  .hero::before { content:""; position:absolute; right:-120px; top:-120px; width:360px; height:360px; border-radius:50%; background:var(--blue-electric); opacity:.35; }
+  .hero::after { content:""; position:absolute; right:90px; bottom:-70px; width:170px; height:170px; border-radius:50%; border:3px solid var(--lime); opacity:.8; }
+  .hero > * { position: relative; z-index: 1; }
+  .brand { display:flex; align-items:center; gap:12px; margin-bottom:32px; font-family:var(--font-head); font-weight:700; font-size:15px; }
+  .brand .mark { width:34px; height:34px; border-radius:9px; background:var(--lime); color:var(--blue-deep); display:grid; place-items:center; font-weight:800; }
+  .badge { display:inline-block; background:var(--lime); color:var(--lime-ink); font-family:var(--font-head); font-weight:700; font-size:12px; padding:4px 12px; border-radius:999px; margin-bottom:16px; margin-right:8px; }
+  .badge.alt { background:#fff; color:var(--blue-deep); }
+  .hero h1 { color:#fff; font-size:30px; font-weight:800; letter-spacing:-0.02em; max-width:720px; }
+  .hero .subtitle { margin:14px 0 0; font-family:var(--font-head); font-weight:500; font-size:16px; color:#C9D0FF; max-width:700px; }
+
+  .meta { display:grid; grid-template-columns:1fr 1fr; gap:0; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-top:28px; box-shadow:0 1px 0 var(--line); }
+  .meta div { padding:14px 20px; border-bottom:1px solid var(--line); }
+  .meta div:nth-child(odd) { border-right:1px solid var(--line); }
+  .meta .full { grid-column:1/-1; border-right:0 !important; }
+  .meta div:nth-last-child(-n+2):nth-child(odd), .meta div:last-child { border-bottom:0; }
+  .meta dt { font-family:var(--font-head); font-size:12px; font-weight:700; color:var(--blue-electric); margin-bottom:2px; }
+  @media (prefers-color-scheme: dark) { .meta dt { color: var(--lime); } }
+  .meta dd { margin:0; font-size:14px; color:var(--ink); }
+
+  .stat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; margin-top:28px; background:rgba(255,255,255,.16); border-radius:14px; overflow:hidden; }
+  .stat { background:rgba(11,14,50,.35); padding:16px 14px; }
+  .stat .n { font-family:var(--font-head); font-size:24px; font-weight:800; color:var(--lime); }
+  .stat .l { font-size:12px; color:#C7CDF7; margin-top:4px; }
+  @media (max-width:680px){ .stat-row{ grid-template-columns:repeat(2,1fr);} }
+
+  section { margin-top: 44px; }
+  .sec-head { display:flex; align-items:center; gap:14px; padding-bottom:12px; margin-bottom:18px; border-bottom:2px solid var(--line); }
+  .sec-head .n { flex:none; width:38px; height:38px; border-radius:10px; background:var(--blue-deep); color:var(--lime); font-family:var(--font-head); font-weight:800; font-size:17px; display:grid; place-items:center; }
+  @media (prefers-color-scheme: dark) { .sec-head .n { background: var(--blue-electric); color: #fff; } }
+  .sec-intro { color:var(--muted); font-size:14px; margin-top:-6px; margin-bottom:16px; max-width:72ch; }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 22px; }
+  .callout { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--blue-electric); border-radius:10px; padding:14px 18px; margin:18px 0; font-size:14px; }
+  .callout.pending { border-left-color: var(--lime); }
+  .callout strong { font-family:var(--font-head); color:var(--heading); }
+
+  table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; font-size:13px; }
+  th { background:var(--blue-deep); color:#fff; font-family:var(--font-head); font-weight:700; text-align:left; padding:9px 12px; font-size:11.5px; text-transform:uppercase; letter-spacing:.02em; }
+  td { padding:9px 12px; border-top:1px solid var(--line); vertical-align:top; }
+  td:first-child code { font-weight:600; }
+  tr.get td:first-child .m{color:#1C7A3D;}
+  tr.post td:first-child .m{color:#B06A00;}
+  tr.patch td:first-child .m{color:#8A4FD6;}
+  tr.delete td:first-child .m{color:#C0392B;}
+  .m { font-family:var(--font-head); font-weight:800; font-size:10.5px; letter-spacing:.03em; display:inline-block; margin-right:7px; }
+  .table-scroll { overflow-x:auto; border-radius:14px; margin-top:4px; }
+  .group-label { font-family:var(--font-head); font-weight:700; font-size:13px; color:var(--blue-mid); margin:22px 0 8px; }
+  @media (prefers-color-scheme: dark){ .group-label{ color:#AEB7FF; } }
+  .group-label:first-child { margin-top:0; }
+
+  .roles-legend { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 0; }
+  .roles-legend span { background:var(--card); border:1px solid var(--line); border-radius:999px; padding:5px 12px; font-size:12px; font-weight:600; color:var(--ink); }
+  .roles-legend span b { color:var(--blue-mid); }
+  @media (prefers-color-scheme: dark){ .roles-legend span b{ color:#AEB7FF; } }
+
+  .approval { margin-top:24px; background:var(--blue-deep); border-radius:14px; padding:22px 24px; color:#fff; }
+  .approval h3 { color:#fff; }
+  .approval ul { margin:14px 0 0; padding:0; list-style:none; display:grid; gap:10px; }
+  .approval li { display:flex; gap:10px; font-size:14px; align-items:flex-start; }
+  .approval li::before { content:""; flex:0 0 auto; width:18px; height:18px; margin-top:1px; border-radius:5px; border:2px solid var(--lime); }
+
+  footer { margin-top:52px; padding-top:18px; border-top:2px solid var(--line); font-size:12.5px; color:var(--muted); display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+
+  @media (max-width: 680px) {
+    .hero { padding: 40px 22px 30px; }
+    .hero h1 { font-size: 23px; }
+    .meta { grid-template-columns: 1fr; }
+    .meta div:nth-child(odd) { border-right: 0; }
+    .meta div { border-bottom: 1px solid var(--line) !important; }
+    .meta div:last-child { border-bottom: 0 !important; }
+  }
+
+  @page { size: A4; margin: 12mm 10mm; }
+  @media print {
+    :root { --bg:#F3F5FC; --card:#FFFFFF; --ink:#131315; --line:#E1E5F5; --muted:#4B4F6B; --heading:#000B78; --link:#1C2FB9; }
+    body { font-size:12.5px; background:var(--bg); }
+    .page { max-width:none; padding:0; }
+    .hero { margin:0; }
+    section { margin-top:26px; }
+    table, tr, .card, .callout, .approval { break-inside: avoid; }
+    h2, h3, .sec-head, .group-label { break-after: avoid; }
+    .sec-head .n { background:#000B78; color:#B9E20E; }
+    .meta dt { color:#253FF6; }
+    code { color:#1C2FB9; }
+    table { font-size:10.5px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <div class="brand"><span class="mark">UX</span> Observatorio UX · UXLab UTEM</div>
+    <span class="badge">Diseño técnico</span><span class="badge alt">Para revisión del Líder</span>
+    <h1>Catálogo de Endpoints de la API de plaGesEtic</h1>
+    <p class="subtitle">Recurso, método HTTP, rol autorizado y datos de entrada/salida de cada endpoint del backend, alineados con el stack aprobado (ADR-001) y la cadena de middlewares de seguridad.</p>
+    <div class="stat-row">
+      <div class="stat"><div class="n">9</div><div class="l">grupos de recursos</div></div>
+      <div class="stat"><div class="n">27</div><div class="l">endpoints catalogados</div></div>
+      <div class="stat"><div class="n">1 h</div><div class="l">esfuerzo asignado</div></div>
+      <div class="stat"><div class="n">01 oct</div><div class="l">2026</div></div>
+    </div>
+  </header>
+
+  <dl class="meta">
+    <div class="full"><dt>Proyecto</dt><dd>Plataforma de Gestión Ética de Participantes y Datos de Investigación (plaGesEtic) — Observatorio UX / UXLab UTEM</dd></div>
+    <div><dt>Documentos base</dt><dd>Propuesta Final de Stack (ADR-001) · Middlewares de Seguridad del Backend (30 sept. 2026)</dd></div>
+    <div><dt>Stack</dt><dd>Node.js + Express · PostgreSQL</dd></div>
+    <div><dt>Responsable</dt><dd>Benjamín Arias (Desarrollador)</dd></div>
+    <div><dt>Fecha</dt><dd>01 de octubre de 2026</dd></div>
+  </dl>
+
+  <!-- ============ 1. CONTEXTO ============ -->
+  <section>
+    <div class="sec-head"><span class="n">1</span><h2>Contexto</h2></div>
+    <p>Cada endpoint protegido pasa por la cadena de middlewares ya definida: <b>autenticación</b> (JWT) → <b>auditoría</b> (registra el intento) → <b>control de acceso por rol y estudio</b> (RBAC) → controlador → <b>seudonimización</b> de la respuesta. El "rol autorizado" de cada fila es el que exige el middleware de RBAC: para los endpoints bajo un <code>id_estudio</code>, el rol se valida junto con la <b>Membresía de Estudio</b> del usuario, no de forma global. Las excepciones son los endpoints de Autenticación y de gestión de Usuarios, que usan el <code>rol</code> global del Usuario (Director, Soporte), porque no dependen de ningún estudio.</p>
+    <div class="roles-legend">
+      <span>Rol <b>global</b>: Director, Soporte</span>
+      <span>Rol <b>en estudio</b>: Investigador Responsable, Asistente de Investigación, Estudiante, Invitado</span>
+    </div>
+    <div class="callout pending">
+      <strong>Supuesto por validar:</strong> se asume prefijo de ruta <code>/api/v1</code> para todos los endpoints (omitido en la tabla por brevedad) y formato de intercambio JSON. A confirmar con el equipo al iniciar la implementación.
+    </div>
+  </section>
+
+  <!-- ============ 2. AUTENTICACIÓN ============ -->
+  <section>
+    <div class="sec-head"><span class="n">2</span><h2>Autenticación</h2></div>
+    <p class="sec-intro">Login en dos pasos (contraseña + TOTP) según RF-SEC-01 y RNF-SEC-04. No pasan por el middleware de RBAC por estudio.</p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Recurso</th><th>Rol autorizado</th><th>Entrada</th><th>Salida</th></tr></thead>
+      <tbody>
+        <tr class="post"><td><span class="m">POST</span><code>/auth/login</code></td><td>Público</td><td>correo, contraseña</td><td>token_temporal (si MFA está habilitado) o error 401</td></tr>
+        <tr class="post"><td><span class="m">POST</span><code>/auth/login/mfa</code></td><td>Público (con token_temporal)</td><td>token_temporal, codigo_totp</td><td>JWT de sesión + datos básicos de Usuario</td></tr>
+        <tr class="post"><td><span class="m">POST</span><code>/auth/mfa/enrolar</code></td><td>Cualquier Usuario autenticado</td><td>— (usa req.usuario)</td><td>secreto_totp, QR de enrolamiento</td></tr>
+        <tr class="post"><td><span class="m">POST</span><code>/auth/logout</code></td><td>Cualquier Usuario autenticado</td><td>—</td><td>confirmación</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- ============ 3. USUARIOS / CUENTAS ============ -->
+  <section>
+    <div class="sec-head"><span class="n">3</span><h2>Usuarios y cuentas</h2></div>
+    <p class="sec-intro">Gestión global de cuentas (RF-SEC: activar, bloquear, resetear MFA). Rol global, no depende de ningún estudio.</p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Recurso</th><th>Rol autorizado</th><th>Entrada</th><th>Salida</th></tr></thead>
+      <tbody>
+        <tr class="get"><td><span class="m">GET</span><code>/usuarios</code></td><td>Director, Soporte</td><td>filtros opcionales: rol, estado_cuenta</td><td>lista de Usuario (id, nombre, correo, rol, estado_cuenta)</td></tr>
+        <tr class="post"><td><span class="m">POST</span><code>/usuarios</code></td><td>Director</td><td>nombre, correo, rol</td><td>Usuario creado (estado_cuenta: pendiente)</td></tr>
+        <tr class="patch"><td><span class="m">PATCH</span><code>/usuarios/{id}/estado</code></td><td>Soporte</td><td>estado_cuenta (activo / bloqueado)</td><td>Usuario actualizado</td></tr>
+        <tr class="post"><td><span class="m">POST</span><code>/usuarios/{id}/mfa/reset</code></td><td>Soporte</td><td>—</td><td>confirmación; invalida el secreto TOTP anterior</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- ============ 4. ESTUDIOS ============ -->
+  <section>
+    <div class="sec-head"><span class="n">4</span><h2>Estudios</h2></div>
+    <p class="sec-intro">Ciclo de vida del Estudio y aprobación del Comité de Ética Científica (CEC).</p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Recurso</th><th>Rol autorizado</th><th>Entrada</th><th>Salida</th></tr></thead>
+      <tbody>
+        <tr class="get"><td><span class="m">GET</span><code>/estudios</code></td><td>Todos (filtrado por membresía)</td><td>—</td><td>lista de Estudio donde el usuario tiene Membresía</td></tr>
+        <tr class="post"><td><span class="m">POST</span><code>/estudios</code></td><td>Investigador Responsable</td><td>titulo, descripcion, documento_cec, protocolo</td><td>Estudio creado (estado_aprobacion_cec: pendiente)</td></tr>
+        <tr class="get"><td><span class="m">GET</span><code>/estudios/{id}</code></td><td>Roles con Membresía en el estudio</td><td>—</td><td>detalle de Estudio</td></tr>
+        <tr class="patch"><td><span class="m">PATCH</span><code>/estudios/{id}</code></td><td>Investigador Responsable (dueño), Director</td><td>campos editables del Estudio</td><td>Estudio actualizado</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- ============ 5. MEMBRESÍAS DE ESTUDIO (RBAC) ============ -->
+  <section>
+    <div class="sec-head"><span class="n">5</span><h2>Membresías de estudio</h2></div>
+    <p class="sec-intro">Asigna a un Usuario un <code>rol_en_estudio</code> dentro de un Estudio — la base del middleware RBAC (RNF-SEC-05).</p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Recurso</th><th>Rol autorizado</th><th>Entrada</th><th>Salida</th></tr></thead>
+      <tbody>
+        <tr class="get"><td><span class="m">GET</span><code>/estudios/{id}/membresias</code></td><td>Investigador Responsable, Director</td><td>—</td><td>lista de Membresía (usuario, rol_en_estudio)</td></tr>
+        <tr class="post"><td><span class="m">POST</span><code>/estudios/{id}/membresias</code></td><td>Investigador Responsable, Director</td><td>id_usuario, rol_en_estudio</td><td>Membresía creada</td></tr>
+        <tr class="delete"><td><span class="m">DELETE</span><code>/estudios/{id}/membresias/{id_membresia}</code></td><td>Investigador Responsable, Director</td><td>—</td><td>confirmación (revoca el acceso al estudio)</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- ============ 6. IDENTIDADES Y PARTICIPACIONES ============ -->
+  <section>
+    <div class="sec-head"><span class="n">6</span><h2>Identidades y participaciones (seudonimización)</h2></div>
+    <p class="sec-intro">El middleware de seudonimización (RNF-SEC-02) filtra la Identidad real en estos endpoints según el rol de la Membresía. El desenmascaramiento es la única vía explícita para ver PII, y queda auditado.</p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Recurso</th><th>Rol autorizado</th><th>Entrada</th><th>Salida</th></tr></thead>
+      <tbody>
+        <tr class="post"><td><span class="m">POST</span><code>/identidades</code></td><td>Investigador Responsable, Asistente de Investigación</td><td>rut_cifrado, nombre_completo, correo, telefono</td><td>Identidad creada (ux_lab_id)</td></tr>
+        <tr class="post"><td><span class="m">POST</span><code>/estudios/{id}/participaciones</code></td><td>Investigador Responsable, Asistente de Investigación</td><td>ux_lab_id</td><td>Participación creada (codigo_seudonimo autogenerado, ej. EXP-001)</td></tr>
+        <tr class="get"><td><span class="m">GET</span><code>/estudios/{id}/participaciones</code></td><td>Investigador Responsable, Asistente, Estudiante</td><td>—</td><td>lista de Participación (seudonimizada salvo para Investigador/Asistente)</td></tr>
+        <tr class="patch"><td><span class="m">PATCH</span><code>/participaciones/{id}/estado</code></td><td>Investigador Responsable, Asistente de Investigación</td><td>estado_participacion (retirado)</td><td>Participación actualizada</td></tr>
+        <tr class="post"><td><span class="m">POST</span><code>/identidades/{ux_lab_id}/desenmascarar</code></td><td>Director</td><td>justificacion (obligatoria)</td><td>datos PII de la Identidad (acción registrada en Auditoría)</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- ============ 7. CONSENTIMIENTOS ============ -->
+  <section>
+    <div class="sec-head"><span class="n">7</span><h2>Consentimientos</h2></div>
+    <p class="sec-intro">Ciclo de vida del consentimiento informado por Participación (RF-ETH).</p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Recurso</th><th>Rol autorizado</th><th>Entrada</th><th>Salida</th></tr></thead>
+      <tbody>
+        <tr class="post"><td><span class="m">POST</span><code>/participaciones/{id}/consentimientos</code></td><td>Asistente de Investigación</td><td>version_documento, tipo, archivo firmado</td><td>Consentimiento creado (estado: vigente)</td></tr>
+        <tr class="get"><td><span class="m">GET</span><code>/participaciones/{id}/consentimientos</code></td><td>Investigador Responsable, Asistente de Investigación</td><td>—</td><td>lista de Consentimiento</td></tr>
+        <tr class="patch"><td><span class="m">PATCH</span><code>/consentimientos/{id}/revocar</code></td><td>Asistente de Investigación</td><td>motivo</td><td>Consentimiento con estado: revocado</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- ============ 8. REGISTROS DE DATOS (ARCHIVOS) ============ -->
+  <section>
+    <div class="sec-head"><span class="n">8</span><h2>Registros de datos (archivos)</h2></div>
+    <p class="sec-intro">Subida y consulta de archivos de sensores; el hash SHA-256 se calcula en streaming (RNF-SEC-03) al recibir el archivo.</p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Recurso</th><th>Rol autorizado</th><th>Entrada</th><th>Salida</th></tr></thead>
+      <tbody>
+        <tr class="post"><td><span class="m">POST</span><code>/participaciones/{id}/registros</code></td><td>Investigador Responsable, Asistente de Investigación</td><td>archivo (multipart), tipo_sensor, metadatos</td><td>Registro de Datos (hash_sha256, ruta de almacenamiento)</td></tr>
+        <tr class="get"><td><span class="m">GET</span><code>/participaciones/{id}/registros</code></td><td>Investigador Responsable, Asistente, Estudiante autorizado</td><td>—</td><td>lista de Registro de Datos (seudonimizada)</td></tr>
+        <tr class="get"><td><span class="m">GET</span><code>/registros/{id}/descarga</code></td><td>Investigador Responsable, Asistente de Investigación</td><td>—</td><td>archivo binario (stream)</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- ============ 9. EXPORTACIONES Y AUDITORÍA ============ -->
+  <section>
+    <div class="sec-head"><span class="n">9</span><h2>Exportaciones y auditoría</h2></div>
+    <p class="sec-intro">Paquetes de exportación desidentificados y consulta de la bitácora append-only (RF-DAT, RNF-SEC-06).</p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Recurso</th><th>Rol autorizado</th><th>Entrada</th><th>Salida</th></tr></thead>
+      <tbody>
+        <tr class="post"><td><span class="m">POST</span><code>/estudios/{id}/exportaciones</code></td><td>Investigador Responsable</td><td>filtros (rango de fechas, tipo de dato)</td><td>paquete de exportación (código EXP-XXX, estado: procesando)</td></tr>
+        <tr class="get"><td><span class="m">GET</span><code>/exportaciones/{id}</code></td><td>Investigador Responsable</td><td>—</td><td>estado y enlace de descarga del paquete</td></tr>
+        <tr class="get"><td><span class="m">GET</span><code>/auditoria</code></td><td>Director</td><td>filtros: id_usuario, rango de fechas, accion</td><td>lista de registros de Auditoría (solo lectura)</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="callout">
+      <strong>Nota de diseño:</strong> ningún endpoint permite <code>PUT</code>/<code>DELETE</code> sobre <code>/auditoria</code> — la tabla es append-only por diseño (middleware de auditoría, documento base del 30 sept.).
+    </div>
+  </section>
+
+  <!-- ============ 10. PENDIENTE ============ -->
+  <section>
+    <div class="sec-head"><span class="n">10</span><h2>Pendiente de validación</h2></div>
+    <div class="approval">
+      <h3>Para revisar con el equipo antes de implementar</h3>
+      <ul>
+        <li>Confirmar si Invitado requiere endpoints propios de solo lectura (resultados preseleccionados) o reutiliza <code>GET /estudios/{id}</code> con permisos reducidos.</li>
+        <li>Definir el formato exacto del paquete de exportación (zip, estructura de carpetas) para <code>POST /estudios/{id}/exportaciones</code>.</li>
+        <li>Confirmar límite de tamaño y manejo asíncrono (cola de trabajo) para <code>POST /participaciones/{id}/registros</code>, ligado al supuesto RNF-PER-02 (archivos de hasta 1 GB), aún por validar.</li>
+        <li>Revisar con Felipe Cruz si el DER define campos adicionales de Estudio o Membresía no reflejados aquí.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <span>plaGesEtic · Observatorio UX / UXLab UTEM</span>
+    <span>Gestión de Proyectos de Ingeniería (2026-II) · Octubre 2026</span>
+  </footer>
+</div>
+</body>
+</html>

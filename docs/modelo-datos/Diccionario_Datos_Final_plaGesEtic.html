@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diccionario de Datos Final (v3) · plaGesEtic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue-deep: #000B78; --blue-mid: #1C2FB9; --blue-electric: #253FF6; --lime: #B9E20E; --ink: #131315;
+    --bg: #F3F5FC; --card: #FFFFFF; --line: #E1E5F5; --muted: #4B4F6B;
+    --hero-bg: #000B78; --hero-ink: #FFFFFF; --heading: #000B78; --link: #1C2FB9; --lime-ink: #131315;
+    --font-head: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+    --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#0A0C24; --card:#12153A; --ink:#EEF0FF; --line:#262B63; --muted:#A9AED6; --heading:#DDE2FF; --link:#8FA0FF; }
+  }
+  :root[data-theme="dark"] { --bg:#0A0C24; --card:#12153A; --ink:#EEF0FF; --line:#262B63; --muted:#A9AED6; --heading:#DDE2FF; --link:#8FA0FF; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.65; }
+  .page { max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
+  h1,h2,h3 { font-family: var(--font-head); color: var(--heading); line-height: 1.2; margin: 0; }
+  h2 { font-size: 21px; font-weight: 800; letter-spacing: -0.01em; }
+  h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 4px; }
+  p { margin: 0 0 12px; }
+  code { font-family: var(--font-mono); font-size: 0.86em; background: color-mix(in srgb, var(--blue-electric) 10%, transparent); color: var(--blue-mid); padding: 1px 6px; border-radius: 5px; white-space: nowrap; }
+  @media (prefers-color-scheme: dark) { code { color: #C4CDFF; } }
+
+  .hero { background: var(--hero-bg); color: var(--hero-ink); margin: 0 -24px; padding: 52px 40px 38px; position: relative; overflow: hidden; border-bottom: 6px solid var(--lime); }
+  .hero::before { content:""; position:absolute; right:-120px; top:-120px; width:360px; height:360px; border-radius:50%; background:var(--blue-electric); opacity:.35; }
+  .hero::after { content:""; position:absolute; right:90px; bottom:-70px; width:170px; height:170px; border-radius:50%; border:3px solid var(--lime); opacity:.8; }
+  .hero > * { position: relative; z-index: 1; }
+  .brand { display:flex; align-items:center; gap:12px; margin-bottom:32px; font-family:var(--font-head); font-weight:700; font-size:15px; }
+  .brand .mark { width:34px; height:34px; border-radius:9px; background:var(--lime); color:var(--blue-deep); display:grid; place-items:center; font-weight:800; }
+  .badge { display:inline-block; background:var(--lime); color:var(--lime-ink); font-family:var(--font-head); font-weight:700; font-size:12px; padding:4px 12px; border-radius:999px; margin-bottom:16px; margin-right:8px; }
+  .badge.alt { background:#fff; color:var(--blue-deep); }
+  .hero h1 { color:#fff; font-size:30px; font-weight:800; letter-spacing:-0.02em; max-width:720px; }
+  .hero .subtitle { margin:14px 0 0; font-family:var(--font-head); font-weight:500; font-size:16px; color:#C9D0FF; max-width:700px; }
+
+  .meta { display:grid; grid-template-columns:1fr 1fr; gap:0; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-top:28px; box-shadow:0 1px 0 var(--line); }
+  .meta div { padding:14px 20px; border-bottom:1px solid var(--line); }
+  .meta div:nth-child(odd) { border-right:1px solid var(--line); }
+  .meta .full { grid-column:1/-1; border-right:0 !important; }
+  .meta div:nth-last-child(-n+2):nth-child(odd), .meta div:last-child { border-bottom:0; }
+  .meta dt { font-family:var(--font-head); font-size:12px; font-weight:700; color:var(--blue-electric); margin-bottom:2px; }
+  @media (prefers-color-scheme: dark) { .meta dt { color: var(--lime); } }
+  .meta dd { margin:0; font-size:14px; color:var(--ink); }
+
+  .stat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; margin-top:28px; background:rgba(255,255,255,.16); border-radius:14px; overflow:hidden; }
+  .stat { background:rgba(11,14,50,.35); padding:16px 14px; }
+  .stat .n { font-family:var(--font-head); font-size:24px; font-weight:800; color:var(--lime); }
+  .stat .l { font-size:12px; color:#C7CDF7; margin-top:4px; }
+  @media (max-width:680px){ .stat-row{ grid-template-columns:repeat(2,1fr);} }
+
+  section { margin-top: 44px; }
+  .sec-head { display:flex; align-items:center; gap:14px; padding-bottom:12px; margin-bottom:18px; border-bottom:2px solid var(--line); }
+  .sec-head .n { flex:none; width:38px; height:38px; border-radius:10px; background:var(--blue-deep); color:var(--lime); font-family:var(--font-head); font-weight:800; font-size:17px; display:grid; place-items:center; }
+  @media (prefers-color-scheme: dark) { .sec-head .n { background: var(--blue-electric); color: #fff; } }
+  .sec-intro { color:var(--muted); font-size:14px; margin-top:-6px; margin-bottom:16px; max-width:76ch; }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 22px; }
+  .callout { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--blue-electric); border-radius:10px; padding:14px 18px; margin:18px 0; font-size:14px; }
+  .callout.warn { border-left-color: #C0392B; }
+  .callout.pending { border-left-color: var(--lime); }
+  .callout strong { font-family:var(--font-head); color:var(--heading); }
+
+  table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; font-size:12.8px; }
+  th { background:var(--blue-deep); color:#fff; font-family:var(--font-head); font-weight:700; text-align:left; padding:9px 12px; font-size:11px; text-transform:uppercase; letter-spacing:.02em; }
+  td { padding:8px 12px; border-top:1px solid var(--line); vertical-align:top; }
+  td.pk { font-weight:700; color:var(--blue-mid); }
+  @media (prefers-color-scheme: dark){ td.pk{ color:#AEB7FF; } }
+  tr.pk-row { background: color-mix(in srgb, var(--lime) 10%, transparent); }
+  .table-scroll { overflow-x:auto; border-radius:14px; margin-top:4px; }
+  .schema-label { font-family:var(--font-head); font-weight:800; font-size:16px; color:var(--blue-mid); margin:26px 0 4px; display:flex; align-items:center; gap:8px; }
+  .schema-label:first-child { margin-top:0; }
+  @media (prefers-color-scheme: dark){ .schema-label{ color:#AEB7FF; } }
+  .schema-sub { color:var(--muted); font-size:13px; margin:0 0 10px; }
+  .table-name { font-family:var(--font-head); font-weight:700; font-size:13.5px; color:var(--heading); margin:18px 0 6px; }
+  .table-name:first-of-type { margin-top:8px; }
+  .fix { background: #FFF4E5; color:#8A4B00; font-family:var(--font-head); font-weight:700; font-size:10px; padding:2px 7px; border-radius:999px; margin-left:8px; vertical-align:middle; }
+  @media (prefers-color-scheme: dark){ .fix{ background:#4A3300; color:#FFD896; } }
+
+  .approval { margin-top:24px; background:var(--blue-deep); border-radius:14px; padding:22px 24px; color:#fff; }
+  .approval h3 { color:#fff; }
+  .approval ul { margin:14px 0 0; padding:0; list-style:none; display:grid; gap:10px; }
+  .approval li { display:flex; gap:10px; font-size:14px; align-items:flex-start; }
+  .approval li::before { content:""; flex:0 0 auto; width:18px; height:18px; margin-top:1px; border-radius:5px; border:2px solid var(--lime); }
+  .approval .sign-row { margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .approval .sign-box { border-top:1px solid rgba(255,255,255,.3); padding-top:8px; font-size:12.5px; color:#C7CDF7; }
+
+  footer { margin-top:52px; padding-top:18px; border-top:2px solid var(--line); font-size:12.5px; color:var(--muted); display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+
+  @media (max-width: 680px) {
+    .hero { padding: 40px 22px 30px; }
+    .hero h1 { font-size: 23px; }
+    .meta { grid-template-columns: 1fr; }
+    .meta div:nth-child(odd) { border-right: 0; }
+    .meta div { border-bottom: 1px solid var(--line) !important; }
+    .meta div:last-child { border-bottom: 0 !important; }
+    .approval .sign-row { grid-template-columns: 1fr; }
+  }
+
+  @page { size: A4; margin: 12mm 10mm; }
+  @media print {
+    :root { --bg:#F3F5FC; --card:#FFFFFF; --ink:#131315; --line:#E1E5F5; --muted:#4B4F6B; --heading:#000B78; --link:#1C2FB9; }
+    body { font-size:12px; background:var(--bg); }
+    .page { max-width:none; padding:0; }
+    .hero { margin:0; }
+    section { margin-top:26px; }
+    table, tr, .card, .callout, .approval { break-inside: avoid; }
+    h2, h3, .sec-head, .schema-label, .table-name { break-after: avoid; }
+    .sec-head .n { background:#000B78; color:#B9E20E; }
+    .meta dt { color:#253FF6; }
+    code { color:#1C2FB9; }
+    table { font-size:10px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <div class="brand"><span class="mark">UX</span> Observatorio UX · UXLab UTEM</div>
+    <span class="badge">DER final</span><span class="badge alt">Para aprobación del Líder</span>
+    <h1>Diccionario de Datos Final (v3) — plaGesEtic</h1>
+    <p class="subtitle">Cierra el DER v2: las 17 tablas de los tres esquemas (identity_schema, research_schema, security_schema), campo por campo, con tipo, clave y descripción — y corrige 3 inconsistencias que habían quedado entre el diseño y el diccionario anterior.</p>
+    <div class="stat-row">
+      <div class="stat"><div class="n">17</div><div class="l">tablas</div></div>
+      <div class="stat"><div class="n">3</div><div class="l">esquemas</div></div>
+      <div class="stat"><div class="n">3</div><div class="l">inconsistencias corregidas</div></div>
+      <div class="stat"><div class="n">0,75 h</div><div class="l">esfuerzo asignado</div></div>
+    </div>
+  </header>
+
+  <dl class="meta">
+    <div class="full"><dt>Proyecto</dt><dd>Plataforma de Gestión Ética de Participantes y Datos de Investigación (plaGesEtic) — Observatorio UX / UXLab UTEM</dd></div>
+    <div><dt>Documento base</dt><dd>DER v2 completo (2 de octubre de 2026) — sección 3 (entidades) y sección 2 (cambios aplicados)</dd></div>
+    <div><dt>Estado</dt><dd>DER cerrado — diccionario completo, pendiente de aprobación</dd></div>
+    <div><dt>Responsable</dt><dd>Benjamín Arias (Desarrollador)</dd></div>
+    <div><dt>Fecha</dt><dd>3 de octubre de 2026</dd></div>
+  </dl>
+
+  <!-- ============ 1. QUÉ CAMBIÓ ============ -->
+  <section>
+    <div class="sec-head"><span class="n">1</span><h2>Qué se cerró respecto al DER v2</h2></div>
+    <p>El diccionario de datos del DER v2 (su sección 4) se había quedado desactualizado respecto al rediseño aplicado en su sección 3: le faltaban 5 tablas completas y contradecía 3 de los cambios ya aprobados. Este documento reemplaza esa sección con las 17 tablas completas, agrega la columna <b>Descripción</b> y corrige las 3 inconsistencias.</p>
+    <div class="callout warn">
+      <strong>Inconsistencias corregidas:</strong>
+      <ul style="margin:8px 0 0; padding-left:18px;">
+        <li><code>membresia_estudio</code> ya no incluye <code>id_rol</code> (FK a Rol) — pasa a tener <code>nivel_acceso</code> y <code>fecha_fin</code>, tal como indica el cambio #3 de la sección 2 del DER v2.</li>
+        <li><code>consentimiento</code> ya no incluye <code>version_documento</code> — ese campo se trasladó a <code>evento_consentimiento</code>, según el cambio #7.</li>
+        <li><code>evento_consentimiento.evidencia</code> se dividió en <code>evidencia_ruta</code> y <code>evidencia_hash</code>, también según el cambio #7.</li>
+      </ul>
+    </div>
+    <div class="callout pending">
+      <strong>Tablas que faltaban</strong> y ya están incluidas abajo: <code>vinculo_identidad</code>, <code>permiso</code>, <code>sesion</code>, <code>mfa_codigo_recuperacion</code> y <code>autorizacion</code>.
+    </div>
+  </section>
+
+  <!-- ============ 2. IDENTITY SCHEMA ============ -->
+  <section>
+    <div class="sec-head"><span class="n">2</span><h2>identity_schema</h2></div>
+    <p class="sec-intro">Único lugar donde vive la identidad real y el puente hacia el participante. Ninguna otra tabla del modelo guarda RUT, nombre ni correo.</p>
+
+    <div class="table-name">identidad</div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_identidad</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador único de la persona real (participante o representante).</td></tr>
+        <tr><td>rut_cifrado</td><td>VARCHAR(255)</td><td>—</td><td>—</td><td>RUT cifrado en reposo (AES-256); nunca se guarda en texto plano.</td></tr>
+        <tr><td>rut_hash</td><td>CHAR(64)</td><td>—</td><td>—</td><td>Hash del RUT (SHA-256), usado para buscar por RUT sin descifrar.</td></tr>
+        <tr><td>nombre</td><td>VARCHAR(150)</td><td>—</td><td>—</td><td>Nombre completo de la persona.</td></tr>
+        <tr><td>correo</td><td>VARCHAR(150)</td><td>—</td><td>—</td><td>Correo de contacto de la persona.</td></tr>
+        <tr><td>telefono</td><td>VARCHAR(30)</td><td>—</td><td>—</td><td>Teléfono de contacto.</td></tr>
+        <tr><td>tipo</td><td>VARCHAR(20)</td><td>—</td><td>—</td><td>Indica si la identidad corresponde a un participante o a un representante legal.</td></tr>
+        <tr><td>fecha_nacimiento</td><td>DATE</td><td>—</td><td>—</td><td>Fecha de nacimiento; determina si el participante es menor de edad al enrolar.</td></tr>
+        <tr><td>fecha_revocacion</td><td>TIMESTAMP</td><td>—</td><td>—</td><td>Fecha en que la persona revocó su autorización para el tratamiento de sus datos, si aplica.</td></tr>
+        <tr><td>fecha_eliminacion</td><td>TIMESTAMP</td><td>—</td><td>—</td><td>Fecha de eliminación/anonimización efectiva del registro, si aplica.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="table-name">vinculo_identidad <span class="fix">tabla agregada</span></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_vinculo</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador del vínculo entre una identidad real y un participante.</td></tr>
+        <tr><td>id_identidad</td><td>UUID</td><td>FK</td><td>identidad.id_identidad</td><td>Identidad real asociada a este vínculo.</td></tr>
+        <tr><td>id_participante</td><td>UUID</td><td>FK, UNIQUE</td><td>participante.id_participante</td><td>Participante asociado; UNIQUE porque cada participante tiene a lo sumo un vínculo activo. Es el único camino entre identity_schema y research_schema.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="table-name">representante_legal</div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_representante</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador del registro de representación legal.</td></tr>
+        <tr><td>id_identidad</td><td>UUID</td><td>FK</td><td>identidad.id_identidad</td><td>Identidad de quien representa al participante menor de edad.</td></tr>
+        <tr><td>id_participante</td><td>UUID</td><td>FK</td><td>participante.id_participante</td><td>Participante representado.</td></tr>
+        <tr><td>relacion</td><td>VARCHAR(50)</td><td>—</td><td>—</td><td>Vínculo del representante con el participante (madre, padre, tutor, etc.).</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ============ 3. RESEARCH SCHEMA ============ -->
+  <section>
+    <div class="sec-head"><span class="n">3</span><h2>research_schema</h2></div>
+    <p class="sec-intro">Datos de investigación sin PII directa; la identidad real solo se alcanza a través de <code>vinculo_identidad</code>.</p>
+
+    <div class="table-name">participante</div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_participante</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador seudónimo del participante, sin ningún dato identificable asociado directamente.</td></tr>
+        <tr><td>estado</td><td>VARCHAR(20)</td><td>—</td><td>—</td><td>Estado del participante: <code>activo</code> o <code>inactivo</code>.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="table-name">participacion</div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_participacion</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador de la participación de un participante en un estudio específico.</td></tr>
+        <tr><td>id_participante</td><td>UUID</td><td>FK</td><td>participante.id_participante</td><td>Participante que se enrola.</td></tr>
+        <tr><td>id_estudio</td><td>UUID</td><td>FK</td><td>estudio.id_estudio</td><td>Estudio en el que se enrola.</td></tr>
+        <tr><td>codigo_seudonimo</td><td>VARCHAR(30)</td><td>UNIQUE</td><td>—</td><td>Código seudónimo exclusivo de esta participación (ej. EXP-001), distinto por cada estudio.</td></tr>
+        <tr><td>fecha_inicio</td><td>DATE</td><td>—</td><td>—</td><td>Fecha en que comienza la participación.</td></tr>
+        <tr><td>es_menor_al_enrolar</td><td>BOOLEAN</td><td>—</td><td>—</td><td>Indica si el participante era menor de edad al momento de enrolarse, para exigir representante legal.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="table-name">estudio</div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_estudio</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador del estudio.</td></tr>
+        <tr><td>id_responsable</td><td>UUID</td><td>FK</td><td>usuario.id_usuario</td><td>Usuario (Investigador Responsable) a cargo del estudio.</td></tr>
+        <tr><td>nombre</td><td>VARCHAR(150)</td><td>—</td><td>—</td><td>Nombre del estudio.</td></tr>
+        <tr><td>fecha_inicio</td><td>DATE</td><td>—</td><td>—</td><td>Fecha de inicio del estudio.</td></tr>
+        <tr><td>fecha_fin</td><td>DATE</td><td>—</td><td>—</td><td>Fecha de término del estudio.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="table-name">consentimiento <span class="fix">corregida</span></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_consentimiento</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador del registro de consentimiento.</td></tr>
+        <tr><td>id_participacion</td><td>UUID</td><td>FK, UNIQUE</td><td>participacion.id_participacion</td><td>Participación a la que pertenece; UNIQUE porque cada participación tiene un único registro de consentimiento (1:1), que acumula sus eventos.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout warn" style="margin-top:6px;"><strong>Corrección:</strong> se retira el campo <code>version_documento</code> de esta tabla — ahora vive en <code>evento_consentimiento</code>, donde corresponde a cada evento y no al consentimiento en general.</div>
+
+    <div class="table-name">evento_consentimiento <span class="fix">corregida</span></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_evento</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador del evento de consentimiento.</td></tr>
+        <tr><td>id_consentimiento</td><td>UUID</td><td>FK</td><td>consentimiento.id_consentimiento</td><td>Consentimiento al que pertenece el evento.</td></tr>
+        <tr><td>id_usuario</td><td>UUID</td><td>FK</td><td>usuario.id_usuario</td><td>Usuario del equipo que registró el evento.</td></tr>
+        <tr><td>tipo_evento</td><td>VARCHAR(20)</td><td>—</td><td>—</td><td>Tipo de evento: aceptar, negar, retirar o reconsentir.</td></tr>
+        <tr><td>fecha</td><td>TIMESTAMP</td><td>—</td><td>—</td><td>Fecha y hora en que ocurrió el evento.</td></tr>
+        <tr><td>version_documento</td><td>VARCHAR(20)</td><td>—</td><td>—</td><td>Versión del documento de consentimiento vigente al momento del evento.</td></tr>
+        <tr><td>evidencia_ruta</td><td>VARCHAR(255)</td><td>—</td><td>—</td><td>Ruta del archivo de evidencia (PDF firmado o escaneo) en el storage.</td></tr>
+        <tr><td>evidencia_hash</td><td>CHAR(64)</td><td>—</td><td>—</td><td>Hash SHA-256 del archivo de evidencia, para verificar su integridad.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="table-name">registro_datos</div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_registro</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador del registro de datos experimentales.</td></tr>
+        <tr><td>id_participacion</td><td>UUID</td><td>FK</td><td>participacion.id_participacion</td><td>Participación que generó este registro (no el participante en general).</td></tr>
+        <tr><td>tipo_dato</td><td>VARCHAR(30)</td><td>—</td><td>—</td><td>Tipo de dato: video, audio, eeg, eye_tracking, log_sensor, cuestionario, documento, planilla, imagen u otro.</td></tr>
+        <tr><td>ruta_archivo</td><td>VARCHAR(255)</td><td>—</td><td>—</td><td>Ruta del archivo en el storage dedicado.</td></tr>
+        <tr><td>hash_sha256</td><td>CHAR(64)</td><td>—</td><td>—</td><td>Hash SHA-256 del archivo, para verificar su integridad.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ============ 4. SECURITY SCHEMA ============ -->
+  <section>
+    <div class="sec-head"><span class="n">4</span><h2>security_schema</h2></div>
+    <p class="sec-intro">Cuentas, roles globales, sesiones, permisos, autorizaciones y bitácora append-only.</p>
+
+    <div class="table-name">usuario</div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_usuario</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador de la cuenta de usuario del sistema.</td></tr>
+        <tr><td>nombre</td><td>VARCHAR(150)</td><td>—</td><td>—</td><td>Nombre del usuario.</td></tr>
+        <tr><td>correo</td><td>VARCHAR(150)</td><td>UNIQUE</td><td>—</td><td>Correo institucional, usado para iniciar sesión.</td></tr>
+        <tr><td>hash_password</td><td>VARCHAR(255)</td><td>—</td><td>—</td><td>Hash de la contraseña (nunca se guarda en texto plano).</td></tr>
+        <tr><td>mfa_secret</td><td>VARCHAR(255)</td><td>—</td><td>—</td><td>Secreto TOTP para la autenticación multifactor, cifrado en reposo.</td></tr>
+        <tr><td>id_rol</td><td>UUID</td><td>FK</td><td>rol.id_rol</td><td>Rol global del usuario (Director, Soporte, Investigador, Asistente, Estudiante o Invitado).</td></tr>
+        <tr><td>activo</td><td>BOOLEAN</td><td>—</td><td>—</td><td>Indica si la cuenta está activa o bloqueada.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="table-name">rol</div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_rol</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador del rol global.</td></tr>
+        <tr><td>nombre_rol</td><td>VARCHAR(50)</td><td>—</td><td>—</td><td>Nombre del rol: Director, Soporte, Investigador, Asistente, Estudiante o Invitado.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="table-name">membresia_estudio <span class="fix">corregida</span></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_membresia</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador de la membresía de un usuario en un estudio.</td></tr>
+        <tr><td>id_usuario</td><td>UUID</td><td>FK</td><td>usuario.id_usuario</td><td>Usuario que tiene acceso al estudio.</td></tr>
+        <tr><td>id_estudio</td><td>UUID</td><td>FK</td><td>estudio.id_estudio</td><td>Estudio al que accede.</td></tr>
+        <tr><td>nivel_acceso</td><td>VARCHAR(20)</td><td>—</td><td>—</td><td>Nivel de acceso dentro del estudio: solo_ver o ver_y_editar.</td></tr>
+        <tr><td>fecha_fin</td><td>DATE</td><td>—</td><td>—</td><td>Fecha en que termina la membresía, si tiene plazo definido.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout warn" style="margin-top:6px;"><strong>Corrección:</strong> se retira el campo <code>id_rol</code> de esta tabla. El rol aplicable dentro de un estudio ya no depende de una FK a <code>rol</code> aquí, sino del <code>nivel_acceso</code> propio de la membresía; el rol global del usuario sigue viviendo en <code>usuario.id_rol</code>.</div>
+
+    <div class="table-name">permiso <span class="fix">tabla agregada</span></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_permiso</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador del permiso.</td></tr>
+        <tr><td>id_rol</td><td>UUID</td><td>FK</td><td>rol.id_rol</td><td>Rol al que se asigna el permiso.</td></tr>
+        <tr><td>recurso</td><td>VARCHAR(100)</td><td>—</td><td>—</td><td>Recurso sobre el que aplica el permiso (ej. <code>registro_datos</code>, <code>consentimiento</code>). Formato por confirmar (ver sección 6).</td></tr>
+        <tr><td>accion</td><td>VARCHAR(50)</td><td>—</td><td>—</td><td>Acción permitida sobre el recurso (crear, leer, editar, exportar, etc.).</td></tr>
+        <tr><td>condicion</td><td>TEXT</td><td>—</td><td>—</td><td>Condición opcional adicional que restringe el permiso (ej. solo si tiene membresía en el estudio).</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="table-name">sesion <span class="fix">tabla agregada</span></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_sesion</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador de la sesión de inicio de sesión.</td></tr>
+        <tr><td>id_usuario</td><td>UUID</td><td>FK</td><td>usuario.id_usuario</td><td>Usuario dueño de la sesión.</td></tr>
+        <tr><td>token_hash</td><td>VARCHAR(255)</td><td>—</td><td>—</td><td>Hash del token de sesión (JWT u otro), nunca el token en claro.</td></tr>
+        <tr><td>fecha_inicio</td><td>TIMESTAMP</td><td>—</td><td>—</td><td>Momento en que se abrió la sesión.</td></tr>
+        <tr><td>fecha_expiracion</td><td>TIMESTAMP</td><td>—</td><td>—</td><td>Momento en que la sesión expira automáticamente.</td></tr>
+        <tr><td>fecha_cierre</td><td>TIMESTAMP</td><td>—</td><td>—</td><td>Momento en que la sesión se cerró (logout manual), si aplica.</td></tr>
+        <tr><td>ip</td><td>VARCHAR(45)</td><td>—</td><td>—</td><td>Dirección IP desde la que se originó la sesión.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="table-name">mfa_codigo_recuperacion <span class="fix">tabla agregada</span></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_codigo</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador del código de recuperación MFA.</td></tr>
+        <tr><td>id_usuario</td><td>UUID</td><td>FK</td><td>usuario.id_usuario</td><td>Usuario dueño del código.</td></tr>
+        <tr><td>codigo_hash</td><td>VARCHAR(255)</td><td>—</td><td>—</td><td>Hash del código de respaldo de un solo uso.</td></tr>
+        <tr><td>usado</td><td>BOOLEAN</td><td>—</td><td>—</td><td>Indica si el código ya fue consumido.</td></tr>
+        <tr><td>fecha_uso</td><td>TIMESTAMP</td><td>—</td><td>—</td><td>Fecha en que se usó el código, si aplica.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="table-name">autorizacion <span class="fix">tabla agregada</span></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_autorizacion</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador de la autorización especial (ej. desenmascaramiento de PII).</td></tr>
+        <tr><td>id_usuario</td><td>UUID</td><td>FK</td><td>usuario.id_usuario</td><td>Usuario que solicita la autorización.</td></tr>
+        <tr><td>id_estudio</td><td>UUID</td><td>FK</td><td>estudio.id_estudio</td><td>Estudio sobre el que se solicita.</td></tr>
+        <tr><td>recurso</td><td>VARCHAR(100)</td><td>—</td><td>—</td><td>Recurso específico al que se solicita acceso excepcional.</td></tr>
+        <tr><td>tipo</td><td>VARCHAR(50)</td><td>—</td><td>—</td><td>Tipo de autorización solicitada.</td></tr>
+        <tr><td>motivo</td><td>TEXT</td><td>—</td><td>—</td><td>Justificación obligatoria de la solicitud.</td></tr>
+        <tr><td>id_autorizador</td><td>UUID</td><td>FK</td><td>usuario.id_usuario</td><td>Usuario (Director) que aprueba o rechaza la solicitud.</td></tr>
+        <tr><td>estado</td><td>VARCHAR(20)</td><td>—</td><td>—</td><td>Estado de la solicitud: pendiente, aprobada o rechazada.</td></tr>
+        <tr><td>fecha_solicitud</td><td>TIMESTAMP</td><td>—</td><td>—</td><td>Fecha en que se solicitó.</td></tr>
+        <tr><td>fecha_vencimiento</td><td>TIMESTAMP</td><td>—</td><td>—</td><td>Fecha en que la autorización deja de ser válida.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="table-name">auditoria</div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr class="pk-row"><td class="pk">id_auditoria</td><td>UUID</td><td>PK</td><td>—</td><td>Identificador del registro de bitácora.</td></tr>
+        <tr><td>id_usuario</td><td>UUID</td><td>NULLABLE, sin FK</td><td>—</td><td>Usuario que ejecutó la acción. Sin FK física para que la bitácora se conserve íntegra aunque se borre el usuario.</td></tr>
+        <tr><td>correo_intentado</td><td>VARCHAR(150)</td><td>—</td><td>—</td><td>Correo usado en intentos de autenticación, incluso si fallaron o el usuario no existe.</td></tr>
+        <tr><td>id_sesion</td><td>UUID</td><td>referencia lógica</td><td>—</td><td>Sesión asociada a la acción, si aplica.</td></tr>
+        <tr><td>entidad</td><td>VARCHAR(100)</td><td>—</td><td>—</td><td>Nombre de la tabla/entidad afectada por la acción.</td></tr>
+        <tr><td>id_registro_afectado</td><td>UUID</td><td>—</td><td>—</td><td>Identificador del registro específico afectado dentro de esa entidad.</td></tr>
+        <tr><td>accion</td><td>VARCHAR(50)</td><td>—</td><td>—</td><td>Acción ejecutada (crear, leer, editar, exportar, desenmascarar, etc.).</td></tr>
+        <tr><td>resultado</td><td>VARCHAR(20)</td><td>—</td><td>—</td><td>Resultado de la acción: éxito o error, y su código si corresponde.</td></tr>
+        <tr><td>id_autorizacion</td><td>UUID</td><td>referencia lógica</td><td>—</td><td>Autorización especial bajo la cual se ejecutó la acción, si aplica.</td></tr>
+        <tr><td>fecha_hora</td><td>TIMESTAMP</td><td>—</td><td>—</td><td>Momento exacto del evento.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ============ 5. PENDIENTE ============ -->
+  <section>
+    <div class="sec-head"><span class="n">5</span><h2>Pendiente de validación</h2></div>
+    <div class="card">
+      <p style="margin:0">Se mantienen los 3 puntos ya señalados en el DER v2: el formato de <code>recurso</code> en <code>permiso</code> y <code>autorizacion</code> (nombres de tabla libres o catálogo cerrado); el algoritmo de cifrado para <code>rut_cifrado</code>; y si <code>accion</code> en <code>auditoria</code> necesita más valores antes de convertirse en ENUM, ya que agregar uno después implica una migración.</p>
+    </div>
+  </section>
+
+  <!-- ============ 6. APROBACIÓN ============ -->
+  <section>
+    <div class="sec-head"><span class="n">6</span><h2>Aprobación</h2></div>
+    <div class="approval">
+      <h3>Para que el Líder cierre el DER final</h3>
+      <ul>
+        <li>Confirmar las 3 correcciones aplicadas sobre <code>membresia_estudio</code>, <code>consentimiento</code> y <code>evento_consentimiento</code>.</li>
+        <li>Validar que las 17 tablas y sus 3 esquemas quedan congelados para iniciar la implementación.</li>
+        <li>Registrar esta versión como el diccionario de datos oficial, reemplazando la sección 4 del DER v2.</li>
+      </ul>
+      <div class="sign-row">
+        <div class="sign-box">Propuesto por: Benjamín Arias (Desarrollador) — 03/10/2026</div>
+        <div class="sign-box">Aprobado por: Benjamín Barrientos (Líder) — fecha ______</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>plaGesEtic · Observatorio UX / UXLab UTEM</span>
+    <span>Gestión de Proyectos de Ingeniería (2026-II) · Octubre 2026</span>
+  </footer>
+</div>
+</body>
+</html>
