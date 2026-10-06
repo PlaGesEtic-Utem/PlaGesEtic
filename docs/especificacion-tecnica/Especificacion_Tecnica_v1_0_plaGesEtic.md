@@ -25,7 +25,7 @@ La arquitectura cliente-servidor separa la aplicación web, API, PostgreSQL y al
 | --- | --- |
 | API | Node.js y Express; operaciones JSON, cargas multipart y descargas en stream. Prefijo /api/v1 por validar. |
 | Persistencia | PostgreSQL con 22 tablas distribuidas en cuatro esquemas. |
-| Aplicación y archivos | Aplicación web, API, base de datos y almacenamiento como contenedores lógicos. Framework web y tecnología del almacenamiento por definir. |
+| Aplicación y archivos | Docker según ADR-001; aplicación web, API, base de datos y almacenamiento como contenedores lógicos. Framework web y tecnología del almacenamiento por definir. |
 | Almacenamiento | Áreas independientes para documentos éticos y archivos de investigación, con permisos y rutas propios. |
 
 ### 3.2 Contexto del sistema
@@ -104,7 +104,7 @@ El contrato para primer ingreso, cambio de contraseña y enrolamiento MFA con un
 
 Los seis roles son Director, Investigador, Asistente, Soporte, Estudiante e Invitado. El acceso combina el permiso del rol y su alcance con la membresía vigente o una autorización especial aplicable; no se deriva únicamente del nombre del rol.
 
-La membresía diferencia `puede_consultar`, `puede_cargar`, `puede_modificar`, `puede_descargar` y `puede_exportar`. Las autorizaciones especiales requieren aprobación, recurso y estudio correspondientes y vencimiento futuro. La matriz y los paneles esperados se documentan en el informe de autenticación y roles.
+La membresía diferencia `puede_consultar`, `puede_cargar`, `puede_modificar`, `puede_descargar` y `puede_exportar`. Las autorizaciones especiales requieren aprobación, recurso y estudio correspondientes y vencimiento futuro. La matriz y los paneles esperados se documentan en el [informe de autenticación y roles](../autenticacion/Documentacion_Autenticacion_Roles_plaGesEtic.md).
 
 ### 6.3 Auditoría
 
@@ -142,11 +142,12 @@ Secuencias complementarias: registro con consentimiento versión 1.1 y exportaci
 | Registro y consentimiento v1.1 | [Draw.io](../diagramas/uml/UML_Registro_Consentimiento_plaGesEtic.drawio) | [SVG](../diagramas/uml/UML_Registro_Consentimiento_plaGesEtic.svg) | [PNG](../diagramas/uml/UML_Registro_Consentimiento_plaGesEtic.png) |
 | Exportación desidentificada v1.0 | [Draw.io](../diagramas/uml/UML_Exportacion_Desidentificada_plaGesEtic.drawio) | [SVG](../diagramas/uml/UML_Exportacion_Desidentificada_plaGesEtic.svg) | [PNG](../diagramas/uml/UML_Exportacion_Desidentificada_plaGesEtic.png) |
 
-Las rutas de diagramas se deben comprobar junto con sus archivos antes de cerrar el PR.
 
 ## 9. Decisiones de arquitectura
 
-Las fuentes v3 sustentan la separación en cuatro esquemas, la independencia de códigos, los cinco permisos de membresía, la auditoría previa y la exportación con aprobación del Estudiante. Esta especificación registra las decisiones documentales; los identificadores y enlaces a ADR formales se incorporarán tras verificar los archivos de `docs/decisiones/`.
+El [ADR-001: selección del stack tecnológico](../decisiones/ADR-001-stack-tecnologico.md) registra la aceptación de Node.js con Express, PostgreSQL y Docker por Benjamín Barrientos, Líder de Proyecto. Su origen es el informe ADR-001 conservado en Drive. El [índice de decisiones](../decisiones/README.md) enlaza este registro.
+
+El DER y las fuentes v3 concretan cuatro esquemas, códigos independientes, cinco permisos de membresía, auditoría previa y exportación del Estudiante con aprobación. Estas definiciones desarrollan el diseño consolidado; no se presentan como ADR adicionales aprobados. La selección del stack se mantiene.
 
 ### Decisiones por completar
 
@@ -159,6 +160,8 @@ Las fuentes v3 sustentan la separación en cuatro esquemas, la independencia de 
 | Descarga y exportación | Conciliar descarga excepcional de Invitado con su membresía de solo consulta; detallar .zip, caducidad y cambios de permisos o retiro durante generación. |
 
 ## 10. Referencias
+
+[ADR-001 de origen](https://docs.google.com/document/d/1b1g4W84W3I38m8evO8mB_z9lKB_2METY/edit)
 
 [DER v3](https://drive.google.com/file/d/1YnhCcu5Atab0iUC53ekw3O7d8CAoG0en/view)
 
@@ -187,6 +190,6 @@ Los resultados reales de los 16 criterios de autenticación siguen pendientes de
 | Versión | Descripción | Responsable |
 | --- | --- | --- |
 | 0.1 | Creación inicial de la plantilla del repositorio. | No indicado en la plantilla. |
-| 1.0 | Consolidación con DER y diccionario v3: cuatro esquemas, 22 tablas, 60 rutas, consentimiento/asentimiento, permisos por operación y exportación con códigos independientes. Adaptación a las once secciones de la plantilla. | Catalina Araniz, documentación. |
+| 1.0 | Consolidación con DER y diccionario v3: cuatro esquemas, 22 tablas, 60 rutas, consentimiento/asentimiento, permisos por operación y exportación con códigos independientes. Adaptación a las once secciones de la plantilla e incorporación de ADR-001 y su índice. | Catalina Araniz, documentación. |
 
 C4 y registro se actualizan a 1.1; exportación se consolida en 1.0. El PR y la Wiki permanecen pendientes de publicación y su evidencia se registrará cuando estén disponibles.
