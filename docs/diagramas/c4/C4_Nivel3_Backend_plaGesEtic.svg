@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1810" viewBox="0 0 1800 1810" role="img"><title>C4 Nivel 3 — Componentes del backend</title><desc>plaGesEtic · API Node.js + Express · Observatorio UX / UXLab UTEM</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#1C2FB9"/></marker></defs><rect width="1800" height="1810" fill="white"/>
+<rect x="60" y="42" width="60" height="7" rx="10" fill="#B9E20E" stroke="none" stroke-width="2"/>
+<text x="60" y="100.0" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="35" font-weight="700" fill="#000B78">C4 Nivel 3 — Componentes del backend</text>
+<text x="60" y="155.0" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="21" font-weight="400" fill="#57627A">plaGesEtic · API Node.js + Express · Observatorio UX / UXLab UTEM</text>
+<text x="60" y="194.0" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#57627A">Versión 1.0 · Arquitectura lógica del backend</text>
+<rect x="665" y="245" width="470" height="95" rx="10" fill="#F3F5FC" stroke="#1C2FB9" stroke-width="2"/>
+<text x="900.0" y="273.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="24" font-weight="700" fill="#000B78">Aplicación web</text>
+<text x="900.0" y="309.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#57627A">[Contenedor · Tecnología por definir]</text>
+<rect x="60" y="380" width="1680" height="1110" rx="10" fill="#FFFFFF" stroke="#8993AB" stroke-width="2" stroke-dasharray="8 6"/>
+<text x="90" y="410.0" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="23" font-weight="700" fill="#000B78">API y lógica de aplicación [Contenedor · Node.js + Express]</text>
+<rect x="110" y="460" width="430" height="185" rx="10" fill="#000B78" stroke="#000B78" stroke-width="2"/>
+<text x="325.0" y="498.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Autenticación y autorización</text>
+<text x="325.0" y="535.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#DCE0FF">[Componente · Node.js / Express]</text>
+<text x="325.0" y="571.8" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">JWT / sesión y MFA en el login.</text>
+<text x="325.0" y="596.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Rol global, permiso, membresía</text>
+<text x="325.0" y="621.1999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">y nivel de acceso por estudio.</text>
+<rect x="685" y="460" width="430" height="185" rx="10" fill="#000B78" stroke="#000B78" stroke-width="2"/>
+<text x="900.0" y="498.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Rutas y controladores API</text>
+<text x="900.0" y="535.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#DCE0FF">[Componente · Node.js / Express]</text>
+<text x="900.0" y="571.8" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Valida entradas y despacha</text>
+<text x="900.0" y="596.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">operaciones a los servicios.</text>
+<text x="900.0" y="621.1999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Arma la respuesta autorizada.</text>
+<rect x="1260" y="460" width="430" height="185" rx="10" fill="#000B78" stroke="#000B78" stroke-width="2"/>
+<text x="1475.0" y="498.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Filtro de privacidad</text>
+<text x="1475.0" y="535.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#DCE0FF">[Componente · Node.js / Express]</text>
+<text x="1475.0" y="571.8" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Devuelve seudónimos por estudio.</text>
+<text x="1475.0" y="596.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Excluye PII de la salida ordinaria.</text>
+<text x="1475.0" y="621.1999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Acceso excepcional explícito.</text>
+<rect x="110" y="810" width="430" height="185" rx="10" fill="#000B78" stroke="#000B78" stroke-width="2"/>
+<text x="325.0" y="848.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Estudios y participantes</text>
+<text x="325.0" y="885.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#DCE0FF">[Componente · Node.js / Express]</text>
+<text x="325.0" y="921.8" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Estudio, participación y seudónimo.</text>
+<text x="325.0" y="946.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Alta de identidad por rol autorizado.</text>
+<text x="325.0" y="971.1999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Gestiona vínculo de privacidad.</text>
+<rect x="685" y="810" width="430" height="185" rx="10" fill="#000B78" stroke="#000B78" stroke-width="2"/>
+<text x="900.0" y="848.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Gestión de consentimientos</text>
+<text x="900.0" y="885.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#DCE0FF">[Componente · Node.js / Express]</text>
+<text x="900.0" y="921.8" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Conserva eventos y evidencias.</text>
+<text x="900.0" y="946.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Determina vigencia y alcance.</text>
+<text x="900.0" y="971.1999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Registra retiro o reconsentimiento.</text>
+<rect x="1260" y="810" width="430" height="185" rx="10" fill="#000B78" stroke="#000B78" stroke-width="2"/>
+<text x="1475.0" y="848.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Registros y exportaciones</text>
+<text x="1475.0" y="885.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#DCE0FF">[Componente · Node.js / Express]</text>
+<text x="1475.0" y="921.8" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Ingesta con consentimiento válido.</text>
+<text x="1475.0" y="946.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Exportación seudonimizada.</text>
+<text x="1475.0" y="971.1999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Filtra archivos y metadatos.</text>
+<rect x="110" y="1240" width="430" height="185" rx="10" fill="#000B78" stroke="#000B78" stroke-width="2"/>
+<text x="325.0" y="1278.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Auditoría</text>
+<text x="325.0" y="1315.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#DCE0FF">[Componente · Node.js / Express]</text>
+<text x="325.0" y="1351.8" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Registra acción, contexto y resultado.</text>
+<text x="325.0" y="1376.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Bitácora append-only.</text>
+<text x="325.0" y="1401.2" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Operaciones protegidas de la API.</text>
+<rect x="685" y="1240" width="430" height="185" rx="10" fill="#000B78" stroke="#000B78" stroke-width="2"/>
+<text x="900.0" y="1278.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Acceso a datos</text>
+<text x="900.0" y="1315.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#DCE0FF">[Componente · Node.js / SQL]</text>
+<text x="900.0" y="1351.8" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Repositorios por esquema y permiso.</text>
+<text x="900.0" y="1376.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Consultas y transacciones SQL.</text>
+<text x="900.0" y="1401.2" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Sin acceso libre a identidades.</text>
+<rect x="1260" y="1240" width="430" height="185" rx="10" fill="#000B78" stroke="#000B78" stroke-width="2"/>
+<text x="1475.0" y="1278.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Adaptador de archivos</text>
+<text x="1475.0" y="1315.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#DCE0FF">[Componente · Node.js / E/S]</text>
+<text x="1475.0" y="1351.8" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Guarda evidencia y datos de estudio.</text>
+<text x="1475.0" y="1376.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Calcula / verifica hash SHA-256.</text>
+<text x="1475.0" y="1401.2" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="19" font-weight="400" fill="#FFFFFF">Acceso y descarga restringidos.</text>
+<path d="M 900 340 L 900 460" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="790" y="347" width="220" height="32" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="900.0" y="363.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#17233D">REST / HTTPS</text>
+<path d="M 685 500 L 540 500" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="550" y="469" width="124" height="28" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="612.0" y="483.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Valida acceso</text>
+<path d="M 1115 500 L 1260 500" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="1125" y="469" width="125" height="28" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1187.5" y="483.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Filtra salida</text>
+<path d="M 760 645 L 760 700 L 325 700 L 325 810" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="260" y="712" width="315" height="32" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="417.5" y="728.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#17233D">Gestiona estudios / altas</text>
+<path d="M 900 645 L 900 810" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="773" y="747" width="254" height="31" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="900.0" y="762.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#17233D">Gestiona eventos</text>
+<path d="M 1040 645 L 1040 700 L 1475 700 L 1475 810" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="1200" y="712" width="305" height="32" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1352.5" y="728.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#17233D">Registra / exporta</text>
+<path d="M 540 900 L 685 900" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="552" y="868" width="120" height="27" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="612.0" y="881.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Registra CI</text>
+<path d="M 1260 900 L 1115 900" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="1126" y="868" width="123" height="27" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1187.5" y="881.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Verifica CI</text>
+<path d="M 325 995 L 325 1070 L 800 1070 L 800 1240" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="440" y="1038" width="210" height="29" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="545.0" y="1052.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#17233D">Lee / persiste</text>
+<path d="M 900 995 L 900 1240" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="765" y="1148" width="270" height="30" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="900.0" y="1163.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#17233D">Eventos + vigencia</text>
+<path d="M 1475 995 L 1475 1070 L 1000 1070 L 1000 1240" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="1100" y="1038" width="325" height="29" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1262.5" y="1052.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="17" font-weight="400" fill="#17233D">Datos / estado de exportación</text>
+<path d="M 1550 995 L 1550 1240" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="1385" y="1148" width="300" height="30" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1535.0" y="1163.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="17" font-weight="400" fill="#17233D">Lee / guarda archivos</text>
+<path d="M 1115 950 L 1185 950 L 1185 1300 L 1260 1300" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="1140" y="1178" width="95" height="30" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1187.5" y="1193.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Evidencias</text>
+<path d="M 685 595 L 585 595 L 585 1180 L 470 1180 L 470 1240" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="95" y="1150" width="460" height="30" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="325.0" y="1165.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="17" font-weight="400" fill="#17233D">Arma registro; escribe al finalizar</text>
+<path d="M 540 1330 L 685 1330" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="550" y="1295" width="125" height="29" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="612.5" y="1309.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Append-only</text>
+<path d="M 110 590 L 85 590 L 85 1190 L 710 1190 L 710 1240" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="95" y="1193" width="440" height="27" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="315.0" y="1206.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="17" font-weight="400" fill="#17233D">Consulta sesión y permisos</text>
+<rect x="685" y="1545" width="430" height="130" rx="10" fill="#F3F5FC" stroke="#1C2FB9" stroke-width="2"/>
+<text x="900.0" y="1577.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="24" font-weight="700" fill="#000B78">PostgreSQL [Contenedor]</text>
+<text x="900.0" y="1620.3" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#57627A">identity_schema · research_schema</text>
+<text x="900.0" y="1643.7" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#57627A">security_schema</text>
+<rect x="1260" y="1545" width="430" height="130" rx="10" fill="#F3F5FC" stroke="#1C2FB9" stroke-width="2"/>
+<text x="1475.0" y="1577.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="22" font-weight="700" fill="#000B78">Almacenamiento [Contenedor]</text>
+<text x="1475.0" y="1620.3" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#57627A">Evidencias y archivos de estudio.</text>
+<text x="1475.0" y="1643.7" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#57627A">Tecnología / protocolo por definir.</text>
+<path d="M 900 1425 L 900 1545" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="830" y="1500" width="140" height="28" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="900.0" y="1514.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#17233D">SQL</text>
+<path d="M 1475 1425 L 1475 1545" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="1340" y="1500" width="270" height="28" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1475.0" y="1514.0" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#17233D">E/S · Por definir</text>
+<text x="60" y="1730.3" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#57627A">Las flechas representan dependencias entre componentes lógicos; esta vista documenta el diseño del backend.</text>
+<text x="60" y="1753.7" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#57627A">Base documental: DER v2, diccionario v2, catálogo de API y middlewares. RBAC según rol global + nivel_acceso.</text>
+</svg>
