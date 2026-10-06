@@ -1,22 +1,27 @@
-# Diagramas — plaGesEtic
+# Decisiones de Arquitectura — plaGesEtic
 
-Esta sección centraliza los diagramas técnicos utilizados para representar la arquitectura, estructura y funcionamiento del MVP de plaGesEtic.
+Esta sección contiene los registros de decisiones de arquitectura (ADR) del proyecto plaGesEtic.
 
-## Contenido
+Los ADR permitirán documentar las principales decisiones técnicas tomadas durante el desarrollo del MVP, incluyendo su contexto, alternativas consideradas y justificación.
 
-En esta sección se incorporarán progresivamente:
+## Decisiones registradas
 
-- Diagramas C4.
-- Diagramas UML.
-- Diagramas relacionados con el modelo de datos.
-- Otros diagramas técnicos necesarios para documentar el sistema.
+| ADR | Decisión | Estado registrado |
+| --- | --- | --- |
+| [ADR-001](ADR-001-stack-tecnologico.md) | Node.js + Express, PostgreSQL y Docker para el MVP. | Aceptado por Benjamín Barrientos, según el registro de origen en Drive. |
 
-## Diagramas disponibles
+El ADR conserva la decisión del registro de origen y añade una nota de correspondencia con el DER v3. Los temas pendientes de implementación permanecen en la [especificación técnica](../especificacion-tecnica/Especificacion_Tecnica_v1_0_plaGesEtic.md#9-decisiones-de-arquitectura).
 
-Actualmente no existen diagramas registrados en esta sección.
+## Convención de nombres
 
-A medida que avance el diseño técnico del proyecto, los diagramas serán incorporados y referenciados desde este índice.
+Los registros de decisiones de arquitectura utilizarán la siguiente estructura:
+
+`ADR-XXX-nombre-de-la-decision.md`
+
+Ejemplo:
+
+`ADR-001-stack-tecnologico.md`
 
 ---
 
-> Esta sección se encuentra en desarrollo y será actualizada conforme avance la definición de la arquitectura del proyecto.
+> Esta sección será actualizada conforme se definan y validen las decisiones de arquitectura del proyecto.
