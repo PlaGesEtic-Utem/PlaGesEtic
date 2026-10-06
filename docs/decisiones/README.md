@@ -6,9 +6,11 @@ Los ADR permitirán documentar las principales decisiones técnicas tomadas dura
 
 ## Decisiones registradas
 
-Actualmente no existen decisiones de arquitectura registradas en esta sección.
+| ADR | Decisión | Estado registrado |
+| --- | --- | --- |
+| [ADR-001](ADR-001-stack-tecnologico.md) | Node.js + Express, PostgreSQL y Docker para el MVP. | Aceptado por Benjamín Barrientos, según el registro de origen en Drive. |
 
-A medida que avance el proyecto, los ADR serán incorporados y referenciados desde este índice.
+El ADR conserva la decisión del registro de origen y añade una nota de correspondencia con el DER v3. Los temas pendientes de implementación permanecen en la [especificación técnica](../especificacion-tecnica/Especificacion_Tecnica_v1_0_plaGesEtic.md#9-decisiones-de-arquitectura).
 
 ## Convención de nombres
 
@@ -18,7 +20,7 @@ Los registros de decisiones de arquitectura utilizarán la siguiente estructura:
 
 Ejemplo:
 
-`ADR-001-arquitectura-base.md`
+`ADR-001-stack-tecnologico.md`
 
 ---
 
