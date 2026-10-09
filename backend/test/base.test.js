@@ -37,13 +37,13 @@ test('GET /salud responde 503 con el formato común si la base no responde', asy
   assert.ok(!JSON.stringify(body).includes('ECONNREFUSED'), 'no debe mostrar detalles internos');
 });
 
-test('Una ruta inexistente responde 404 con el formato común', async () => {
+test('Una ruta sin sesión responde 401 con el formato común (no revela si la ruta existe)', async () => {
   const s = await levantar(poolOk);
   const r = await fetch(`${s.url}/no-existe`);
   const body = await r.json();
   s.cerrar();
-  assert.strictEqual(r.status, 404);
-  assert.strictEqual(body.error.codigo, 'NO_ENCONTRADO');
+  assert.strictEqual(r.status, 401);
+  assert.strictEqual(body.error.codigo, 'NO_AUTENTICADO');
 });
 
 test('JSON mal formado responde 400 sin detalles internos', async () => {

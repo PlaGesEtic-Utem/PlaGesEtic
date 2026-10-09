@@ -17,8 +17,9 @@
  */
 const { Router } = require('express');
 
-module.exports = (/* pool */) => {
+module.exports = (pool) => {
   const router = Router();
-  // Las rutas de la Actividad 45 se montan aquí.
+  // Actividad 45 · Registro de participantes y estudios
+  router.use('/estudios', require('./estudios')(pool));
   return router;
 };
