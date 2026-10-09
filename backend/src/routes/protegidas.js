@@ -21,5 +21,6 @@ module.exports = (pool) => {
   const router = Router();
   // Actividad 45 · Registro de participantes y estudios
   router.use('/estudios', require('./estudios')(pool));
+  router.use('/identidades', require('./identidades')(pool));
   return router;
 };

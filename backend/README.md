@@ -77,6 +77,31 @@ Todas las respuestas de error usan el mismo formato, sin detalles internos:
 
 Códigos: `SOLICITUD_INVALIDA` 400 · `NO_AUTENTICADO` 401 · `SIN_PERMISO` 403 · `NO_ENCONTRADO` 404 · `CONFLICTO` 409 · `TIPO_NO_PERMITIDO` 415 · `ERROR_INTERNO` 500 · `SERVICIO_NO_DISPONIBLE` 503.
 
+## Probar a mano (visual, solo desarrollo)
+
+Mientras no esté integrado el login de la Actividad 40, se prueba con una **sesión de prueba**.
+
+1. Instala en Visual Studio Code la extensión **REST Client** (autor: Huachao Mao).
+2. Levanta todo: `docker compose up --build` (en otra terminal sigue con los pasos).
+3. Carga los datos de prueba (usuarios, estudios, protocolos y membresías de los datos sintéticos):
+   ```bash
+   docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/dev/datos_prueba.sql
+   ```
+   (Sin Docker: ejecuta `db/dev/datos_prueba.sql` en pgAdmin sobre la base `plagesetic`.)
+4. Pide un token por usuario y cópialo:
+   ```bash
+   docker compose exec api node scripts/sesion-prueba.js test_investigador@uxlab.test
+   docker compose exec api node scripts/sesion-prueba.js test_estudiante@uxlab.test
+   docker compose exec api node scripts/sesion-prueba.js test_director@uxlab.test
+   ```
+   (Sin Docker: `node scripts/sesion-prueba.js <correo>` desde la carpeta `backend`.)
+5. Abre `pruebas/estudios.http` (y luego `pruebas/identidades.http`), pega los tokens arriba y haz clic en **Send Request** sobre cada prueba.
+   La respuesta (código y JSON) se abre al lado. Cada prueba dice qué resultado esperar.
+
+**Datos personales:** se cifran con la clave `CLAVE_CIFRADO` del `.env`. El valor de `.env.example` sirve solo para desarrollo; la API se niega a usarlo en producción.
+
+`db/dev/` y `scripts/sesion-prueba.js` son **solo para desarrollo**: no se usan en producción.
+
 ## Pruebas
 
 ```bash

@@ -64,9 +64,26 @@ function filtroPrivacidad(req, res, next) {
   const jsonOriginal = res.json.bind(res);
   res.json = (cuerpo) => {
     const puedeVerPII = !!(req.acceso && req.acceso.desenmascarar === true);
-    return jsonOriginal(puedeVerPII ? cuerpo : limpiarPII(cuerpo));
+    if (puedeVerPII) return jsonOriginal(cuerpo);
+    // Excepción explícita y mínima por ruta (ver permitirEnRespuesta): solo esos campos, solo en el primer nivel.
+    const permitidos = req.camposPermitidos || [];
+    if (permitidos.length && cuerpo && typeof cuerpo === 'object' && !Array.isArray(cuerpo)) {
+      const limpio = limpiarPII(cuerpo);
+      for (const k of permitidos) if (Object.prototype.hasOwnProperty.call(cuerpo, k)) limpio[k] = cuerpo[k];
+      return jsonOriginal(limpio);
+    }
+    return jsonOriginal(limpiarPII(cuerpo));
   };
   next();
 }
 
-module.exports = { filtroPrivacidad, limpiarPII, CAMPOS_PROHIBIDOS };
+/**
+ * Excepción declarada en la ruta: deja salir campos puntuales que el catálogo v3 exige devolver.
+ * Hoy solo la usan POST /identidades y /identidades/buscar, que responden únicamente con el UX Lab ID.
+ * Uso: router.post('/', ..., permitirEnRespuesta('ux_lab_id'), controlador)
+ */
+function permitirEnRespuesta(...campos) {
+  return (req, res, next) => { req.camposPermitidos = campos; next(); };
+}
+
+module.exports = { filtroPrivacidad, permitirEnRespuesta, limpiarPII, CAMPOS_PROHIBIDOS };
