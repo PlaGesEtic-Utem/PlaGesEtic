@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diccionario de Datos v2 · plaGesEtic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue-deep: #000B78; --blue-mid: #1C2FB9; --blue-electric: #253FF6; --lime: #B9E20E; --ink: #131315;
+    --bg: #F3F5FC; --card: #FFFFFF; --line: #E1E5F5; --muted: #4B4F6B;
+    --hero-bg: #000B78; --hero-ink: #FFFFFF; --heading: #000B78; --link: #1C2FB9; --lime-ink: #131315;
+    --font-head: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+    --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#0A0C24; --card:#12153A; --ink:#EEF0FF; --line:#262B63; --muted:#A9AED6; --heading:#DDE2FF; --link:#8FA0FF; }
+  }
+  :root[data-theme="dark"] { --bg:#0A0C24; --card:#12153A; --ink:#EEF0FF; --line:#262B63; --muted:#A9AED6; --heading:#DDE2FF; --link:#8FA0FF; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.65; }
+  .page { max-width: 1100px; margin: 0 auto; padding: 0 24px 64px; }
+  h1,h2,h3 { font-family: var(--font-head); color: var(--heading); line-height: 1.2; margin: 0; }
+  h2 { font-size: 23px; font-weight: 800; letter-spacing: -0.01em; }
+  h3 { font-size: 16px; font-weight: 700; margin: 0; }
+  p { margin: 0 0 14px; }
+  code { font-family: var(--font-mono); font-size: 0.88em; background: color-mix(in srgb, var(--blue-electric) 10%, transparent); color: var(--blue-mid); padding: 1px 6px; border-radius: 5px; }
+  @media (prefers-color-scheme: dark) { code { color: #C4CDFF; } }
+
+  .hero { background: var(--hero-bg); color: var(--hero-ink); margin: 0 -24px; padding: 52px 40px 38px; position: relative; overflow: hidden; border-bottom: 6px solid var(--lime); }
+  .hero::before { content:""; position:absolute; right:-120px; top:-120px; width:360px; height:360px; border-radius:50%; background:var(--blue-electric); opacity:.35; }
+  .hero::after { content:""; position:absolute; right:90px; bottom:-70px; width:170px; height:170px; border-radius:50%; border:3px solid var(--lime); opacity:.8; }
+  .hero > * { position: relative; z-index: 1; }
+  .brand { display:flex; align-items:center; gap:12px; margin-bottom:32px; font-family:var(--font-head); font-weight:700; font-size:15px; }
+  .brand .mark { width:34px; height:34px; border-radius:9px; background:var(--lime); color:var(--blue-deep); display:grid; place-items:center; font-weight:800; }
+  .badge { display:inline-block; background:var(--lime); color:var(--lime-ink); font-family:var(--font-head); font-weight:700; font-size:12px; padding:4px 12px; border-radius:999px; margin-bottom:16px; margin-right:8px; }
+  .badge.alt { background:#fff; color:var(--blue-deep); }
+  .hero h1 { color:#fff; font-size:31px; font-weight:800; letter-spacing:-0.02em; max-width:720px; }
+  .hero .subtitle { margin:14px 0 0; font-family:var(--font-head); font-weight:500; font-size:16px; color:#C9D0FF; max-width:680px; }
+
+  .meta { display:grid; grid-template-columns:1fr 1fr; gap:0; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-top:28px; box-shadow:0 1px 0 var(--line); }
+  .meta div { padding:14px 20px; border-bottom:1px solid var(--line); }
+  .meta div:nth-child(odd) { border-right:1px solid var(--line); }
+  .meta .full { grid-column:1/-1; border-right:0 !important; }
+  .meta div:nth-last-child(-n+2):nth-child(odd), .meta div:last-child { border-bottom:0; }
+  .meta dt { font-family:var(--font-head); font-size:12px; font-weight:700; color:var(--blue-electric); margin-bottom:2px; }
+  @media (prefers-color-scheme: dark) { .meta dt { color: var(--lime); } }
+  .meta dd { margin:0; font-size:14px; color:var(--ink); }
+
+  section { margin-top: 44px; }
+  .sec-head { display:flex; align-items:center; gap:14px; padding-bottom:12px; margin-bottom:18px; border-bottom:2px solid var(--line); }
+  .sec-head .n { flex:none; width:38px; height:38px; border-radius:10px; background:var(--blue-deep); color:var(--lime); font-family:var(--font-head); font-weight:800; font-size:17px; display:grid; place-items:center; }
+  @media (prefers-color-scheme: dark) { .sec-head .n { background: var(--blue-electric); color: #fff; } }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 22px; }
+  .callout { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--blue-electric); border-radius:10px; padding:14px 18px; margin:18px 0; }
+  .callout.pending { border-left-color: var(--lime); }
+  .callout.change { border-left-color: var(--blue-mid); }
+  .callout strong { font-family:var(--font-head); color:var(--heading); }
+
+  /* ============ GRUPOS POR ESQUEMA ============ */
+  .schema-banner { display:flex; align-items:center; gap:12px; background:var(--blue-deep); color:#fff; border-radius:14px; padding:14px 20px; margin-bottom:18px; flex-wrap:wrap; }
+  .schema-banner code { background:rgba(255,255,255,.15); color:var(--lime); }
+  .schema-banner .desc { font-size:13px; color:#C9D0FF; }
+  .schema-group { margin-top:28px; }
+  .schema-group:first-child { margin-top:0; }
+  .schema-head { display:flex; align-items:baseline; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+  .schema-head .dot { width:12px; height:12px; border-radius:4px; background:var(--lime); flex:none; margin-top:4px; }
+  .schema-head .dot.blue { background:var(--blue-electric); }
+  .schema-head .dot.mid { background:var(--blue-mid); }
+  .schema-head h3 { margin:0; font-size:16px; }
+  .schema-head .desc { font-size:12.5px; color:var(--muted); }
+  .schema-head .new-tag { background:var(--lime); color:var(--lime-ink); font-family:var(--font-head); font-weight:800; font-size:10px; padding:2px 8px; border-radius:999px; }
+
+  /* ============ TABLA DICCIONARIO ============ */
+  table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; font-size:13.3px; }
+  th { background:var(--blue-deep); color:#fff; font-family:var(--font-head); font-weight:700; text-align:left; padding:10px 13px; font-size:12px; }
+  td { padding:9px 13px; border-top:1px solid var(--line); vertical-align:top; }
+  .table-scroll { overflow-x:auto; border-radius:14px; }
+  tr.pk-row td { background: color-mix(in srgb, var(--lime) 10%, var(--card)); }
+  td.campo-cell { font-family:var(--font-mono); font-size:12.3px; }
+  td.campo-cell.pk { font-weight:700; color:var(--blue-mid); }
+  td.restr-cell { font-size:12px; }
+  td.restr-cell .r { display:inline-block; background: color-mix(in srgb, var(--blue-electric) 10%, transparent); color:var(--blue-mid); font-weight:700; font-size:10.5px; padding:1px 6px; border-radius:5px; margin:1px 3px 1px 0; white-space:nowrap; }
+  td.restr-cell .r.soft { background: color-mix(in srgb, var(--muted) 15%, transparent); color:var(--muted); }
+  @media (prefers-color-scheme: dark) { td.restr-cell .r { color:#C4CDFF; } td.restr-cell .r.soft{ color:var(--muted);} }
+
+  footer { margin-top:52px; padding-top:18px; border-top:2px solid var(--line); font-size:12.5px; color:var(--muted); display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+
+  @media (max-width: 680px) {
+    .hero { padding: 40px 22px 30px; }
+    .hero h1 { font-size: 24px; }
+    .meta { grid-template-columns: 1fr; }
+    .meta div:nth-child(odd) { border-right: 0; }
+    .meta div { border-bottom: 1px solid var(--line) !important; }
+    .meta div:last-child { border-bottom: 0 !important; }
+  }
+
+  @page { size: A4 landscape; margin: 12mm; }
+  @media print {
+    :root { --bg:#F3F5FC; --card:#FFFFFF; --ink:#131315; --line:#E1E5F5; --muted:#4B4F6B; --heading:#000B78; --link:#1C2FB9; }
+    body { font-size:12.5px; background:var(--bg); }
+    .page { max-width:none; padding:0; }
+    .hero { margin:0; }
+    section { margin-top:26px; }
+    .card, table, tr, .callout { break-inside: avoid; }
+    h2, h3, .sec-head { break-after: avoid; }
+    .sec-head .n { background:#000B78; color:#B9E20E; }
+    .meta dt { color:#253FF6; }
+    code { color:#1C2FB9; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <div class="brand"><span class="mark">UX</span> Observatorio UX · UXLab UTEM</div>
+    <span class="badge">Diccionario de datos · v2</span><span class="badge alt">17 tablas · 3 esquemas</span>
+    <h1>Diccionario de Datos — plaGesEtic</h1>
+    <p class="subtitle">Tabla, campo, tipo, restricciones y descripción de las 17 tablas del modelo, organizadas en <code>identity_schema</code>, <code>research_schema</code> y <code>security_schema</code>.</p>
+  </header>
+
+  <dl class="meta">
+    <div class="full"><dt>Proyecto</dt><dd>Plataforma de Gestión Ética de Participantes y Datos de Investigación (plaGesEtic) — Observatorio UX / UXLab UTEM</dd></div>
+    <div><dt>Documento base</dt><dd>Diccionario de Datos v1 + correcciones de rediseño de privacidad y seguridad</dd></div>
+    <div><dt>Estado</dt><dd>v2 — incorpora el puente de privacidad, roles globales y 4 tablas de seguridad nuevas</dd></div>
+    <div><dt>Responsable</dt><dd>Benjamín Arias (Desarrollador)</dd></div>
+    <div><dt>Fecha</dt><dd>1 de octubre de 2026</dd></div>
+  </dl>
+
+  <!-- ============ 1. CONTEXTO ============ -->
+  <section>
+    <div class="sec-head"><span class="n">1</span><h2>Contexto</h2></div>
+    <div class="card">
+      <p style="margin:0">Esta versión reemplaza al diccionario v1 con tres cambios estructurales: (1) se rompe la clave foránea directa entre <code>participante</code> e <code>identidad</code> para permitir el borrado por ley sin destruir el experimento, a través de la nueva tabla puente <code>vinculo_identidad</code>; (2) los roles pasan de vivir en la membresía por estudio a ser un atributo global de <code>usuario</code>, con 6 perfiles oficiales; y (3) se agregan 4 tablas de seguridad (<code>permiso</code>, <code>sesion</code>, <code>mfa_codigo_recuperacion</code>, <code>autorizacion</code>) y <code>auditoria</code> se traslada a <code>security_schema</code>.</p>
+    </div>
+  </section>
+
+  <!-- ============ 2. ENUMS ============ -->
+  <section>
+    <div class="sec-head"><span class="n">2</span><h2>Catálogo de valores permitidos (ENUMs)</h2></div>
+    <p style="margin-top:-8px;">Las cuatro listas cerradas más relevantes del modelo, antes de entrar al detalle tabla por tabla.</p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Tabla</th><th>Campo</th><th>Valores permitidos</th></tr></thead>
+      <tbody>
+        <tr><td class="campo-cell">rol</td><td class="campo-cell">nombre_rol</td><td><code>Director</code>, <code>Soporte</code>, <code>Investigador</code>, <code>Asistente</code>, <code>Estudiante</code>, <code>Invitado</code></td></tr>
+        <tr><td class="campo-cell">membresia_estudio</td><td class="campo-cell">nivel_acceso</td><td><code>solo_ver</code>, <code>ver_y_editar</code></td></tr>
+        <tr><td class="campo-cell">registro_datos</td><td class="campo-cell">tipo_dato</td><td><code>video</code>, <code>audio</code>, <code>eeg</code>, <code>eye_tracking</code>, <code>log_sensor</code>, <code>cuestionario</code>, <code>documento</code>, <code>planilla</code>, <code>imagen</code>, <code>otro</code></td></tr>
+        <tr><td class="campo-cell">autorizacion</td><td class="campo-cell">estado</td><td><code>pendiente</code>, <code>aprobada</code>, <code>rechazada</code>, <code>vencida</code></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- ============ 3. IDENTITY_SCHEMA ============ -->
+  <section>
+    <div class="sec-head"><span class="n">3</span><h2>identity_schema</h2></div>
+    <div class="schema-banner"><code>identity_schema</code><span class="desc">Datos identificables de personas reales, y el puente que las vincula con el experimento</span></div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot"></span><h3>identidad</h3><span class="desc">Datos identificables, ahora con RUT cifrado y borrado programable</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_identidad</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único de la identidad.</td></tr>
+          <tr><td class="campo-cell">rut_cifrado</td><td>VARCHAR(255)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>RUT cifrado en reposo (reemplaza al campo <code>rut</code> en texto plano).</td></tr>
+          <tr><td class="campo-cell">rut_hash</td><td>CHAR(64)</td><td class="restr-cell"><span class="r">NOT NULL</span><span class="r">UNIQUE</span></td><td>Hash del RUT; permite buscar una persona sin descifrar <code>rut_cifrado</code>.</td></tr>
+          <tr><td class="campo-cell">nombre</td><td>VARCHAR(150)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Nombre completo de la persona.</td></tr>
+          <tr><td class="campo-cell">correo</td><td>VARCHAR(150)</td><td class="restr-cell"><span class="r">NOT NULL</span><span class="r">UNIQUE</span></td><td>Correo electrónico de contacto.</td></tr>
+          <tr><td class="campo-cell">telefono</td><td>VARCHAR(20)</td><td class="restr-cell"><span class="r">NULLABLE</span></td><td>Teléfono de contacto, opcional.</td></tr>
+          <tr><td class="campo-cell">tipo</td><td>VARCHAR(20)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Valores permitidos: <code>participante</code>, <code>representante</code>.</td></tr>
+          <tr><td class="campo-cell">fecha_nacimiento</td><td>DATE</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Usada para calcular la edad al momento de cada enrolamiento.</td></tr>
+          <tr><td class="campo-cell">fecha_revocacion</td><td>TIMESTAMP</td><td class="restr-cell"><span class="r">NULLABLE</span></td><td>Fecha en que la persona revocó su consentimiento / pidió ser olvidada.</td></tr>
+          <tr><td class="campo-cell">fecha_eliminacion</td><td>TIMESTAMP</td><td class="restr-cell"><span class="r">NULLABLE</span></td><td>Fecha programada de borrado definitivo (30 días desde la revocación, Ley 19.628).</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot"></span><h3>vinculo_identidad</h3><span class="desc">Tabla puente: el único lugar que conecta una identidad real con un participante</span><span class="new-tag">NUEVA</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_vinculo</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único del vínculo.</td></tr>
+          <tr><td class="campo-cell">id_identidad</td><td>UUID</td><td class="restr-cell"><span class="r">FK → identidad.id_identidad</span><span class="r">NOT NULL</span></td><td>Identidad real vinculada.</td></tr>
+          <tr><td class="campo-cell">id_participante</td><td>UUID</td><td class="restr-cell"><span class="r">FK → participante.id_participante</span><span class="r">NOT NULL</span><span class="r">UNIQUE</span></td><td>Participante (seudonimizado) correspondiente a esa identidad.</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="callout change" style="margin-top:12px;">
+        <strong>Por qué existe:</strong> borrar esta fila (al revocar consentimiento) deja <code>participante</code> y todos sus datos de investigación completamente anónimos e irreversibles, sin tocar <code>research_schema</code>.
+      </div>
+    </div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot"></span><h3>representante_legal</h3><span class="desc">Quién firma en representación de un participante menor de edad</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_representante</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único del registro de representación.</td></tr>
+          <tr><td class="campo-cell">id_identidad</td><td>UUID</td><td class="restr-cell"><span class="r">FK → identidad.id_identidad</span><span class="r">NOT NULL</span></td><td>Identidad de la persona que representa.</td></tr>
+          <tr><td class="campo-cell">id_participante</td><td>UUID</td><td class="restr-cell"><span class="r">FK → participante.id_participante</span><span class="r">NOT NULL</span></td><td>Participante menor de edad representado.</td></tr>
+          <tr><td class="campo-cell">relacion</td><td>VARCHAR(50)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Valores permitidos: <code>Madre</code>, <code>Padre</code>, <code>Tutor legal</code>, <code>Otro</code>.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4. RESEARCH_SCHEMA ============ -->
+  <section>
+    <div class="sec-head"><span class="n">4</span><h2>research_schema</h2></div>
+    <div class="schema-banner"><code>research_schema</code><span class="desc">Datos de investigación, sin PII directa — solo llega aquí vía vinculo_identidad</span></div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot blue"></span><h3>participante</h3><span class="desc">Ya no tiene FK a identidad: la relación pasa por vinculo_identidad</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_participante</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único del participante.</td></tr>
+          <tr><td class="campo-cell">estado</td><td>VARCHAR(20)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Valores permitidos: <code>activo</code>, <code>inactivo</code>.</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="callout change" style="margin-top:12px;">
+        <strong>Qué se quitó:</strong> <code>id_identidad</code> (rompía la seudonimización) y <code>es_menor_edad</code> (se calcula desde <code>identidad.fecha_nacimiento</code>, y el valor histórico ya vive en <code>participacion.es_menor_al_enrolar</code>).
+      </div>
+    </div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot blue"></span><h3>participacion</h3><span class="desc">Un participante dentro de un estudio específico, con su seudónimo</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_participacion</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único de la participación.</td></tr>
+          <tr><td class="campo-cell">id_participante</td><td>UUID</td><td class="restr-cell"><span class="r">FK → participante.id_participante</span><span class="r">NOT NULL</span></td><td>Participante que se enroló en el estudio.</td></tr>
+          <tr><td class="campo-cell">id_estudio</td><td>UUID</td><td class="restr-cell"><span class="r">FK → estudio.id_estudio</span><span class="r">NOT NULL</span></td><td>Estudio en el que participa.</td></tr>
+          <tr><td class="campo-cell">codigo_seudonimo</td><td>VARCHAR(30)</td><td class="restr-cell"><span class="r">NOT NULL</span><span class="r">UNIQUE</span></td><td>Código distinto por cada participación, incluso para la misma persona.</td></tr>
+          <tr><td class="campo-cell">fecha_inicio</td><td>DATE</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Fecha en que comienza esta participación.</td></tr>
+          <tr><td class="campo-cell">es_menor_al_enrolar</td><td>BOOLEAN</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Dato histórico e inmutable: si la persona era menor de edad en el momento exacto de ingresar al estudio.</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="callout" style="margin-top:12px;">
+        <strong>Restricción compuesta:</strong> <code>UNIQUE(id_participante, id_estudio)</code> — un participante no puede tener dos participaciones activas en el mismo estudio.
+      </div>
+    </div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot blue"></span><h3>estudio</h3><span class="desc">Estudios del Observatorio UX</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_estudio</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único del estudio.</td></tr>
+          <tr><td class="campo-cell">id_responsable</td><td>UUID</td><td class="restr-cell"><span class="r">FK → usuario.id_usuario</span><span class="r">NOT NULL</span></td><td>Usuario responsable del estudio. Un usuario puede ser responsable de varios estudios (1:N).</td></tr>
+          <tr><td class="campo-cell">nombre</td><td>VARCHAR(150)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Nombre del estudio.</td></tr>
+          <tr><td class="campo-cell">fecha_inicio</td><td>DATE</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Fecha de inicio del estudio.</td></tr>
+          <tr><td class="campo-cell">fecha_fin</td><td>DATE</td><td class="restr-cell"><span class="r">NULLABLE</span></td><td>Fecha de término; nula mientras el estudio sigue activo.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot blue"></span><h3>consentimiento</h3><span class="desc">Un consentimiento por participación — ahora sin versión fija</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_consentimiento</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único del consentimiento.</td></tr>
+          <tr><td class="campo-cell">id_participacion</td><td>UUID</td><td class="restr-cell"><span class="r">FK → participacion.id_participacion</span><span class="r">NOT NULL</span><span class="r">UNIQUE</span></td><td>Participación a la que corresponde (relación 1:1).</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="callout change" style="margin-top:12px;">
+        <strong>Qué se quitó:</strong> <code>version_documento</code> — se movió a <code>evento_consentimiento</code> para no perder la versión anterior cuando la persona reconsiente.
+      </div>
+    </div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot blue"></span><h3>evento_consentimiento</h3><span class="desc">Historial completo de cada decisión, con quién la registró y su evidencia firmada</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_evento</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único del evento.</td></tr>
+          <tr><td class="campo-cell">id_consentimiento</td><td>UUID</td><td class="restr-cell"><span class="r">FK → consentimiento.id_consentimiento</span><span class="r">NOT NULL</span></td><td>Consentimiento al que pertenece este evento.</td></tr>
+          <tr><td class="campo-cell">tipo_evento</td><td>VARCHAR(20)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Valores permitidos: <code>aceptar</code>, <code>negar</code>, <code>retirar</code>, <code>reconsentir</code>.</td></tr>
+          <tr><td class="campo-cell">fecha</td><td>TIMESTAMP</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Fecha y hora exacta del evento.</td></tr>
+          <tr><td class="campo-cell">version_documento</td><td>VARCHAR(20)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Versión exacta del documento que la persona leyó en este evento.</td></tr>
+          <tr><td class="campo-cell">id_usuario</td><td>UUID</td><td class="restr-cell"><span class="r">FK → usuario.id_usuario</span><span class="r">NOT NULL</span></td><td>Usuario del equipo que registró el evento.</td></tr>
+          <tr><td class="campo-cell">evidencia_ruta</td><td>VARCHAR(255)</td><td class="restr-cell"><span class="r">NULLABLE</span></td><td>Ruta al archivo de evidencia firmada (PDF, imagen, etc.).</td></tr>
+          <tr><td class="campo-cell">evidencia_hash</td><td>CHAR(64)</td><td class="restr-cell"><span class="r">NULLABLE</span></td><td>Hash SHA-256 de la evidencia, para verificar que no fue alterada.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot blue"></span><h3>registro_datos</h3><span class="desc">Archivos y datos experimentales, con 10 tipos de dato soportados</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_registro</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único del registro de datos.</td></tr>
+          <tr><td class="campo-cell">id_participacion</td><td>UUID</td><td class="restr-cell"><span class="r">FK → participacion.id_participacion</span><span class="r">NOT NULL</span></td><td>Participación que generó este registro.</td></tr>
+          <tr><td class="campo-cell">tipo_dato</td><td>VARCHAR(30)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Valores permitidos: <code>video</code>, <code>audio</code>, <code>eeg</code>, <code>eye_tracking</code>, <code>log_sensor</code>, <code>cuestionario</code>, <code>documento</code>, <code>planilla</code>, <code>imagen</code>, <code>otro</code>.</td></tr>
+          <tr><td class="campo-cell">ruta_archivo</td><td>VARCHAR(255)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Ruta o clave del archivo en el storage dedicado.</td></tr>
+          <tr><td class="campo-cell">hash_sha256</td><td>CHAR(64)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Hash SHA-256 del archivo, en hexadecimal (64 caracteres exactos).</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5. SECURITY_SCHEMA ============ -->
+  <section>
+    <div class="sec-head"><span class="n">5</span><h2>security_schema</h2></div>
+    <div class="schema-banner"><code>security_schema</code><span class="desc">Cuentas, roles globales, sesiones, permisos, autorizaciones y auditoría</span></div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot mid"></span><h3>usuario</h3><span class="desc">Ahora con rol global y estado activo/inactivo</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_usuario</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único de la cuenta de usuario.</td></tr>
+          <tr><td class="campo-cell">nombre</td><td>VARCHAR(150)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Nombre del integrante del equipo.</td></tr>
+          <tr><td class="campo-cell">correo</td><td>VARCHAR(150)</td><td class="restr-cell"><span class="r">NOT NULL</span><span class="r">UNIQUE</span></td><td>Correo usado para iniciar sesión.</td></tr>
+          <tr><td class="campo-cell">hash_password</td><td>VARCHAR(255)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Hash de la contraseña.</td></tr>
+          <tr><td class="campo-cell">mfa_secret</td><td>VARCHAR(255)</td><td class="restr-cell"><span class="r">NULLABLE</span></td><td>Semilla TOTP para MFA; ampliado de 64 a 255 caracteres. Nula hasta activar el 2FA.</td></tr>
+          <tr><td class="campo-cell">id_rol</td><td>UUID</td><td class="restr-cell"><span class="r">FK → rol.id_rol</span><span class="r">NOT NULL</span></td><td>Rol global del usuario (Director, Soporte, Investigador, Asistente, Estudiante o Invitado).</td></tr>
+          <tr><td class="campo-cell">activo</td><td>BOOLEAN</td><td class="restr-cell"><span class="r">NOT NULL</span><span class="r">DEFAULT true</span></td><td>Si la cuenta puede iniciar sesión.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot mid"></span><h3>rol</h3><span class="desc">Ahora 6 perfiles oficiales, en vez de 3</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_rol</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único del rol.</td></tr>
+          <tr><td class="campo-cell">nombre_rol</td><td>VARCHAR(50)</td><td class="restr-cell"><span class="r">NOT NULL</span><span class="r">UNIQUE</span></td><td>Valores permitidos: <code>Director</code>, <code>Soporte</code>, <code>Investigador</code>, <code>Asistente</code>, <code>Estudiante</code>, <code>Invitado</code>.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot mid"></span><h3>membresia_estudio</h3><span class="desc">Ya no define el rol: solo el nivel de acceso dentro de ese estudio</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_membresia</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único de la membresía.</td></tr>
+          <tr><td class="campo-cell">id_usuario</td><td>UUID</td><td class="restr-cell"><span class="r">FK → usuario.id_usuario</span><span class="r">NOT NULL</span></td><td>Usuario que tiene la membresía.</td></tr>
+          <tr><td class="campo-cell">id_estudio</td><td>UUID</td><td class="restr-cell"><span class="r">FK → estudio.id_estudio</span><span class="r">NOT NULL</span></td><td>Estudio sobre el que aplica la membresía.</td></tr>
+          <tr><td class="campo-cell">nivel_acceso</td><td>VARCHAR(20)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Valores permitidos: <code>solo_ver</code>, <code>ver_y_editar</code>.</td></tr>
+          <tr><td class="campo-cell">fecha_fin</td><td>DATE</td><td class="restr-cell"><span class="r">NULLABLE</span></td><td>Fecha en que termina el acceso del usuario a ese estudio, si corresponde.</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="callout change" style="margin-top:12px;">
+        <strong>Qué se quitó:</strong> <code>id_rol</code> — el rol ahora es global y vive en <code>usuario</code>.
+      </div>
+      <div class="callout" style="margin-top:12px;">
+        <strong>Restricción compuesta:</strong> <code>UNIQUE(id_usuario, id_estudio)</code> — un usuario no puede tener dos membresías activas en el mismo estudio.
+      </div>
+    </div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot mid"></span><h3>permiso</h3><span class="desc">Matriz de qué puede hacer cada rol</span><span class="new-tag">NUEVA</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_permiso</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único del permiso.</td></tr>
+          <tr><td class="campo-cell">id_rol</td><td>UUID</td><td class="restr-cell"><span class="r">FK → rol.id_rol</span><span class="r">NOT NULL</span></td><td>Rol al que aplica este permiso.</td></tr>
+          <tr><td class="campo-cell">recurso</td><td>VARCHAR(50)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Entidad o módulo sobre el que aplica (ej. <code>registro_datos</code>, <code>consentimiento</code>).</td></tr>
+          <tr><td class="campo-cell">accion</td><td>VARCHAR(30)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Valores permitidos: <code>crear</code>, <code>leer</code>, <code>actualizar</code>, <code>eliminar</code>, <code>exportar</code>.</td></tr>
+          <tr><td class="campo-cell">condicion</td><td>TEXT</td><td class="restr-cell"><span class="r">NULLABLE</span></td><td>Regla adicional opcional (ej. "solo estudios donde tiene membresía").</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot mid"></span><h3>sesion</h3><span class="desc">Control y auditoría de sesiones activas</span><span class="new-tag">NUEVA</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_sesion</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único de la sesión.</td></tr>
+          <tr><td class="campo-cell">id_usuario</td><td>UUID</td><td class="restr-cell"><span class="r">FK → usuario.id_usuario</span><span class="r">NOT NULL</span></td><td>Usuario dueño de la sesión.</td></tr>
+          <tr><td class="campo-cell">token_hash</td><td>CHAR(64)</td><td class="restr-cell"><span class="r">NOT NULL</span><span class="r">UNIQUE</span></td><td>Hash del token de sesión (JWT); nunca se guarda el token en texto plano.</td></tr>
+          <tr><td class="campo-cell">fecha_inicio</td><td>TIMESTAMP</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Momento en que se creó la sesión.</td></tr>
+          <tr><td class="campo-cell">fecha_expiracion</td><td>TIMESTAMP</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Momento en que el token deja de ser válido.</td></tr>
+          <tr><td class="campo-cell">fecha_cierre</td><td>TIMESTAMP</td><td class="restr-cell"><span class="r">NULLABLE</span></td><td>Momento del cierre de sesión manual, si ocurrió.</td></tr>
+          <tr><td class="campo-cell">ip</td><td>VARCHAR(45)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Dirección IP de origen (soporta IPv4 e IPv6).</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot mid"></span><h3>mfa_codigo_recuperacion</h3><span class="desc">Códigos de respaldo de un solo uso para el 2FA</span><span class="new-tag">NUEVA</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_codigo</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único del código.</td></tr>
+          <tr><td class="campo-cell">id_usuario</td><td>UUID</td><td class="restr-cell"><span class="r">FK → usuario.id_usuario</span><span class="r">NOT NULL</span></td><td>Usuario dueño del código de respaldo.</td></tr>
+          <tr><td class="campo-cell">codigo_hash</td><td>CHAR(64)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Hash del código de recuperación.</td></tr>
+          <tr><td class="campo-cell">usado</td><td>BOOLEAN</td><td class="restr-cell"><span class="r">NOT NULL</span><span class="r">DEFAULT false</span></td><td>Si ya fue consumido (cada código se usa una sola vez).</td></tr>
+          <tr><td class="campo-cell">fecha_uso</td><td>TIMESTAMP</td><td class="restr-cell"><span class="r">NULLABLE</span></td><td>Momento en que se usó el código, si corresponde.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot mid"></span><h3>autorizacion</h3><span class="desc">Justificaciones y permisos especiales aprobados (Flujo B)</span><span class="new-tag">NUEVA</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_autorizacion</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único de la autorización.</td></tr>
+          <tr><td class="campo-cell">id_usuario</td><td>UUID</td><td class="restr-cell"><span class="r">FK → usuario.id_usuario</span><span class="r">NOT NULL</span></td><td>Usuario que solicita el acceso especial (ej. Soporte o Estudiante).</td></tr>
+          <tr><td class="campo-cell">id_estudio</td><td>UUID</td><td class="restr-cell"><span class="r">FK → estudio.id_estudio</span><span class="r">NOT NULL</span></td><td>Estudio sobre el que se solicita el acceso.</td></tr>
+          <tr><td class="campo-cell">recurso</td><td>VARCHAR(50)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Entidad o módulo sobre el que se autoriza el acceso.</td></tr>
+          <tr><td class="campo-cell">tipo</td><td>VARCHAR(30)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Tipo de autorización solicitada (ej. acceso temporal, excepción puntual).</td></tr>
+          <tr><td class="campo-cell">motivo</td><td>TEXT</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Justificación de la solicitud.</td></tr>
+          <tr><td class="campo-cell">id_autorizador</td><td>UUID</td><td class="restr-cell"><span class="r">FK → usuario.id_usuario</span><span class="r">NOT NULL</span></td><td>Usuario (típicamente Director) que aprueba o rechaza.</td></tr>
+          <tr><td class="campo-cell">estado</td><td>VARCHAR(20)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Valores permitidos: <code>pendiente</code>, <code>aprobada</code>, <code>rechazada</code>, <code>vencida</code>.</td></tr>
+          <tr><td class="campo-cell">fecha_solicitud</td><td>TIMESTAMP</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Momento en que se solicitó la autorización.</td></tr>
+          <tr><td class="campo-cell">fecha_vencimiento</td><td>TIMESTAMP</td><td class="restr-cell"><span class="r">NULLABLE</span></td><td>Momento en que la autorización deja de ser válida, si aplica.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot mid"></span><h3>auditoria</h3><span class="desc">Movida desde el esquema experimental; ahora admite intentos fallidos y no usa FK físicas</span></div>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr class="pk-row"><td class="campo-cell pk">id_auditoria</td><td>UUID</td><td class="restr-cell"><span class="r">PK</span><span class="r">NOT NULL</span></td><td>Identificador único del registro de auditoría.</td></tr>
+          <tr><td class="campo-cell">id_usuario</td><td>UUID</td><td class="restr-cell"><span class="r soft">Referencia a usuario.id_usuario (sin FK física)</span><span class="r">NULLABLE</span></td><td>Usuario que ejecutó la acción; nulo si fue un intento de alguien sin cuenta.</td></tr>
+          <tr><td class="campo-cell">correo_intentado</td><td>VARCHAR(150)</td><td class="restr-cell"><span class="r">NULLABLE</span></td><td>Correo usado en un intento de inicio de sesión fallido de un usuario inexistente.</td></tr>
+          <tr><td class="campo-cell">id_sesion</td><td>UUID</td><td class="restr-cell"><span class="r soft">Referencia a sesion.id_sesion (sin FK física)</span><span class="r">NULLABLE</span></td><td>Sesión bajo la cual ocurrió la acción, si corresponde.</td></tr>
+          <tr><td class="campo-cell">entidad</td><td>VARCHAR(50)</td><td class="restr-cell"><span class="r">NULLABLE</span></td><td>Tabla o módulo afectado (ej. <code>registro_datos</code>, <code>consentimiento</code>).</td></tr>
+          <tr><td class="campo-cell">id_registro_afectado</td><td>UUID</td><td class="restr-cell"><span class="r soft">Referencia blanda</span><span class="r">NULLABLE</span></td><td>Fila específica afectada dentro de esa entidad.</td></tr>
+          <tr><td class="campo-cell">accion</td><td>VARCHAR(50)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Valores permitidos (ampliados): <code>crear</code>, <code>leer</code>, <code>actualizar</code>, <code>eliminar</code>, <code>exportar</code>, <code>login_exitoso</code>, <code>login_fallido</code>, <code>cierre_sesion</code>.</td></tr>
+          <tr><td class="campo-cell">resultado</td><td>VARCHAR(20)</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Valores permitidos: <code>exito</code>, <code>error</code>.</td></tr>
+          <tr><td class="campo-cell">id_autorizacion</td><td>UUID</td><td class="restr-cell"><span class="r soft">Referencia a autorizacion.id_autorizacion (sin FK física)</span><span class="r">NULLABLE</span></td><td>Autorización bajo la cual se ejecutó la acción, si aplica.</td></tr>
+          <tr><td class="campo-cell">fecha_hora</td><td>TIMESTAMP</td><td class="restr-cell"><span class="r">NOT NULL</span></td><td>Momento exacto de la acción.</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="callout change" style="margin-top:12px;">
+        <strong>Por qué sin FK físicas:</strong> si se borra un usuario, una sesión o una autorización, la bitácora debe seguir intacta — una FK estricta forzaría a borrar en cascada o bloquear el borrado, perdiendo la trazabilidad.
+      </div>
+      <div class="callout" style="margin-top:12px;">
+        <strong>Restricción de tabla:</strong> <code>INSERT</code> únicamente — no admite <code>UPDATE</code> ni <code>DELETE</code> (append-only).
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 6. PENDIENTES ============ -->
+  <section>
+    <div class="sec-head"><span class="n">6</span><h2>Pendiente de validación</h2></div>
+    <div class="callout pending">
+      <strong>Por revisar con el equipo:</strong> el formato exacto de <code>permiso.recurso</code> y <code>autorizacion.recurso</code> (si serán nombres de tabla libres o un catálogo cerrado), el algoritmo de cifrado para <code>identidad.rut_cifrado</code>, y si <code>auditoria.accion</code> necesita más valores además de los ya listados antes de convertirla en <code>ENUM</code> — agregar uno después implica migración, igual que en v1.
+    </div>
+  </section>
+
+  <footer>
+    <span>plaGesEtic · Observatorio UX / UXLab UTEM</span>
+    <span>Gestión de Proyectos de Ingeniería (2026-II) · Octubre 2026</span>
+  </footer>
+</div>
+</body>
+</html>
