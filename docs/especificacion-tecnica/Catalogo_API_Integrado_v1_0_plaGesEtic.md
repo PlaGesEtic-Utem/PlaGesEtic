@@ -2,7 +2,7 @@
 
 Anexo de la especificación documental v1.0. Transcripción estructurada del catálogo v3: 60 rutas en 11 grupos. Conserva roles, flags, entradas y salidas; los pendientes de coherencia están en la especificación.
 
-[Fuente del catálogo v3](https://drive.google.com/file/d/1E6hF6FkxxDuMAv8JcfXlSu_fw2IyEpau/view)
+[Fuente: catálogo v3.1](https://drive.google.com/file/d/172V5EtjaF20uoevILh5StJMz4zkU-C_g/view)
 
 > **Notas de coherencia con el código (10/10/2026, ver [ADR-002](../decisiones/ADR-002-decisiones-prototipo-alfa.md)):**
 > - Las rutas se publican **sin prefijo** `/api/v1` (D2, propuesta).

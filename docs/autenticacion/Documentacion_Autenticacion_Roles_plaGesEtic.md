@@ -110,8 +110,8 @@ Datos de prueba: ocho cuentas sintéticas, una por rol más Soporte y Estudiante
 
 [Criterios de aceptación del líder](https://drive.google.com/file/d/1K8cMjb4yym7bkhdDM-FssplNwwSDairc/view)
 
-[Diccionario de datos v3](https://drive.google.com/file/d/1lHu6YkbNk8AL_j4kFryUXEL66SSHzw-S/view)
+[Diccionario de datos v3.1](https://drive.google.com/file/d/1e1g9YL--Hef9Zritw5-cFVUmXs24-FTd/view)
 
-[Catálogo de endpoints v3](https://drive.google.com/file/d/1E6hF6FkxxDuMAv8JcfXlSu_fw2IyEpau/view)
+[Catálogo de endpoints v3.1](https://drive.google.com/file/d/172V5EtjaF20uoevILh5StJMz4zkU-C_g/view)
 
 [Middlewares de seguridad v3](https://drive.google.com/file/d/1mJSEWUPjqA2g7kzBd127ka7tVsNWvenG/view)
