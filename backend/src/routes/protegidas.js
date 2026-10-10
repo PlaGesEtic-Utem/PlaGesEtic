@@ -12,10 +12,9 @@
  *     marcarAuditoria('estudio', 'leer'),
  *     requierePermiso({ recurso: 'estudio', accion: 'leer', permisoEstudio: 'puede_consultar' }),
  *     estudiosController.obtener);
- *
- * El sábado 10/10 se agrega aquí GET /auditoria (solo Director, solo lectura).
  */
 const { Router } = require('express');
+const auditoriaRoutes = require('./auditoriaRoutes');
 
 module.exports = (pool) => {
   const router = Router();
@@ -24,5 +23,7 @@ module.exports = (pool) => {
   router.use('/estudios/:idEstudio/participaciones', require('./participaciones')(pool));
   router.use('/estudios', require('./estudios')(pool));
   router.use('/identidades', require('./identidades')(pool));
+  // GET /auditoria (solo Director, solo lectura)
+  router.use(auditoriaRoutes);
   return router;
 };

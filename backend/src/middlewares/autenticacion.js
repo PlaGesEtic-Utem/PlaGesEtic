@@ -1,5 +1,8 @@
 'use strict';
 /**
+ * MIDDLEWARE 2 · AUTENTICACIÓN
+ * Actividad 42 · Benjamín Arias
+ * Reutiliza el login, MFA y JWT de la Actividad 40 (no se reimplementan).
  *
  * ENTRADA: cabecera  Authorization: Bearer <JWT de sesión emitido por POST /auth/login/mfa>
  * VALIDA:
@@ -14,8 +17,17 @@
  */
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-const db = require('../config/db'); // AJUSTAR la ruta: debe exportar query(texto, parametros) del Pool de pg
+const { cargarConfig } = require('../config');
+const { buscarSesionVigente } = require('../repositories/autenticacionRepository');
 const { ErrorApi, errores } = require('../utils/errores');
+
+// Secreto del JWT: viene de config (JWT_SECRET), el mismo que usa el login de la Actividad 40.
+let secretoJwt;
+function obtenerSecreto() {
+  if (secretoJwt === undefined) secretoJwt = cargarConfig().jwt.secreto;
+  if (!secretoJwt) throw new Error('JWT_SECRET no está configurado');
+  return secretoJwt;
+}
 
 /**
  * ⚠ SUPUESTO a confirmar con el login de la Actividad 40:
@@ -46,29 +58,17 @@ async function autenticacion(req, res, next) {
     if (!esquema || esquema.toLowerCase() !== 'bearer' || !token) {
       return next(errores.noAutenticado());
     }
-    if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET no está configurado');
+    const secreto = obtenerSecreto(); // fuera del try: un secreto sin configurar debe dar 500, no 401
     try {
-      jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
+      jwt.verify(token, secreto, { algorithms: ['HS256'] });
     } catch (e) {
       return next(errores.noAutenticado()); // firma inválida, token vencido o mal formado
     }
 
     // 2 y 3. Sesión vigente + cuenta activa y sin vencer, en una sola consulta.
     // Un token_temporal del paso MFA no tiene fila en sesion_usuario, así que nunca pasa de aquí.
-    const { rows } = await db.query(
-      `SELECT s.id_sesion, u.id_usuario, u.debe_cambiar_password, r.nombre_rol
-         FROM security_schema.sesion_usuario s
-         JOIN security_schema.usuario u ON u.id_usuario = s.id_usuario
-         JOIN security_schema.rol r     ON r.id_rol = u.id_rol
-        WHERE s.token_hash = $1
-          AND s.fecha_cierre IS NULL
-          AND s.fecha_expiracion > now()
-          AND u.activo = true
-          AND (u.fecha_expiracion IS NULL OR u.fecha_expiracion > now())`,
-      [hashDelToken(token)]
-    );
-    if (rows.length === 0) return next(errores.noAutenticado());
-    const f = rows[0];
+    const f = await buscarSesionVigente(hashDelToken(token));
+    if (!f) return next(errores.noAutenticado());
 
     // Cambio de contraseña pendiente: solo /auth/password y /auth/logout.
     if (f.debe_cambiar_password && !rutaPermitidaConCambioPendiente(req)) {
