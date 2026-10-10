@@ -4,6 +4,12 @@ Anexo de la especificación documental v1.0. Transcripción estructurada del cat
 
 [Fuente del catálogo v3](https://drive.google.com/file/d/1E6hF6FkxxDuMAv8JcfXlSu_fw2IyEpau/view)
 
+> **Notas de coherencia con el código (10/10/2026, ver [ADR-002](../decisiones/ADR-002-decisiones-prototipo-alfa.md)):**
+> - Las rutas se publican **sin prefijo** `/api/v1` (D2, propuesta).
+> - En `POST /identidades`, **correo y teléfono son obligatorios** (D1, aceptada).
+> - «Investigador (responsable)» significa membresía vigente con el permiso indicado en la columna «Permiso en estudio»; el responsable puede otorgarlo a otro investigador (D5, propuesta).
+> - Implementadas en `feature/backend-base` al 10/10: estudios (5 rutas), identidades (2) y participaciones (2). El ingreso (`/auth/*`) se implementa el 11/10 (D3).
+
 ## Autenticación y MFA
 
 | Recurso | Rol autorizado | Permiso en estudio | Entrada | Salida |
@@ -57,7 +63,7 @@ Anexo de la especificación documental v1.0. Transcripción estructurada del cat
 
 | Recurso | Rol autorizado | Permiso en estudio | Entrada | Salida |
 | --- | --- | --- | --- | --- |
-| POST /identidades | Investigador, Asistente | — (sin estudio) | rut (opcional), nombre, correo (opcional), telefono (opcional), fecha_nacimiento, tipo | Solo el ux_lab_id generado. El servidor cifra nombre, correo, teléfono y RUT y calcula sus hashes; el cliente nunca envía ni recibe datos cifrados. |
+| POST /identidades | Investigador, Asistente | — (sin estudio) | rut (opcional), nombre, correo, telefono, fecha_nacimiento, tipo | Solo el ux_lab_id generado. El servidor cifra nombre, correo, teléfono y RUT y calcula sus hashes; el cliente nunca envía ni recibe datos cifrados. |
 | POST /identidades/buscar | Investigador, Asistente | — (sin estudio) | rut o correo | Solo el ux_lab_id si la persona ya existe (para no duplicarla), sin ningún dato personal. |
 | POST /representaciones | Investigador, Asistente | — (sin estudio) | ux_lab_id_representante, ux_lab_id_representado, relacion, fecha_inicio | id_representacion. |
 | POST /identidades/{ux_lab_id}/desenmascarar | Director; o quien tenga una autorización ver_identidad aprobada y vigente | — (global) | justificacion (obligatoria), id_estudio | Datos personales descifrados. Queda en auditoria con accion: desenmascarar y la justificación. |

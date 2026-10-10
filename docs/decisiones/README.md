@@ -9,6 +9,7 @@ Los ADR permitirán documentar las principales decisiones técnicas tomadas dura
 | ADR | Decisión | Estado registrado |
 | --- | --- | --- |
 | [ADR-001](ADR-001-stack-tecnologico.md) | Node.js + Express, PostgreSQL y Docker para el MVP. | Aceptado por Benjamín Barrientos, según el registro de origen en Drive. |
+| [ADR-002](ADR-002-decisiones-prototipo-alfa.md) | Decisiones para el prototipo Alfa: correo y teléfono obligatorios, rutas sin prefijo, ingreso y sesión, edición del estudio, frontend y ramas. | Propuesto el 10/10/2026; D1, D6 y D7 aceptadas. |
 
 El ADR conserva la decisión del registro de origen y añade una nota de correspondencia con el DER v3. Los temas pendientes de implementación permanecen en la [especificación técnica](../especificacion-tecnica/Especificacion_Tecnica_v1_0_plaGesEtic.md#9-decisiones-de-arquitectura).
 
