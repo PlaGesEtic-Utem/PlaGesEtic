@@ -1,0 +1,19 @@
+ESQUEMA,TABLA,CAMPO_1,CAMPO_2,CAMPO_3,CAMPO_4,CAMPO_5,CAMPO_6,CAMPO_7
+security_schema,usuarios,nombre: Ana Gomez,correo: director@uxlab.utem.cl,rol: Director,hash_password: hash_a1b2,,
+security_schema,usuarios,nombre: Felipe Cruz,correo: investigador@uxlab.utem.cl,rol: Investigador Responsable,hash_password: hash_c3d4,,
+security_schema,usuarios,nombre: Luis Soto,correo: asistente@uxlab.utem.cl,rol: Asistente,hash_password: hash_e5f6,,
+security_schema,usuarios,nombre: Carla Paz,correo: estudiante@uxlab.utem.cl,rol: Estudiante,hash_password: hash_g7h8,,
+security_schema,usuarios,nombre: Juan Sol,correo: invitado@correo.cl,rol: Invitado,hash_password: hash_i9j0,,
+security_schema,usuarios,nombre: Admin Soporte,correo: soporte@uxlab.utem.cl,rol: Soporte,hash_password: hash_k1l2,,
+research_schema,estudios,id_estudio: EST-01,titulo: Estudio Portal UTEM,codigo_protocolo_cec: CEC-2026-001,estado_aprobacion: Aprobado,,
+research_schema,estudios,id_estudio: EST-02,titulo: Prueba NeuroUX,codigo_protocolo_cec: CEC-2026-005,estado_aprobacion: Aprobado,,
+identity_schema,identidades,id_identidad: UX-1001,rut: 11.111.111-1,nombre: Pedro Parra,correo: pedro@correo.cl,telefono: +56911111111,fecha_nacimiento: 1990-05-14,tipo: participante
+identity_schema,identidades,id_identidad: UX-1002,rut: 22.222.222-2,nombre: Maria Milla,correo: maria@correo.cl,telefono: +56922222222,fecha_nacimiento: 1985-11-20,tipo: participante
+identity_schema,identidades,id_identidad: UX-1003,rut: 33.333.333-3,nombre: Lucas Leon,correo: lucas@correo.cl,telefono: +56933333333,fecha_nacimiento: 2010-02-10,tipo: participante(menor)
+identity_schema,identidades,id_identidad: UX-1004,rut: 44.444.444-4,nombre: Rosa Leon,correo: rosa@correo.cl,telefono: +56944444444,fecha_nacimiento: 1980-08-30,tipo: representante
+research_schema,participaciones,id_participacion: PART-001,id_estudio: EST-01,id_identidad_vinculo: UX-1001,codigo_seudonimo: EXP-001,estado_participacion: Activo,,
+research_schema,participaciones,id_participacion: PART-002,id_estudio: EST-01,id_identidad_vinculo: UX-1002,codigo_seudonimo: EXP-002,estado_participacion: Retirado,,
+research_schema,participaciones,id_participacion: PART-003,id_estudio: EST-02,id_identidad_vinculo: UX-1003,codigo_seudonimo: EXP-003,estado_participacion: Activo,,
+ethics_schema,consentimientos,id_participacion: PART-001,tipo_evento: aceptar,estado: Otorgado,ruta_evidencia: /storage/evidencia_1.pdf,,
+ethics_schema,consentimientos,id_participacion: PART-002,tipo_evento: retirar,estado: Revocado,ruta_evidencia: /storage/evidencia_2.pdf,,
+ethics_schema,consentimientos,id_participacion: PART-003,tipo_evento: aceptar,estado: Otorgado,ruta_evidencia: /storage/evidencia_3.pdf,,
