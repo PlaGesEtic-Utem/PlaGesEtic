@@ -4,7 +4,7 @@ Documentación de alcance ingreso recuperación y permisos
 
 Proyecto plaGesEtic · Observatorio UX / UXLab UTEM · Documentación Catalina Araniz
 
-> **Estado de la implementación (10/10/2026):** este documento describe el **diseño** aprobado. Están implementados los seis roles y sus permisos en la base (`04_roles_base.sql`, `05_permisos_base.sql`) y la validación de sesión en la API. El ingreso con contraseña y TOTP se implementa en el prototipo Alfa (11/10); el panel por rol, con el frontend (Actividad 58); y las pruebas CA-01 a CA-16, en la Actividad 48. Ver [ADR-002](../decisiones/ADR-002-decisiones-prototipo-alfa.md).
+> **Estado de la implementación (10/10/2026):** este documento describe el **diseño** aprobado. Están implementados los seis roles y sus permisos en la base (`04_roles_base.sql`, `05_permisos_base.sql`) y la validación de sesión en la API. El ingreso con contraseña y TOTP se implementa en el prototipo Alfa (11/10); el panel por rol, con el frontend (Actividad 58); y las pruebas CA-01 a CA-18, en la Actividad 48. Ver [ADR-002](../decisiones/ADR-002-decisiones-prototipo-alfa.md).
 
 ## 1 Alcance de la implementación
 
@@ -25,7 +25,7 @@ Roles globales: Director, Soporte, Investigador, Asistente, Estudiante e Invitad
 
 ## 3 Continuidad de las decisiones del día
 
-Los criterios del líder fijan 16 casos de aceptación. El diseño v3 actualiza propuestas de la matriz inicial: Soporte gestiona y recupera cuentas; Estudiante puede solicitar exportaciones con permiso y aprobación; Invitado tiene consulta temporal de contenido permitido. La aprobación operativa del seed de permisos y el procedimiento del primer ingreso deben quedar registrados antes del cierre.
+Los criterios del líder (versión 2, 06/10) fijan 18 casos de aceptación: los 16 de la versión 1 más CA-17 (primer ingreso) y CA-18 (cuenta bloqueada o vencida). El diseño v3 actualiza propuestas de la matriz inicial: Soporte gestiona y recupera cuentas; Estudiante puede solicitar exportaciones con permiso y aprobación; Invitado tiene consulta temporal de contenido permitido. La aprobación operativa del seed de permisos y el procedimiento del primer ingreso deben quedar registrados antes del cierre.
 
 ## 4 Ingreso de cada rol y recuperación de acceso
 
@@ -81,7 +81,7 @@ Las celdas marcadas como propuestas en el documento del líder se contrastan con
 
 ## 6 Registro de aceptación y cierre
 
-Estado del cierre: pendiente de evidencia de ejecución. Los 16 criterios CA-01 a CA-16 conservan su identificación del documento del líder; no se asigna un resultado aprobado sin registro de prueba. Para cada caso se adjunta evidencia, versión probada, resultado y observación de corrección.
+Estado del cierre: pendiente de evidencia de ejecución. Los 18 criterios CA-01 a CA-18 conservan su identificación del documento del líder (CA-17 y CA-18 se numeran al final para no cambiar los ID de la versión 1); no se asigna un resultado aprobado sin registro de prueba. Para cada caso se adjunta evidencia, versión probada, resultado y observación de corrección.
 
 | ID | Comprobación esperada | Resultado |
 | --- | --- | --- |
@@ -101,6 +101,8 @@ Estado del cierre: pendiente de evidencia de ejecución. Los 16 criterios CA-01 
 | CA-14 | Login, fallos, accesos y denegaciones quedan en auditoría. | Pendiente de evidencia |
 | CA-15 | Accesos especiales enlazados a autorización y justificación. | Pendiente de evidencia |
 | CA-16 | Usuario de aplicación sin UPDATE ni DELETE sobre auditoría. | Pendiente de evidencia |
+| CA-17 | Primer ingreso: QR una sola vez y 10 códigos de recuperación; MFA activo al confirmar el primer código; cambio de contraseña obligatorio antes del panel. | Pendiente de evidencia |
+| CA-18 | Cuenta bloqueada o vencida: no entra, mensaje genérico e intento auditado. | Pendiente de evidencia |
 
 Datos de prueba: ocho cuentas sintéticas, una por rol más Soporte y Estudiante autorizados, y estudios A/B. Se comprueba también el vencimiento de autorización, la cuenta Invitado y cada permiso de membresía. El cierre requiere los casos aprobados, correcciones verificadas y referencia de la versión final.
 

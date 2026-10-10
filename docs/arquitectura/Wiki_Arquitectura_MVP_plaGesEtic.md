@@ -56,7 +56,7 @@ El [ADR-001: stack tecnológico](https://github.com/PlaGesEtic-Utem/PlaGesEtic/b
 
 Se revisó coherencia documental de cuatro esquemas, 22 tablas, seis roles y 60 rutas. El reporte de validación v2 actualiza los cuatro hallazgos anteriores y conserva la revisión de privacidad a cargo del responsable.
 
-Antes de cerrar implementación: precisar sesión restringida del primer ingreso y enrolamiento MFA; conciliar la devolución de UX Lab ID al capturar con el filtro de PII; verificar permisos y descargas excepcionales del Invitado; fijar seed de permisos; definir llaves, frontend, almacenamiento, procesamiento y recuperación de auditoría. CEC y asesoría jurídica concretan retención y supresión. El cierre de autenticación requiere resultados y evidencia CA-01 a CA-16.
+Antes de cerrar implementación: precisar sesión restringida del primer ingreso y enrolamiento MFA; conciliar la devolución de UX Lab ID al capturar con el filtro de PII; verificar permisos y descargas excepcionales del Invitado; fijar seed de permisos; definir llaves, frontend, almacenamiento, procesamiento y recuperación de auditoría. CEC y asesoría jurídica concretan retención y supresión. El cierre de autenticación requiere resultados y evidencia CA-01 a CA-18.
 
 ## Registro de cambios
 

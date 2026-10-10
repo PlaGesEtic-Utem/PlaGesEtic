@@ -185,7 +185,7 @@ Los plazos de retención son políticas de diseño pendientes de validación. La
 
 Se comprobó el total de 22 tablas, la distribución 3/4/7/8 por esquema, los seis roles, las 60 rutas y el uso de los nombres v3. El reporte de validación v2 registra resolución de los hallazgos anteriores, con validación del responsable todavía requerida para la escritura sin lectura. La ejecución funcional se registra por separado en el documento de autenticación.
 
-Los resultados reales de los 16 criterios de autenticación siguen pendientes de evidencia; no se declara aprobada la implementación.
+Los resultados reales de los 18 criterios de autenticación (CA-01 a CA-18) siguen pendientes de evidencia; no se declara aprobada la implementación.
 
 ## 11. Historial de cambios
 
