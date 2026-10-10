@@ -23,9 +23,9 @@ La arquitectura cliente-servidor separa la aplicación web, API, PostgreSQL y al
 
 | Elemento | Definición |
 | --- | --- |
-| API | Node.js y Express; operaciones JSON, cargas multipart y descargas en stream. Prefijo /api/v1 por validar. |
+| API | Node.js y Express; operaciones JSON, cargas multipart y descargas en stream. Sin prefijo `/api/v1` (ADR-002, D2). |
 | Persistencia | PostgreSQL con 22 tablas distribuidas en cuatro esquemas. |
-| Aplicación y archivos | Docker según ADR-001; aplicación web, API, base de datos y almacenamiento como contenedores lógicos. Framework web y tecnología del almacenamiento por definir. |
+| Aplicación y archivos | Docker según ADR-001; aplicación web, API, base de datos y almacenamiento como contenedores lógicos. Frontend en HTML, CSS y JavaScript sin framework (ADR-002, D6); tecnología del almacenamiento por definir. |
 | Almacenamiento | Áreas independientes para documentos éticos y archivos de investigación, con permisos y rutas propios. |
 
 ### 3.2 Contexto del sistema
@@ -69,7 +69,7 @@ UX Lab ID identifica internamente a la persona; codigo_seudonimo identifica su p
 
 ### 5.1 Descripción de la API
 
-La API usa Node.js y Express, operaciones JSON, cargas multipart y descargas en stream. El prefijo `/api/v1` queda por validar. Los controles combinan rol, alcance, permisos por estudio, responsabilidad y autorizaciones específicas.
+La API usa Node.js y Express, operaciones JSON, cargas multipart y descargas en stream. Las rutas no llevan prefijo `/api/v1` (ADR-002, D2). Los controles combinan rol, alcance, permisos por estudio, responsabilidad y autorizaciones específicas.
 
 ### 5.2 Endpoints
 
@@ -99,6 +99,8 @@ El detalle completo se conserva en el [Catálogo API integrado v1.0](Catalogo_AP
 Los seis roles ingresan con correo, contraseña y segundo factor TOTP o código de recuperación de un solo uso. El QR configura la aplicación de autenticación. El modelo usa hash argon2id, secreto TOTP cifrado y hash del token de sesión. Soporte recupera cuentas con contraseña temporal y puede reiniciar MFA; el usuario debe cambiar la contraseña y enrolar MFA nuevamente cuando corresponda.
 
 El contrato para primer ingreso, cambio de contraseña y enrolamiento MFA con una sesión restringida queda por precisar.
+
+**Estado al 10/10:** diseño definido; el ingreso con contraseña y TOTP se implementa en el prototipo Alfa (11/10). Enrolamiento con QR, códigos de recuperación y recuperación de contraseña quedan para la Actividad 74 (ADR-002, D3). En el Alfa la sesión viaja como `Authorization: Bearer`; la cookie HttpOnly se adopta con el frontend (ADR-002, D4).
 
 ### 6.2 Autorización y roles
 
@@ -145,7 +147,7 @@ Secuencias complementarias: registro con consentimiento versión 1.1 y exportaci
 
 ## 9. Decisiones de arquitectura
 
-El [ADR-001: selección del stack tecnológico](../decisiones/ADR-001-stack-tecnologico.md) registra la aceptación de Node.js con Express, PostgreSQL y Docker por Benjamín Barrientos, Líder de Proyecto. Su origen es el informe ADR-001 conservado en Drive. El [índice de decisiones](../decisiones/README.md) enlaza este registro.
+El [ADR-001: selección del stack tecnológico](../decisiones/ADR-001-stack-tecnologico.md) registra la aceptación de Node.js con Express, PostgreSQL y Docker por Benjamín Barrientos, Líder de Proyecto. Su origen es el informe ADR-001 conservado en Drive. El [ADR-002](../decisiones/ADR-002-decisiones-prototipo-alfa.md) registra las decisiones tomadas al implementar el prototipo Alfa (correo y teléfono obligatorios, rutas sin prefijo, ingreso y sesión en el Alfa, permisos de edición del estudio, frontend y flujo de ramas). El [índice de decisiones](../decisiones/README.md) enlaza ambos registros.
 
 El DER y las fuentes v3 concretan cuatro esquemas, códigos independientes, cinco permisos de membresía, auditoría previa y exportación del Estudiante con aprobación. Estas definiciones desarrollan el diseño consolidado; no se presentan como ADR adicionales aprobados. La selección del stack se mantiene.
 
@@ -156,7 +158,7 @@ El DER y las fuentes v3 concretan cuatro esquemas, códigos independientes, cinc
 | MFA y primer ingreso | Precisar el token o sesión restringida para cambiar contraseña y enrolar MFA antes de disponer de una sesión completa. |
 | Permisos e identidad | Validar escritura de identidad sin lectura y fijar el catálogo seed. Conciliar la excepción del UX Lab ID al capturar con el filtro de salida. |
 | Ética y retención | CEC define reconsentimiento, conservación tras retiro, evidencias y archivos sensibles. Validar jurídicamente el plazo de supresión; 30 días es propuesta interna. |
-| Operación | Elegir frontend, almacenamiento y gestión/rotación de llaves. Definir tamaño máximo, ejecución de cargas/exportaciones y recuperación ante fallos de auditoría. |
+| Operación | Elegir almacenamiento y gestión/rotación de llaves (el frontend queda resuelto en ADR-002, D6). Definir tamaño máximo, ejecución de cargas/exportaciones y recuperación ante fallos de auditoría. |
 | Descarga y exportación | Conciliar descarga excepcional de Invitado con su membresía de solo consulta; detallar .zip, caducidad y cambios de permisos o retiro durante generación. |
 
 ## 10. Referencias
@@ -191,5 +193,6 @@ Los resultados reales de los 16 criterios de autenticación siguen pendientes de
 | --- | --- | --- |
 | 0.1 | Creación inicial de la plantilla del repositorio. | No indicado en la plantilla. |
 | 1.0 | Consolidación con DER y diccionario v3: cuatro esquemas, 22 tablas, 60 rutas, consentimiento/asentimiento, permisos por operación y exportación con códigos independientes. Adaptación a las once secciones de la plantilla e incorporación de ADR-001 y su índice. | Catalina Araniz, documentación. |
+| 1.1 | Coherencia con el código del Alfa: diccionario v3.1 (correo y teléfono obligatorios), rutas sin prefijo, estado del ingreso, frontend y referencia a ADR-002. Solo se actualizó el `.md`; el `.docx` queda en 1.0. | Benjamín Barrientos, Líder. |
 
 C4 y registro se actualizan a 1.1; exportación se consolida en 1.0. El PR y la Wiki permanecen pendientes de publicación y su evidencia se registrará cuando estén disponibles.

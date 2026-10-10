@@ -4,6 +4,8 @@ Documentación de alcance ingreso recuperación y permisos
 
 Proyecto plaGesEtic · Observatorio UX / UXLab UTEM · Documentación Catalina Araniz
 
+> **Estado de la implementación (10/10/2026):** este documento describe el **diseño** aprobado. Están implementados los seis roles y sus permisos en la base (`04_roles_base.sql`, `05_permisos_base.sql`) y la validación de sesión en la API. El ingreso con contraseña y TOTP se implementa en el prototipo Alfa (11/10); el panel por rol, con el frontend (Actividad 58); y las pruebas CA-01 a CA-16, en la Actividad 48. Ver [ADR-002](../decisiones/ADR-002-decisiones-prototipo-alfa.md).
+
 ## 1 Alcance de la implementación
 
 La actividad 40 establece ingreso con correo, contraseña y MFA, control de sesiones, seis roles, panel por rol y trazabilidad de accesos y denegaciones. La documentación reúne los entregables del jueves 1, viernes 2 y sábado 3 de octubre; el cierre del domingo 4 se completa con los resultados de aceptación.

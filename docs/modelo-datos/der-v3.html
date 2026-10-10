@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DER v3 · plaGesEtic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue-deep: #000B78; --blue-mid: #1C2FB9; --blue-electric: #253FF6; --lime: #B9E20E; --ink: #131315;
+    --bg: #F3F5FC; --card: #FFFFFF; --line: #E1E5F5; --muted: #4B4F6B;
+    --hero-bg: #000B78; --hero-ink: #FFFFFF; --heading: #000B78; --link: #1C2FB9; --lime-ink: #131315;
+    --font-head: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+    --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#0A0C24; --card:#12153A; --ink:#EEF0FF; --line:#262B63; --muted:#A9AED6; --heading:#DDE2FF; --link:#8FA0FF; }
+  }
+  :root[data-theme="dark"] { --bg:#0A0C24; --card:#12153A; --ink:#EEF0FF; --line:#262B63; --muted:#A9AED6; --heading:#DDE2FF; --link:#8FA0FF; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.65; }
+  .page { max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
+  h1,h2,h3 { font-family: var(--font-head); color: var(--heading); line-height: 1.2; margin: 0; }
+  h2 { font-size: 23px; font-weight: 800; letter-spacing: -0.01em; }
+  h3 { font-size: 16.5px; font-weight: 700; margin: 0 0 10px; }
+  p { margin: 0 0 14px; }
+  code { font-family: var(--font-mono); font-size: 0.88em; background: color-mix(in srgb, var(--blue-electric) 10%, transparent); color: var(--blue-mid); padding: 1px 6px; border-radius: 5px; }
+  @media (prefers-color-scheme: dark) { code { color: #C4CDFF; } }
+
+  .hero { background: var(--hero-bg); color: var(--hero-ink); margin: 0 -24px; padding: 52px 40px 38px; position: relative; overflow: hidden; border-bottom: 6px solid var(--lime); }
+  .hero::before { content:""; position:absolute; right:-120px; top:-120px; width:360px; height:360px; border-radius:50%; background:var(--blue-electric); opacity:.35; }
+  .hero::after { content:""; position:absolute; right:90px; bottom:-70px; width:170px; height:170px; border-radius:50%; border:3px solid var(--lime); opacity:.8; }
+  .hero > * { position: relative; z-index: 1; }
+  .brand { display:flex; align-items:center; gap:12px; margin-bottom:32px; font-family:var(--font-head); font-weight:700; font-size:15px; }
+  .brand .mark { width:34px; height:34px; border-radius:9px; background:var(--lime); color:var(--blue-deep); display:grid; place-items:center; font-weight:800; }
+  .badge { display:inline-block; background:var(--lime); color:var(--lime-ink); font-family:var(--font-head); font-weight:700; font-size:12px; padding:4px 12px; border-radius:999px; margin-bottom:16px; margin-right:8px; }
+  .badge.alt { background:#fff; color:var(--blue-deep); }
+  .hero h1 { color:#fff; font-size:32px; font-weight:800; letter-spacing:-0.02em; max-width:740px; }
+  .hero .subtitle { margin:14px 0 0; font-family:var(--font-head); font-weight:500; font-size:16.5px; color:#C9D0FF; max-width:700px; }
+
+  .meta { display:grid; grid-template-columns:1fr 1fr; gap:0; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-top:28px; box-shadow:0 1px 0 var(--line); }
+  .meta div { padding:14px 20px; border-bottom:1px solid var(--line); }
+  .meta div:nth-child(odd) { border-right:1px solid var(--line); }
+  .meta .full { grid-column:1/-1; border-right:0 !important; }
+  .meta div:nth-last-child(-n+2):nth-child(odd), .meta div:last-child { border-bottom:0; }
+  .meta dt { font-family:var(--font-head); font-size:12px; font-weight:700; color:var(--blue-electric); margin-bottom:2px; }
+  @media (prefers-color-scheme: dark) { .meta dt { color: var(--lime); } }
+  .meta dd { margin:0; font-size:14px; color:var(--ink); }
+
+  section { margin-top: 46px; }
+  .sec-head { display:flex; align-items:center; gap:14px; padding-bottom:12px; margin-bottom:20px; border-bottom:2px solid var(--line); }
+  .sec-head .n { flex:none; width:38px; height:38px; border-radius:10px; background:var(--blue-deep); color:var(--lime); font-family:var(--font-head); font-weight:800; font-size:17px; display:grid; place-items:center; }
+  @media (prefers-color-scheme: dark) { .sec-head .n { background: var(--blue-electric); color: #fff; } }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 22px; }
+  .callout { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--blue-electric); border-radius:10px; padding:14px 18px; margin:18px 0; }
+  .callout.pending { border-left-color: var(--lime); }
+  .callout strong { font-family:var(--font-head); color:var(--heading); }
+
+  ul.clean { padding-left:20px; margin:0 0 14px; }
+  ul.clean li { margin-bottom:6px; }
+  ul.clean li::marker { color: var(--blue-electric); }
+  ul.clean li code { margin-right:2px; }
+
+  table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; font-size:13.5px; }
+  th { background:var(--blue-deep); color:#fff; font-family:var(--font-head); font-weight:700; text-align:left; padding:11px 15px; font-size:12.5px; }
+  td { padding:10px 15px; border-top:1px solid var(--line); vertical-align:top; }
+  td:first-child { font-weight:600; font-family:var(--font-head); color:var(--heading); }
+  .table-scroll { overflow-x:auto; border-radius:14px; }
+
+  /* ============ CAMBIOS APLICADOS ============ */
+  .changelog { display:flex; flex-direction:column; gap:10px; }
+  .changerow { display:grid; grid-template-columns:34px 1fr; gap:12px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 16px; align-items:start; }
+  .changerow .num { width:26px; height:26px; border-radius:7px; background:var(--blue-deep); color:var(--lime); font-family:var(--font-head); font-weight:800; font-size:12px; display:grid; place-items:center; }
+  .changerow .txt strong { font-family:var(--font-head); color:var(--heading); }
+
+  /* ============ GRUPOS POR ESQUEMA ============ */
+  .schema-group { margin-top:28px; }
+  .schema-group:first-child { margin-top:0; }
+  .schema-head { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .schema-head .dot { width:12px; height:12px; border-radius:4px; background:var(--lime); flex:none; }
+  .schema-head .dot.blue { background:var(--blue-electric); }
+  .schema-head h3 { margin:0; font-size:15px; }
+  .schema-head .desc { font-size:12.5px; color:var(--muted); margin-left:4px; }
+  .schema-box { border:1.5px dashed var(--line); border-radius:16px; padding:18px; }
+
+  /* ============ DICCIONARIO DE DATOS ============ */
+  .dict-table { margin-top:14px; }
+  .dict-table:first-child { margin-top:0; }
+  table.dict td.pk-cell { font-family:var(--font-mono); font-weight:700; color:var(--blue-mid); white-space:nowrap; }
+  table.dict td.fk-cell { font-family:var(--font-mono); font-size:12px; color:var(--muted); white-space:nowrap; }
+  table.dict tr.pk-row td { background: color-mix(in srgb, var(--lime) 10%, var(--card)); }
+
+  /* ============ ENTIDADES ============ */
+  .entities-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
+  .entity-card { background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+  .entity-card .head { background:var(--blue-deep); color:#fff; padding:10px 14px; font-family:var(--font-head); font-weight:700; font-size:13.5px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .entity-card .head .tag { background:var(--lime); color:var(--lime-ink); font-size:10px; font-weight:800; padding:2px 8px; border-radius:999px; white-space:nowrap; }
+  .entity-card .head .tag.blue { background:var(--blue-electric); color:#fff; }
+  .entity-card ul { list-style:none; margin:0; padding:0; }
+  .entity-card li { padding:7px 14px; border-top:1px solid var(--line); font-size:12.6px; display:flex; justify-content:space-between; gap:8px; }
+  .entity-card li:first-child { border-top:0; }
+  .entity-card li .pk { font-family:var(--font-mono); font-size:11px; font-weight:700; color:var(--blue-mid); }
+  .entity-card li .fk { font-family:var(--font-mono); font-size:10px; font-weight:700; color:var(--muted); white-space:nowrap; }
+
+  /* ============ DIAGRAMA ============ */
+  .diagram-wrap { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; overflow-x:auto; }
+  .diagram-wrap svg { display:block; margin:0 auto; min-width:980px; }
+  .diagram-note { font-size:13px; color:var(--muted); margin-top:12px; }
+
+  footer { margin-top:52px; padding-top:18px; border-top:2px solid var(--line); font-size:12.5px; color:var(--muted); display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+
+  @media (max-width: 900px) { .entities-grid { grid-template-columns:repeat(2, 1fr); } }
+  @media (max-width: 620px) { .entities-grid { grid-template-columns:1fr; } }
+  @media (max-width: 680px) {
+    .hero { padding: 40px 22px 30px; }
+    .hero h1 { font-size: 25px; }
+    .meta { grid-template-columns: 1fr; }
+    .meta div:nth-child(odd) { border-right: 0; }
+    .meta div { border-bottom: 1px solid var(--line) !important; }
+    .meta div:last-child { border-bottom: 0 !important; }
+  }
+
+  @page { size: A4 landscape; margin: 12mm; }
+  @media print {
+    :root { --bg:#F3F5FC; --card:#FFFFFF; --ink:#131315; --line:#E1E5F5; --muted:#4B4F6B; --heading:#000B78; --link:#1C2FB9; }
+    body { font-size:13px; background:var(--bg); }
+    .page { max-width:none; padding:0; }
+    .hero { margin:0; }
+    section { margin-top:28px; }
+    .card, table, tr, .entity-card, .callout, .diagram-wrap, .changerow { break-inside: avoid; }
+    h2, h3, .sec-head { break-after: avoid; }
+    .sec-head .n { background:#000B78; color:#B9E20E; }
+    .meta dt { color:#253FF6; }
+    code { color:#1C2FB9; }
+  }
+
+  .status { font-family:var(--font-head); font-weight:800; font-size:10px; padding:2px 8px; border-radius:999px; margin-left:6px; }
+  .status.nueva { background:var(--lime); color:var(--lime-ink); }
+  .status.cambiada { background:var(--blue-electric); color:#fff; }
+  .st { display:inline-block; font-family:var(--font-head); font-weight:800; font-size:10.5px; padding:2px 9px; border-radius:999px; white-space:nowrap; }
+  .st.ok { background:var(--lime); color:var(--lime-ink); }
+  .st.parcial { background:#FFE7A8; color:#5A4300; }
+  .st.na { background:var(--line); color:var(--muted); }
+  ul.clean { padding-left:20px; margin:0 0 14px; } ul.clean li { margin-bottom:6px; }
+  .note-list { margin:10px 0 0; padding-left:20px; font-size:13.5px; color:var(--muted); }
+  .note-list li { margin-bottom:4px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="brand"><span class="mark">UX</span> Observatorio UX · UXLab UTEM</div>
+    <span class="badge">DER · v3</span><span class="badge alt">22 tablas · 4 esquemas</span>
+    <h1>Diagrama Entidad-Relación (DER) — Versión 3</h1>
+    <p class="subtitle">Modelo de datos de plaGesEtic alineado con el documento del cliente: 22 tablas en cuatro esquemas (identity, ethics, research y security), con claves, cardinalidades y trazabilidad a los 12 objetivos específicos.</p>
+  </header>
+
+  <dl class="meta"><div class="full"><dt>Proyecto</dt><dd>Plataforma de Gestión Ética de Participantes y Datos de Investigación (plaGesEtic) — Observatorio UX / UXLab UTEM</dd></div><div><dt>Documentos base</dt><dd>Documento del cliente (Plataforma de Gestión Ética…) · DER v2 · Requisitos No Funcionales</dd></div><div><dt>Estado</dt><dd>v3 — 22 tablas, 4 esquemas</dd></div><div><dt>Responsable</dt><dd>Benjamín Arias (Desarrollador)</dd></div><div><dt>Fecha</dt><dd>5 de octubre de 2026</dd></div></dl>
+
+  <section>
+    <div class="sec-head"><span class="n">1</span><h2>Contexto</h2></div>
+    <div class="card">
+      <p style="margin:0">Esta versión reemplaza al DER v2 tras compararlo con el documento de requerimientos del cliente. El v2 cubría bien la separación de identidades y la seguridad, pero no modelaba protocolos ni aprobaciones del CEC, asentimiento, sesiones de investigación, metadatos de archivos, exportaciones con códigos propios ni permisos diferenciados por estudio. El modelo v3 los incorpora y agrega un cuarto esquema para la documentación ética, como pide el objetivo 1. El detalle de cada campo, con su descripción, está en el <strong>Diccionario de Datos v3</strong>, generado desde la misma definición que este documento.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">2</span><h2>Cambios aplicados desde v2</h2></div>
+    <div class="changelog"><div class="changerow"><span class="num">1</span><span class="txt"><strong>Cuarto esquema <code>ethics_schema</code>:</strong> Separa la documentación ética, como pide el objetivo 1 del cliente. <code>consentimiento</code> y <code>evento_consentimiento</code> se mueven aquí, y se agregan <code>protocolo_version</code> (aprobación del CEC, objetivo 4) y <code>documento_consentimiento</code> (versiones de consentimiento y asentimiento, objetivo 5).</span></div><div class="changerow"><span class="num">2</span><span class="txt"><strong>Identidad cifrada y UX Lab ID:</strong> <code>nombre</code>, <code>correo</code> y <code>telefono</code> pasan a <code>*_cifrado</code> (AES-256-GCM, RNF-SEC-01), con <code>correo_hash</code> para búsquedas. Nuevo <code>ux_lab_id</code> aleatorio y no publicable (objetivo 2). <code>rut</code> y <code>correo</code> pasan a ser opcionales (extranjeros, menores).</span></div><div class="changerow"><span class="num">3</span><span class="txt"><strong>Puente de privacidad 1:1:</strong> <code>vinculo_identidad.id_identidad</code> también es UNIQUE: una persona es un solo participante, con muchas participaciones.</span></div><div class="changerow"><span class="num">4</span><span class="txt"><strong>Representante legal corregido:</strong> <code>representante_legal</code> relaciona dos identidades (representante y representado) y ya no apunta a <code>participante</code>, así que no salta el puente de privacidad.</span></div><div class="changerow"><span class="num">5</span><span class="txt"><strong>Asentimiento y representación en los consentimientos:</strong> <code>consentimiento.tipo</code> distingue consentimiento de asentimiento; <code>evento_consentimiento</code> referencia el documento exacto (<code>id_documento</code>) y, si firmó un tercero, la representación.</span></div><div class="changerow"><span class="num">6</span><span class="txt"><strong>Estudio completo:</strong> Nuevos <code>codigo_estudio</code>, <code>descripcion</code>, <code>estado</code> (borrador/activo/cerrado), <code>fecha_cierre</code> y <code>retencion_hasta</code>.</span></div><div class="changerow"><span class="num">7</span><span class="txt"><strong>Sesiones de investigación:</strong> Nueva <code>sesion_investigacion</code> (objetivo 6 y funciones de Investigador y Asistente). La sesión de login se renombra <code>sesion_usuario</code> para no confundirlas.</span></div><div class="changerow"><span class="num">8</span><span class="txt"><strong>Metadatos de archivos:</strong> <code>registro_datos</code> agrega sesión, dispositivo de origen (Bitbrain, Tobii, SennsLab, SennsMetrics…), extensión, MIME, tamaño, versión, original/derivado, sensibilidad, usuario y fecha de carga. <code>tipo_dato</code> pasa de 10 a 14 valores (pupilometría, GSR/EDA, frecuencia cardíaca, captura de pantalla).</span></div><div class="changerow"><span class="num">9</span><span class="txt"><strong>Exportaciones con códigos independientes:</strong> Nuevas <code>exportacion</code> (código aleatorio, propósito, flujo de aprobación) y <code>exportacion_participacion</code> (código por participante distinto del seudónimo, objetivo 11).</span></div><div class="changerow"><span class="num">10</span><span class="txt"><strong>Seudónimos aleatorios:</strong> <code>codigo_seudonimo</code> lo genera el servidor de forma aleatoria (ej. <code>P-7K3QX9</code>); se descarta el formato secuencial <code>EXP-001</code>.</span></div><div class="changerow"><span class="num">11</span><span class="txt"><strong>Permisos diferenciados por estudio:</strong> <code>membresia_estudio</code> reemplaza <code>nivel_acceso</code> por cinco permisos: consultar, cargar, modificar, descargar y exportar (objetivo 8). <code>permiso</code> agrega <code>alcance</code> (global/estudio) y las acciones <code>descargar</code> y <code>aprobar</code>.</span></div><div class="changerow"><span class="num">12</span><span class="txt"><strong>Cuentas, autorizaciones y auditoría:</strong> <code>usuario</code> agrega <code>debe_cambiar_password</code>, <code>mfa_activo</code> y <code>fecha_expiracion</code>. <code>autorizacion</code> gana tipos cerrados y vencimiento obligatorio. <code>auditoria</code> agrega <code>descargar</code>, <code>desenmascarar</code>, <code>aprobar</code>, <code>rechazar</code> y <code>revocar</code>, más <code>justificacion</code>, <code>ip</code> e <code>id_estudio</code>.</span></div></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">3</span><h2>Entidades y atributos, separadas por esquema</h2></div>
+    <p style="margin-top:-8px;">Ninguna tabla de <code>research_schema</code> guarda RUT, nombre ni correo: la identidad real solo se alcanza a través de <code>vinculo_identidad</code>. Las etiquetas indican las tablas nuevas o cambiadas respecto del v2.</p>
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot"></span><h3>Datos identificables (PII) — identity_schema</h3><span class="desc">Único lugar donde vive la identidad real de las personas. Nombre, correo, teléfono y RUT se guardan cifrados (RNF-SEC-01).</span></div>
+      <div class="schema-box"><div class="entities-grid"><div class="entity-card"><div class="head">identidad <span class="status cambiada">CAMBIA</span></div><ul><li><span>id_identidad · UUID</span><span class="pk">PK</span></li><li><span>ux_lab_id · VARCHAR(12)</span></li><li><span>rut_cifrado · VARCHAR(255)</span></li><li><span>rut_hash · CHAR(64)</span></li><li><span>nombre_cifrado · VARCHAR(512)</span></li><li><span>correo_cifrado · VARCHAR(512)</span></li><li><span>correo_hash · CHAR(64)</span></li><li><span>telefono_cifrado · VARCHAR(255)</span></li><li><span>tipo · VARCHAR(20)</span></li><li><span>fecha_nacimiento · DATE</span></li><li><span>fecha_registro · TIMESTAMP</span></li><li><span>fecha_revocacion · TIMESTAMP</span></li><li><span>fecha_eliminacion · TIMESTAMP</span></li></ul></div><div class="entity-card"><div class="head">vinculo_identidad <span class="status cambiada">CAMBIA</span></div><ul><li><span>id_vinculo · UUID</span><span class="pk">PK</span></li><li><span>id_identidad · UUID</span><span class="fk">FK → identidad</span></li><li><span>id_participante · UUID</span><span class="fk">FK → participante</span></li></ul></div><div class="entity-card"><div class="head">representante_legal <span class="status cambiada">CAMBIA</span></div><ul><li><span>id_representacion · UUID</span><span class="pk">PK</span></li><li><span>id_identidad_representante · UUID</span><span class="fk">FK → identidad</span></li><li><span>id_identidad_representado · UUID</span><span class="fk">FK → identidad</span></li><li><span>relacion · VARCHAR(20)</span></li><li><span>fecha_inicio · DATE</span></li><li><span>fecha_fin · DATE</span></li></ul></div></div></div>
+    </div>
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot"></span><h3>Documentación ética — ethics_schema</h3><span class="desc">Protocolos y aprobaciones del Comité de Ética Científica, documentos de consentimiento y asentimiento, y el historial de decisiones con su evidencia firmada.</span></div>
+      <div class="schema-box"><div class="entities-grid"><div class="entity-card"><div class="head">protocolo_version <span class="status nueva">NUEVA</span></div><ul><li><span>id_protocolo · UUID</span><span class="pk">PK</span></li><li><span>id_estudio · UUID</span><span class="fk">FK → estudio</span></li><li><span>version · VARCHAR(20)</span></li><li><span>documento_ruta · VARCHAR(255)</span></li><li><span>documento_hash · CHAR(64)</span></li><li><span>estado_cec · VARCHAR(20)</span></li><li><span>codigo_aprobacion_cec · VARCHAR(50)</span></li><li><span>fecha_aprobacion_cec · DATE</span></li><li><span>fecha_vencimiento_cec · DATE</span></li><li><span>id_usuario_registro · UUID</span><span class="fk">FK → usuario</span></li><li><span>fecha_registro · TIMESTAMP</span></li></ul></div><div class="entity-card"><div class="head">documento_consentimiento <span class="status nueva">NUEVA</span></div><ul><li><span>id_documento · UUID</span><span class="pk">PK</span></li><li><span>id_estudio · UUID</span><span class="fk">FK → estudio</span></li><li><span>id_protocolo · UUID</span><span class="fk">FK → protocolo_version</span></li><li><span>tipo · VARCHAR(20)</span></li><li><span>version · VARCHAR(20)</span></li><li><span>documento_ruta · VARCHAR(255)</span></li><li><span>documento_hash · CHAR(64)</span></li><li><span>vigente · BOOLEAN</span></li><li><span>fecha_registro · TIMESTAMP</span></li></ul></div><div class="entity-card"><div class="head">consentimiento <span class="status cambiada">CAMBIA</span></div><ul><li><span>id_consentimiento · UUID</span><span class="pk">PK</span></li><li><span>id_participacion · UUID</span><span class="fk">FK → participacion</span></li><li><span>tipo · VARCHAR(20)</span></li></ul></div><div class="entity-card"><div class="head">evento_consentimiento <span class="status cambiada">CAMBIA</span></div><ul><li><span>id_evento · UUID</span><span class="pk">PK</span></li><li><span>id_consentimiento · UUID</span><span class="fk">FK → consentimiento</span></li><li><span>id_documento · UUID</span><span class="fk">FK → documento_consentimiento</span></li><li><span>id_representacion · UUID</span><span class="fk">FK → representante_legal</span></li><li><span>tipo_evento · VARCHAR(20)</span></li><li><span>fecha · TIMESTAMP</span></li><li><span>evidencia_ruta · VARCHAR(255)</span></li><li><span>evidencia_hash · CHAR(64)</span></li><li><span>id_usuario · UUID</span><span class="fk">FK → usuario</span></li></ul></div></div></div>
+    </div>
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot"></span><h3>Participación y datos de investigación — research_schema</h3><span class="desc">Estudios, participaciones seudonimizadas, sesiones, archivos experimentales y exportaciones. Sin datos identificatorios.</span></div>
+      <div class="schema-box"><div class="entities-grid"><div class="entity-card"><div class="head">estudio <span class="status cambiada">CAMBIA</span></div><ul><li><span>id_estudio · UUID</span><span class="pk">PK</span></li><li><span>codigo_estudio · VARCHAR(20)</span></li><li><span>nombre · VARCHAR(150)</span></li><li><span>descripcion · TEXT</span></li><li><span>id_responsable · UUID</span><span class="fk">FK → usuario</span></li><li><span>estado · VARCHAR(20)</span></li><li><span>fecha_inicio · DATE</span></li><li><span>fecha_fin · DATE</span></li><li><span>fecha_cierre · TIMESTAMP</span></li><li><span>retencion_hasta · DATE</span></li></ul></div><div class="entity-card"><div class="head">participante </div><ul><li><span>id_participante · UUID</span><span class="pk">PK</span></li><li><span>estado · VARCHAR(20)</span></li><li><span>fecha_registro · TIMESTAMP</span></li></ul></div><div class="entity-card"><div class="head">participacion <span class="status cambiada">CAMBIA</span></div><ul><li><span>id_participacion · UUID</span><span class="pk">PK</span></li><li><span>id_participante · UUID</span><span class="fk">FK → participante</span></li><li><span>id_estudio · UUID</span><span class="fk">FK → estudio</span></li><li><span>codigo_seudonimo · VARCHAR(12)</span></li><li><span>fecha_inicio · DATE</span></li><li><span>es_menor_al_enrolar · BOOLEAN</span></li><li><span>estado · VARCHAR(20)</span></li></ul></div><div class="entity-card"><div class="head">sesion_investigacion <span class="status nueva">NUEVA</span></div><ul><li><span>id_sesion_investigacion · UUID</span><span class="pk">PK</span></li><li><span>id_participacion · UUID</span><span class="fk">FK → participacion</span></li><li><span>numero_sesion · SMALLINT</span></li><li><span>tecnicas · TEXT</span></li><li><span>fecha_programada · TIMESTAMP</span></li><li><span>fecha_realizada · TIMESTAMP</span></li><li><span>estado · VARCHAR(20)</span></li><li><span>id_responsable · UUID</span><span class="fk">FK → usuario</span></li><li><span>observaciones · TEXT</span></li></ul></div><div class="entity-card"><div class="head">registro_datos <span class="status cambiada">CAMBIA</span></div><ul><li><span>id_registro · UUID</span><span class="pk">PK</span></li><li><span>id_participacion · UUID</span><span class="fk">FK → participacion</span></li><li><span>id_sesion_investigacion · UUID</span><span class="fk">FK → sesion_investigacion</span></li><li><span>tipo_dato · VARCHAR(30)</span></li><li><span>dispositivo_origen · VARCHAR(30)</span></li><li><span>extension · VARCHAR(10)</span></li><li><span>formato_mime · VARCHAR(100)</span></li><li><span>tamano_bytes · BIGINT</span></li><li><span>ruta_archivo · VARCHAR(255)</span></li><li><span>hash_sha256 · CHAR(64)</span></li><li><span>version · INTEGER</span></li><li><span>id_registro_anterior · UUID</span><span class="fk">FK → registro_datos</span></li><li><span>es_original · BOOLEAN</span></li><li><span>es_sensible · BOOLEAN</span></li><li><span>id_usuario_carga · UUID</span><span class="fk">FK → usuario</span></li><li><span>fecha_carga · TIMESTAMP</span></li></ul></div><div class="entity-card"><div class="head">exportacion <span class="status nueva">NUEVA</span></div><ul><li><span>id_exportacion · UUID</span><span class="pk">PK</span></li><li><span>id_estudio · UUID</span><span class="fk">FK → estudio</span></li><li><span>codigo_exportacion · VARCHAR(12)</span></li><li><span>proposito · VARCHAR(20)</span></li><li><span>filtros · JSONB</span></li><li><span>estado · VARCHAR(20)</span></li><li><span>id_solicitante · UUID</span><span class="fk">FK → usuario</span></li><li><span>id_aprobador · UUID</span><span class="fk">FK → usuario</span></li><li><span>fecha_solicitud · TIMESTAMP</span></li><li><span>fecha_aprobacion · TIMESTAMP</span></li><li><span>fecha_generacion · TIMESTAMP</span></li><li><span>ruta_paquete · VARCHAR(255)</span></li><li><span>hash_paquete · CHAR(64)</span></li><li><span>fecha_vencimiento · TIMESTAMP</span></li></ul></div><div class="entity-card"><div class="head">exportacion_participacion <span class="status nueva">NUEVA</span></div><ul><li><span>id_exportacion · UUID</span><span class="pk">PK</span></li><li><span>id_participacion · UUID</span><span class="pk">PK</span></li><li><span>codigo_en_exportacion · VARCHAR(12)</span></li></ul></div></div></div>
+    </div>
+    <div class="schema-group">
+      <div class="schema-head"><span class="dot"></span><h3>Acceso, sesiones y auditoría — security_schema</h3><span class="desc">Cuentas, roles, permisos globales y por estudio, sesiones de login, MFA, autorizaciones especiales y bitácora append-only.</span></div>
+      <div class="schema-box"><div class="entities-grid"><div class="entity-card"><div class="head">usuario <span class="status cambiada">CAMBIA</span></div><ul><li><span>id_usuario · UUID</span><span class="pk">PK</span></li><li><span>nombre · VARCHAR(150)</span></li><li><span>correo · VARCHAR(150)</span></li><li><span>hash_password · VARCHAR(255)</span></li><li><span>debe_cambiar_password · BOOLEAN</span></li><li><span>mfa_secret · VARCHAR(255)</span></li><li><span>mfa_activo · BOOLEAN</span></li><li><span>id_rol · UUID</span><span class="fk">FK → rol</span></li><li><span>activo · BOOLEAN</span></li><li><span>fecha_expiracion · TIMESTAMP</span></li><li><span>fecha_creacion · TIMESTAMP</span></li></ul></div><div class="entity-card"><div class="head">rol </div><ul><li><span>id_rol · UUID</span><span class="pk">PK</span></li><li><span>nombre_rol · VARCHAR(50)</span></li></ul></div><div class="entity-card"><div class="head">permiso <span class="status cambiada">CAMBIA</span></div><ul><li><span>id_permiso · UUID</span><span class="pk">PK</span></li><li><span>id_rol · UUID</span><span class="fk">FK → rol</span></li><li><span>recurso · VARCHAR(50)</span></li><li><span>accion · VARCHAR(20)</span></li><li><span>alcance · VARCHAR(10)</span></li></ul></div><div class="entity-card"><div class="head">membresia_estudio <span class="status cambiada">CAMBIA</span></div><ul><li><span>id_membresia · UUID</span><span class="pk">PK</span></li><li><span>id_usuario · UUID</span><span class="fk">FK → usuario</span></li><li><span>id_estudio · UUID</span><span class="fk">FK → estudio</span></li><li><span>puede_consultar · BOOLEAN</span></li><li><span>puede_cargar · BOOLEAN</span></li><li><span>puede_modificar · BOOLEAN</span></li><li><span>puede_descargar · BOOLEAN</span></li><li><span>puede_exportar · BOOLEAN</span></li><li><span>id_otorgante · UUID</span><span class="fk">FK → usuario</span></li><li><span>fecha_inicio · DATE</span></li><li><span>fecha_fin · DATE</span></li></ul></div><div class="entity-card"><div class="head">sesion_usuario <span class="status cambiada">CAMBIA</span></div><ul><li><span>id_sesion · UUID</span><span class="pk">PK</span></li><li><span>id_usuario · UUID</span><span class="fk">FK → usuario</span></li><li><span>token_hash · CHAR(64)</span></li><li><span>fecha_inicio · TIMESTAMP</span></li><li><span>fecha_expiracion · TIMESTAMP</span></li><li><span>fecha_cierre · TIMESTAMP</span></li><li><span>ip · VARCHAR(45)</span></li></ul></div><div class="entity-card"><div class="head">mfa_codigo_recuperacion </div><ul><li><span>id_codigo · UUID</span><span class="pk">PK</span></li><li><span>id_usuario · UUID</span><span class="fk">FK → usuario</span></li><li><span>codigo_hash · CHAR(64)</span></li><li><span>usado · BOOLEAN</span></li><li><span>fecha_uso · TIMESTAMP</span></li></ul></div><div class="entity-card"><div class="head">autorizacion <span class="status cambiada">CAMBIA</span></div><ul><li><span>id_autorizacion · UUID</span><span class="pk">PK</span></li><li><span>id_usuario · UUID</span><span class="fk">FK → usuario</span></li><li><span>id_estudio · UUID</span><span class="fk">FK → estudio</span></li><li><span>tipo · VARCHAR(30)</span></li><li><span>recurso · VARCHAR(50)</span></li><li><span>id_registro_objetivo · UUID</span></li><li><span>motivo · TEXT</span></li><li><span>estado · VARCHAR(20)</span></li><li><span>id_autorizador · UUID</span><span class="fk">FK → usuario</span></li><li><span>fecha_solicitud · TIMESTAMP</span></li><li><span>fecha_resolucion · TIMESTAMP</span></li><li><span>fecha_vencimiento · TIMESTAMP</span></li></ul></div><div class="entity-card"><div class="head">auditoria <span class="status cambiada">CAMBIA</span></div><ul><li><span>id_auditoria · UUID</span><span class="pk">PK</span></li><li><span>id_usuario · UUID</span><span class="fk">ref. lógica</span></li><li><span>correo_intentado · VARCHAR(150)</span></li><li><span>id_sesion · UUID</span><span class="fk">ref. lógica</span></li><li><span>ip · VARCHAR(45)</span></li><li><span>entidad · VARCHAR(50)</span></li><li><span>id_registro_afectado · UUID</span><span class="fk">ref. lógica</span></li><li><span>id_estudio · UUID</span><span class="fk">ref. lógica</span></li><li><span>accion · VARCHAR(20)</span></li><li><span>resultado · VARCHAR(10)</span></li><li><span>justificacion · TEXT</span></li><li><span>id_autorizacion · UUID</span><span class="fk">ref. lógica</span></li><li><span>fecha_hora · TIMESTAMP</span></li></ul></div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">4</span><h2>Diccionario de datos: claves primarias y foráneas</h2></div>
+    <p style="margin-top:-8px;">Tipo, clave y referencia de cada campo, por esquema. Coincide campo por campo con el Diccionario de Datos v3, que además trae la descripción. Las filas resaltadas son claves primarias.</p>
+    <div class="dict-table">
+      <h3 style="margin:22px 0 10px;">Datos identificables (PII) — identity_schema</h3>
+      <div class="table-scroll"><table class="dict"><thead><tr><th>Tabla</th><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th></tr></thead><tbody><tr class="pk-row"><td>identidad</td><td class="pk-cell">id_identidad</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>identidad</td><td>ux_lab_id</td><td>VARCHAR(12)</td><td>UNIQUE</td><td>—</td></tr><tr><td>identidad</td><td>rut_cifrado</td><td>VARCHAR(255)</td><td>—</td><td>—</td></tr><tr><td>identidad</td><td>rut_hash</td><td>CHAR(64)</td><td>UNIQUE</td><td>—</td></tr><tr><td>identidad</td><td>nombre_cifrado</td><td>VARCHAR(512)</td><td>—</td><td>—</td></tr><tr><td>identidad</td><td>correo_cifrado</td><td>VARCHAR(512)</td><td>—</td><td>—</td></tr><tr><td>identidad</td><td>correo_hash</td><td>CHAR(64)</td><td>—</td><td>—</td></tr><tr><td>identidad</td><td>telefono_cifrado</td><td>VARCHAR(255)</td><td>—</td><td>—</td></tr><tr><td>identidad</td><td>tipo</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr><td>identidad</td><td>fecha_nacimiento</td><td>DATE</td><td>—</td><td>—</td></tr><tr><td>identidad</td><td>fecha_registro</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr><td>identidad</td><td>fecha_revocacion</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr><td>identidad</td><td>fecha_eliminacion</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>vinculo_identidad</td><td class="pk-cell">id_vinculo</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>vinculo_identidad</td><td>id_identidad</td><td>UUID</td><td class="fk-cell">FK, UNIQUE</td><td>identidad.id_identidad</td></tr><tr><td>vinculo_identidad</td><td>id_participante</td><td>UUID</td><td class="fk-cell">FK, UNIQUE</td><td>participante.id_participante</td></tr><tr class="pk-row"><td>representante_legal</td><td class="pk-cell">id_representacion</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>representante_legal</td><td>id_identidad_representante</td><td>UUID</td><td class="fk-cell">FK</td><td>identidad.id_identidad</td></tr><tr><td>representante_legal</td><td>id_identidad_representado</td><td>UUID</td><td class="fk-cell">FK</td><td>identidad.id_identidad</td></tr><tr><td>representante_legal</td><td>relacion</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr><td>representante_legal</td><td>fecha_inicio</td><td>DATE</td><td>—</td><td>—</td></tr><tr><td>representante_legal</td><td>fecha_fin</td><td>DATE</td><td>—</td><td>—</td></tr></tbody></table></div>
+    </div>
+    <div class="dict-table">
+      <h3 style="margin:22px 0 10px;">Documentación ética — ethics_schema</h3>
+      <div class="table-scroll"><table class="dict"><thead><tr><th>Tabla</th><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th></tr></thead><tbody><tr class="pk-row"><td>protocolo_version</td><td class="pk-cell">id_protocolo</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>protocolo_version</td><td>id_estudio</td><td>UUID</td><td class="fk-cell">FK</td><td>estudio.id_estudio</td></tr><tr><td>protocolo_version</td><td>version</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr><td>protocolo_version</td><td>documento_ruta</td><td>VARCHAR(255)</td><td>—</td><td>—</td></tr><tr><td>protocolo_version</td><td>documento_hash</td><td>CHAR(64)</td><td>—</td><td>—</td></tr><tr><td>protocolo_version</td><td>estado_cec</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr><td>protocolo_version</td><td>codigo_aprobacion_cec</td><td>VARCHAR(50)</td><td>—</td><td>—</td></tr><tr><td>protocolo_version</td><td>fecha_aprobacion_cec</td><td>DATE</td><td>—</td><td>—</td></tr><tr><td>protocolo_version</td><td>fecha_vencimiento_cec</td><td>DATE</td><td>—</td><td>—</td></tr><tr><td>protocolo_version</td><td>id_usuario_registro</td><td>UUID</td><td class="fk-cell">FK</td><td>usuario.id_usuario</td></tr><tr><td>protocolo_version</td><td>fecha_registro</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>documento_consentimiento</td><td class="pk-cell">id_documento</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>documento_consentimiento</td><td>id_estudio</td><td>UUID</td><td class="fk-cell">FK</td><td>estudio.id_estudio</td></tr><tr><td>documento_consentimiento</td><td>id_protocolo</td><td>UUID</td><td class="fk-cell">FK</td><td>protocolo_version.id_protocolo</td></tr><tr><td>documento_consentimiento</td><td>tipo</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr><td>documento_consentimiento</td><td>version</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr><td>documento_consentimiento</td><td>documento_ruta</td><td>VARCHAR(255)</td><td>—</td><td>—</td></tr><tr><td>documento_consentimiento</td><td>documento_hash</td><td>CHAR(64)</td><td>—</td><td>—</td></tr><tr><td>documento_consentimiento</td><td>vigente</td><td>BOOLEAN</td><td>—</td><td>—</td></tr><tr><td>documento_consentimiento</td><td>fecha_registro</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>consentimiento</td><td class="pk-cell">id_consentimiento</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>consentimiento</td><td>id_participacion</td><td>UUID</td><td class="fk-cell">FK</td><td>participacion.id_participacion</td></tr><tr><td>consentimiento</td><td>tipo</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>evento_consentimiento</td><td class="pk-cell">id_evento</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>evento_consentimiento</td><td>id_consentimiento</td><td>UUID</td><td class="fk-cell">FK</td><td>consentimiento.id_consentimiento</td></tr><tr><td>evento_consentimiento</td><td>id_documento</td><td>UUID</td><td class="fk-cell">FK</td><td>documento_consentimiento.id_documento</td></tr><tr><td>evento_consentimiento</td><td>id_representacion</td><td>UUID</td><td class="fk-cell">FK</td><td>representante_legal.id_representacion</td></tr><tr><td>evento_consentimiento</td><td>tipo_evento</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr><td>evento_consentimiento</td><td>fecha</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr><td>evento_consentimiento</td><td>evidencia_ruta</td><td>VARCHAR(255)</td><td>—</td><td>—</td></tr><tr><td>evento_consentimiento</td><td>evidencia_hash</td><td>CHAR(64)</td><td>—</td><td>—</td></tr><tr><td>evento_consentimiento</td><td>id_usuario</td><td>UUID</td><td class="fk-cell">FK</td><td>usuario.id_usuario</td></tr></tbody></table></div>
+    </div>
+    <div class="dict-table">
+      <h3 style="margin:22px 0 10px;">Participación y datos de investigación — research_schema</h3>
+      <div class="table-scroll"><table class="dict"><thead><tr><th>Tabla</th><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th></tr></thead><tbody><tr class="pk-row"><td>estudio</td><td class="pk-cell">id_estudio</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>estudio</td><td>codigo_estudio</td><td>VARCHAR(20)</td><td>UNIQUE</td><td>—</td></tr><tr><td>estudio</td><td>nombre</td><td>VARCHAR(150)</td><td>—</td><td>—</td></tr><tr><td>estudio</td><td>descripcion</td><td>TEXT</td><td>—</td><td>—</td></tr><tr><td>estudio</td><td>id_responsable</td><td>UUID</td><td class="fk-cell">FK</td><td>usuario.id_usuario</td></tr><tr><td>estudio</td><td>estado</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr><td>estudio</td><td>fecha_inicio</td><td>DATE</td><td>—</td><td>—</td></tr><tr><td>estudio</td><td>fecha_fin</td><td>DATE</td><td>—</td><td>—</td></tr><tr><td>estudio</td><td>fecha_cierre</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr><td>estudio</td><td>retencion_hasta</td><td>DATE</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>participante</td><td class="pk-cell">id_participante</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>participante</td><td>estado</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr><td>participante</td><td>fecha_registro</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>participacion</td><td class="pk-cell">id_participacion</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>participacion</td><td>id_participante</td><td>UUID</td><td class="fk-cell">FK</td><td>participante.id_participante</td></tr><tr><td>participacion</td><td>id_estudio</td><td>UUID</td><td class="fk-cell">FK</td><td>estudio.id_estudio</td></tr><tr><td>participacion</td><td>codigo_seudonimo</td><td>VARCHAR(12)</td><td>UNIQUE</td><td>—</td></tr><tr><td>participacion</td><td>fecha_inicio</td><td>DATE</td><td>—</td><td>—</td></tr><tr><td>participacion</td><td>es_menor_al_enrolar</td><td>BOOLEAN</td><td>—</td><td>—</td></tr><tr><td>participacion</td><td>estado</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>sesion_investigacion</td><td class="pk-cell">id_sesion_investigacion</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>sesion_investigacion</td><td>id_participacion</td><td>UUID</td><td class="fk-cell">FK</td><td>participacion.id_participacion</td></tr><tr><td>sesion_investigacion</td><td>numero_sesion</td><td>SMALLINT</td><td>—</td><td>—</td></tr><tr><td>sesion_investigacion</td><td>tecnicas</td><td>TEXT</td><td>—</td><td>—</td></tr><tr><td>sesion_investigacion</td><td>fecha_programada</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr><td>sesion_investigacion</td><td>fecha_realizada</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr><td>sesion_investigacion</td><td>estado</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr><td>sesion_investigacion</td><td>id_responsable</td><td>UUID</td><td class="fk-cell">FK</td><td>usuario.id_usuario</td></tr><tr><td>sesion_investigacion</td><td>observaciones</td><td>TEXT</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>registro_datos</td><td class="pk-cell">id_registro</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>registro_datos</td><td>id_participacion</td><td>UUID</td><td class="fk-cell">FK</td><td>participacion.id_participacion</td></tr><tr><td>registro_datos</td><td>id_sesion_investigacion</td><td>UUID</td><td class="fk-cell">FK</td><td>sesion_investigacion.id_sesion_investigacion</td></tr><tr><td>registro_datos</td><td>tipo_dato</td><td>VARCHAR(30)</td><td>—</td><td>—</td></tr><tr><td>registro_datos</td><td>dispositivo_origen</td><td>VARCHAR(30)</td><td>—</td><td>—</td></tr><tr><td>registro_datos</td><td>extension</td><td>VARCHAR(10)</td><td>—</td><td>—</td></tr><tr><td>registro_datos</td><td>formato_mime</td><td>VARCHAR(100)</td><td>—</td><td>—</td></tr><tr><td>registro_datos</td><td>tamano_bytes</td><td>BIGINT</td><td>—</td><td>—</td></tr><tr><td>registro_datos</td><td>ruta_archivo</td><td>VARCHAR(255)</td><td>—</td><td>—</td></tr><tr><td>registro_datos</td><td>hash_sha256</td><td>CHAR(64)</td><td>—</td><td>—</td></tr><tr><td>registro_datos</td><td>version</td><td>INTEGER</td><td>—</td><td>—</td></tr><tr><td>registro_datos</td><td>id_registro_anterior</td><td>UUID</td><td class="fk-cell">FK</td><td>registro_datos.id_registro</td></tr><tr><td>registro_datos</td><td>es_original</td><td>BOOLEAN</td><td>—</td><td>—</td></tr><tr><td>registro_datos</td><td>es_sensible</td><td>BOOLEAN</td><td>—</td><td>—</td></tr><tr><td>registro_datos</td><td>id_usuario_carga</td><td>UUID</td><td class="fk-cell">FK</td><td>usuario.id_usuario</td></tr><tr><td>registro_datos</td><td>fecha_carga</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>exportacion</td><td class="pk-cell">id_exportacion</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>exportacion</td><td>id_estudio</td><td>UUID</td><td class="fk-cell">FK</td><td>estudio.id_estudio</td></tr><tr><td>exportacion</td><td>codigo_exportacion</td><td>VARCHAR(12)</td><td>UNIQUE</td><td>—</td></tr><tr><td>exportacion</td><td>proposito</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr><td>exportacion</td><td>filtros</td><td>JSONB</td><td>—</td><td>—</td></tr><tr><td>exportacion</td><td>estado</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr><td>exportacion</td><td>id_solicitante</td><td>UUID</td><td class="fk-cell">FK</td><td>usuario.id_usuario</td></tr><tr><td>exportacion</td><td>id_aprobador</td><td>UUID</td><td class="fk-cell">FK</td><td>usuario.id_usuario</td></tr><tr><td>exportacion</td><td>fecha_solicitud</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr><td>exportacion</td><td>fecha_aprobacion</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr><td>exportacion</td><td>fecha_generacion</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr><td>exportacion</td><td>ruta_paquete</td><td>VARCHAR(255)</td><td>—</td><td>—</td></tr><tr><td>exportacion</td><td>hash_paquete</td><td>CHAR(64)</td><td>—</td><td>—</td></tr><tr><td>exportacion</td><td>fecha_vencimiento</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>exportacion_participacion</td><td class="pk-cell">id_exportacion</td><td>UUID</td><td class="pk-cell">PK, FK</td><td>exportacion.id_exportacion</td></tr><tr class="pk-row"><td>exportacion_participacion</td><td class="pk-cell">id_participacion</td><td>UUID</td><td class="pk-cell">PK, FK</td><td>participacion.id_participacion</td></tr><tr><td>exportacion_participacion</td><td>codigo_en_exportacion</td><td>VARCHAR(12)</td><td>—</td><td>—</td></tr></tbody></table></div>
+    </div>
+    <div class="dict-table">
+      <h3 style="margin:22px 0 10px;">Acceso, sesiones y auditoría — security_schema</h3>
+      <div class="table-scroll"><table class="dict"><thead><tr><th>Tabla</th><th>Campo</th><th>Tipo</th><th>Clave</th><th>Referencia</th></tr></thead><tbody><tr class="pk-row"><td>usuario</td><td class="pk-cell">id_usuario</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>usuario</td><td>nombre</td><td>VARCHAR(150)</td><td>—</td><td>—</td></tr><tr><td>usuario</td><td>correo</td><td>VARCHAR(150)</td><td>UNIQUE</td><td>—</td></tr><tr><td>usuario</td><td>hash_password</td><td>VARCHAR(255)</td><td>—</td><td>—</td></tr><tr><td>usuario</td><td>debe_cambiar_password</td><td>BOOLEAN</td><td>—</td><td>—</td></tr><tr><td>usuario</td><td>mfa_secret</td><td>VARCHAR(255)</td><td>—</td><td>—</td></tr><tr><td>usuario</td><td>mfa_activo</td><td>BOOLEAN</td><td>—</td><td>—</td></tr><tr><td>usuario</td><td>id_rol</td><td>UUID</td><td class="fk-cell">FK</td><td>rol.id_rol</td></tr><tr><td>usuario</td><td>activo</td><td>BOOLEAN</td><td>—</td><td>—</td></tr><tr><td>usuario</td><td>fecha_expiracion</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr><td>usuario</td><td>fecha_creacion</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>rol</td><td class="pk-cell">id_rol</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>rol</td><td>nombre_rol</td><td>VARCHAR(50)</td><td>UNIQUE</td><td>—</td></tr><tr class="pk-row"><td>permiso</td><td class="pk-cell">id_permiso</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>permiso</td><td>id_rol</td><td>UUID</td><td class="fk-cell">FK</td><td>rol.id_rol</td></tr><tr><td>permiso</td><td>recurso</td><td>VARCHAR(50)</td><td>—</td><td>—</td></tr><tr><td>permiso</td><td>accion</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr><td>permiso</td><td>alcance</td><td>VARCHAR(10)</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>membresia_estudio</td><td class="pk-cell">id_membresia</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>membresia_estudio</td><td>id_usuario</td><td>UUID</td><td class="fk-cell">FK</td><td>usuario.id_usuario</td></tr><tr><td>membresia_estudio</td><td>id_estudio</td><td>UUID</td><td class="fk-cell">FK</td><td>estudio.id_estudio</td></tr><tr><td>membresia_estudio</td><td>puede_consultar</td><td>BOOLEAN</td><td>—</td><td>—</td></tr><tr><td>membresia_estudio</td><td>puede_cargar</td><td>BOOLEAN</td><td>—</td><td>—</td></tr><tr><td>membresia_estudio</td><td>puede_modificar</td><td>BOOLEAN</td><td>—</td><td>—</td></tr><tr><td>membresia_estudio</td><td>puede_descargar</td><td>BOOLEAN</td><td>—</td><td>—</td></tr><tr><td>membresia_estudio</td><td>puede_exportar</td><td>BOOLEAN</td><td>—</td><td>—</td></tr><tr><td>membresia_estudio</td><td>id_otorgante</td><td>UUID</td><td class="fk-cell">FK</td><td>usuario.id_usuario</td></tr><tr><td>membresia_estudio</td><td>fecha_inicio</td><td>DATE</td><td>—</td><td>—</td></tr><tr><td>membresia_estudio</td><td>fecha_fin</td><td>DATE</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>sesion_usuario</td><td class="pk-cell">id_sesion</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>sesion_usuario</td><td>id_usuario</td><td>UUID</td><td class="fk-cell">FK</td><td>usuario.id_usuario</td></tr><tr><td>sesion_usuario</td><td>token_hash</td><td>CHAR(64)</td><td>UNIQUE</td><td>—</td></tr><tr><td>sesion_usuario</td><td>fecha_inicio</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr><td>sesion_usuario</td><td>fecha_expiracion</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr><td>sesion_usuario</td><td>fecha_cierre</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr><td>sesion_usuario</td><td>ip</td><td>VARCHAR(45)</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>mfa_codigo_recuperacion</td><td class="pk-cell">id_codigo</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>mfa_codigo_recuperacion</td><td>id_usuario</td><td>UUID</td><td class="fk-cell">FK</td><td>usuario.id_usuario</td></tr><tr><td>mfa_codigo_recuperacion</td><td>codigo_hash</td><td>CHAR(64)</td><td>—</td><td>—</td></tr><tr><td>mfa_codigo_recuperacion</td><td>usado</td><td>BOOLEAN</td><td>—</td><td>—</td></tr><tr><td>mfa_codigo_recuperacion</td><td>fecha_uso</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>autorizacion</td><td class="pk-cell">id_autorizacion</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>autorizacion</td><td>id_usuario</td><td>UUID</td><td class="fk-cell">FK</td><td>usuario.id_usuario</td></tr><tr><td>autorizacion</td><td>id_estudio</td><td>UUID</td><td class="fk-cell">FK</td><td>estudio.id_estudio</td></tr><tr><td>autorizacion</td><td>tipo</td><td>VARCHAR(30)</td><td>—</td><td>—</td></tr><tr><td>autorizacion</td><td>recurso</td><td>VARCHAR(50)</td><td>—</td><td>—</td></tr><tr><td>autorizacion</td><td>id_registro_objetivo</td><td>UUID</td><td>—</td><td>—</td></tr><tr><td>autorizacion</td><td>motivo</td><td>TEXT</td><td>—</td><td>—</td></tr><tr><td>autorizacion</td><td>estado</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr><td>autorizacion</td><td>id_autorizador</td><td>UUID</td><td class="fk-cell">FK</td><td>usuario.id_usuario</td></tr><tr><td>autorizacion</td><td>fecha_solicitud</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr><td>autorizacion</td><td>fecha_resolucion</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr><td>autorizacion</td><td>fecha_vencimiento</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr><tr class="pk-row"><td>auditoria</td><td class="pk-cell">id_auditoria</td><td>UUID</td><td class="pk-cell">PK</td><td>—</td></tr><tr><td>auditoria</td><td>id_usuario</td><td>UUID</td><td class="fk-cell">Ref. lógica</td><td>referencia lógica, sin FK física</td></tr><tr><td>auditoria</td><td>correo_intentado</td><td>VARCHAR(150)</td><td>—</td><td>—</td></tr><tr><td>auditoria</td><td>id_sesion</td><td>UUID</td><td class="fk-cell">Ref. lógica</td><td>referencia lógica, sin FK física</td></tr><tr><td>auditoria</td><td>ip</td><td>VARCHAR(45)</td><td>—</td><td>—</td></tr><tr><td>auditoria</td><td>entidad</td><td>VARCHAR(50)</td><td>—</td><td>—</td></tr><tr><td>auditoria</td><td>id_registro_afectado</td><td>UUID</td><td class="fk-cell">Ref. lógica</td><td>referencia lógica, sin FK física</td></tr><tr><td>auditoria</td><td>id_estudio</td><td>UUID</td><td class="fk-cell">Ref. lógica</td><td>referencia lógica, sin FK física</td></tr><tr><td>auditoria</td><td>accion</td><td>VARCHAR(20)</td><td>—</td><td>—</td></tr><tr><td>auditoria</td><td>resultado</td><td>VARCHAR(10)</td><td>—</td><td>—</td></tr><tr><td>auditoria</td><td>justificacion</td><td>TEXT</td><td>—</td><td>—</td></tr><tr><td>auditoria</td><td>id_autorizacion</td><td>UUID</td><td class="fk-cell">Ref. lógica</td><td>referencia lógica, sin FK física</td></tr><tr><td>auditoria</td><td>fecha_hora</td><td>TIMESTAMP</td><td>—</td><td>—</td></tr></tbody></table></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">5</span><h2>Diagrama entidad-relación</h2></div>
+    <div class="diagram-wrap" style="padding:10px"><svg role="img" aria-label="Diagrama entidad-relación v3 de plaGesEtic"
+ viewBox="0.00 0.00 1474.80 1008.80" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(14.4 994.4)">
+<title>DER</title>
+<polygon fill="white" stroke="transparent" points="-14.4,14.4 -14.4,-994.4 1460.4,-994.4 1460.4,14.4 -14.4,14.4"/>
+<g id="clust1" class="cluster">
+<title>cluster_identity_schema</title>
+<path fill="#f7fae6" stroke="#9db80b" stroke-dasharray="5,2" d="M1119,-371C1119,-371 1426,-371 1426,-371 1432,-371 1438,-377 1438,-383 1438,-383 1438,-649 1438,-649 1438,-655 1432,-661 1426,-661 1426,-661 1119,-661 1119,-661 1113,-661 1107,-655 1107,-649 1107,-649 1107,-383 1107,-383 1107,-377 1113,-371 1119,-371"/>
+<text text-anchor="start" x="1115" y="-649.2" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="11.00" fill="#000b78">identity_schema</text>
+<text text-anchor="start" x="1216" y="-649.2" font-family="Inter, Helvetica, Arial, sans-serif" font-size="11.00" fill="#000b78"> — Datos identificables (PII)</text>
+</g>
+<g id="clust2" class="cluster">
+<title>cluster_ethics_schema</title>
+<path fill="#f5f0ff" stroke="#8a4fd6" stroke-dasharray="5,2" d="M770,-17C770,-17 1087,-17 1087,-17 1093,-17 1099,-23 1099,-29 1099,-29 1099,-490 1099,-490 1099,-496 1093,-502 1087,-502 1087,-502 770,-502 770,-502 764,-502 758,-496 758,-490 758,-490 758,-29 758,-29 758,-23 764,-17 770,-17"/>
+<text text-anchor="start" x="766" y="-490.2" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="11.00" fill="#000b78">ethics_schema</text>
+<text text-anchor="start" x="857" y="-490.2" font-family="Inter, Helvetica, Arial, sans-serif" font-size="11.00" fill="#000b78"> — Documentación ética</text>
+</g>
+<g id="clust3" class="cluster">
+<title>cluster_research_schema</title>
+<path fill="#eef2ff" stroke="#253ff6" stroke-dasharray="5,2" d="M375,-8C375,-8 738,-8 738,-8 744,-8 750,-14 750,-20 750,-20 750,-658 750,-658 750,-664 744,-670 738,-670 738,-670 375,-670 375,-670 369,-670 363,-664 363,-658 363,-658 363,-20 363,-20 363,-14 369,-8 375,-8"/>
+<text text-anchor="start" x="371" y="-658.2" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="11.00" fill="#000b78">research_schema</text>
+<text text-anchor="start" x="478" y="-658.2" font-family="Inter, Helvetica, Arial, sans-serif" font-size="11.00" fill="#000b78"> — Participación y datos de investigación</text>
+</g>
+<g id="clust4" class="cluster">
+<title>cluster_security_schema</title>
+<path fill="#f3f5fc" stroke="#7b82a8" stroke-dasharray="5,2" d="M20,-326C20,-326 343,-326 343,-326 349,-326 355,-332 355,-338 355,-338 355,-960 355,-960 355,-966 349,-972 343,-972 343,-972 20,-972 20,-972 14,-972 8,-966 8,-960 8,-960 8,-338 8,-338 8,-332 14,-326 20,-326"/>
+<text text-anchor="start" x="16" y="-960.2" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="11.00" fill="#000b78">security_schema</text>
+<text text-anchor="start" x="119" y="-960.2" font-family="Inter, Helvetica, Arial, sans-serif" font-size="11.00" fill="#000b78"> — Acceso, sesiones y auditoría</text>
+</g>
+<!-- identidad -->
+<g id="node1" class="node">
+<title>identidad</title>
+<polygon fill="#ffffff" stroke="transparent" points="1294.5,-553 1294.5,-627 1391.5,-627 1391.5,-553 1294.5,-553"/>
+<polygon fill="#000b78" stroke="transparent" points="1296,-608 1296,-626 1391,-626 1391,-608 1296,-608"/>
+<text text-anchor="start" x="1300" y="-615.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">identidad</text>
+<text text-anchor="start" x="1300" y="-597.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_identidad</text>
+<text text-anchor="start" x="1377" y="-597.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="1300" y="-578.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">ux_lab_id</text>
+<text text-anchor="start" x="1374" y="-579.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">UQ</text>
+<text text-anchor="start" x="1300" y="-560.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">rut_hash</text>
+<text text-anchor="start" x="1374" y="-561.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">UQ</text>
+<polygon fill="none" stroke="#c7ceef" points="1294.5,-553 1294.5,-627 1391.5,-627 1391.5,-553 1294.5,-553"/>
+</g>
+<!-- vinculo_identidad -->
+<g id="node2" class="node">
+<title>vinculo_identidad</title>
+<polygon fill="#ffffff" stroke="transparent" points="1121,-385 1121,-459 1237,-459 1237,-385 1121,-385"/>
+<polygon fill="#000b78" stroke="transparent" points="1122,-440 1122,-458 1236,-458 1236,-440 1122,-440"/>
+<text text-anchor="start" x="1126" y="-447.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">vinculo_identidad</text>
+<text text-anchor="start" x="1126" y="-429.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_vinculo</text>
+<text text-anchor="start" x="1222" y="-429.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="1126" y="-410.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_identidad</text>
+<text text-anchor="start" x="1207" y="-411.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK UQ</text>
+<text text-anchor="start" x="1126" y="-392.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_participante</text>
+<text text-anchor="start" x="1207" y="-393.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK UQ</text>
+<polygon fill="none" stroke="#c7ceef" points="1121,-385 1121,-459 1237,-459 1237,-385 1121,-385"/>
+</g>
+<!-- identidad&#45;&gt;vinculo_identidad -->
+<g id="edge1" class="edge">
+<title>identidad&#45;&gt;vinculo_identidad</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M1301.34,-552.71C1284.96,-537.98 1266.22,-520.56 1250,-504 1237.65,-491.39 1224.75,-477.06 1213.39,-464"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="1214.79,-462.41 1209.28,-459.25 1211.62,-465.16 1214.79,-462.41"/>
+<text text-anchor="middle" x="1223.88" y="-463.49" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+<text text-anchor="middle" x="1286.04" y="-545.72" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- representante_legal -->
+<g id="node3" class="node">
+<title>representante_legal</title>
+<polygon fill="#ffffff" stroke="transparent" points="1262.5,-385 1262.5,-459 1423.5,-459 1423.5,-385 1262.5,-385"/>
+<polygon fill="#000b78" stroke="transparent" points="1264,-440 1264,-458 1423,-458 1423,-440 1264,-440"/>
+<text text-anchor="start" x="1268" y="-447.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">representante_legal</text>
+<text text-anchor="start" x="1268" y="-429.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_representacion</text>
+<text text-anchor="start" x="1409" y="-429.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="1268" y="-410.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_identidad_representante</text>
+<text text-anchor="start" x="1409" y="-411.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="1268" y="-392.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_identidad_representado</text>
+<text text-anchor="start" x="1409" y="-393.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<polygon fill="none" stroke="#c7ceef" points="1262.5,-385 1262.5,-459 1423.5,-459 1423.5,-385 1262.5,-385"/>
+</g>
+<!-- identidad&#45;&gt;representante_legal -->
+<g id="edge3" class="edge">
+<title>identidad&#45;&gt;representante_legal</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M1335.43,-552.98C1333.66,-527.18 1333.53,-492.36 1335.04,-465.25"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="1337.14,-465.35 1335.41,-459.24 1332.95,-465.09 1337.14,-465.35"/>
+<text text-anchor="middle" x="1341.27" y="-471.83" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="1327.81" y="-536.61" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- identidad&#45;&gt;representante_legal -->
+<g id="edge4" class="edge">
+<title>identidad&#45;&gt;representante_legal</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M1351.2,-552.98C1353.12,-527.18 1353.26,-492.36 1351.62,-465.25"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="1353.71,-465.08 1351.22,-459.24 1349.52,-465.36 1353.71,-465.08"/>
+<text text-anchor="middle" x="1358.93" y="-470.95" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="1345.4" y="-535.77" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- evento_consentimiento -->
+<g id="node7" class="node">
+<title>evento_consentimiento</title>
+<polygon fill="#ffffff" stroke="transparent" points="936.5,-31 936.5,-159 1073.5,-159 1073.5,-31 936.5,-31"/>
+<polygon fill="#000b78" stroke="transparent" points="938,-140 938,-158 1073,-158 1073,-140 938,-140"/>
+<text text-anchor="start" x="942" y="-147.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">evento_consentimiento</text>
+<text text-anchor="start" x="942" y="-129.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_evento</text>
+<text text-anchor="start" x="1059" y="-129.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="942" y="-110.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_consentimiento</text>
+<text text-anchor="start" x="1059" y="-111.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="942" y="-92.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_documento</text>
+<text text-anchor="start" x="1059" y="-93.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="942" y="-74.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_representacion</text>
+<text text-anchor="start" x="1059" y="-75.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="942" y="-56.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">tipo_evento</text>
+<text text-anchor="start" x="1065" y="-56.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="942" y="-38.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_usuario</text>
+<text text-anchor="start" x="1059" y="-39.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<polygon fill="none" stroke="#c7ceef" points="936.5,-31 936.5,-159 1073.5,-159 1073.5,-31 936.5,-31"/>
+</g>
+<!-- representante_legal&#45;&gt;evento_consentimiento -->
+<g id="edge10" class="edge">
+<title>representante_legal&#45;&gt;evento_consentimiento</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M1308.03,-384.56C1290.74,-366.73 1269.46,-345.06 1250,-326 1193.17,-270.34 1127.37,-208.73 1078.28,-163.29"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="1079.42,-161.47 1073.59,-158.94 1076.56,-164.56 1079.42,-161.47"/>
+<text text-anchor="middle" x="1088.82" y="-161.53" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="1293.07" y="-376.57" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- protocolo_version -->
+<g id="node4" class="node">
+<title>protocolo_version</title>
+<polygon fill="#ffffff" stroke="transparent" points="772.5,-376 772.5,-468 879.5,-468 879.5,-376 772.5,-376"/>
+<polygon fill="#000b78" stroke="transparent" points="774,-449 774,-467 879,-467 879,-449 774,-449"/>
+<text text-anchor="start" x="778" y="-456.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">protocolo_version</text>
+<text text-anchor="start" x="778" y="-438.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_protocolo</text>
+<text text-anchor="start" x="865" y="-438.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="778" y="-419.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_estudio</text>
+<text text-anchor="start" x="865" y="-420.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="778" y="-401.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">version</text>
+<text text-anchor="start" x="871" y="-401.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="778" y="-383.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">estado_cec</text>
+<text text-anchor="start" x="871" y="-383.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<polygon fill="none" stroke="#c7ceef" points="772.5,-376 772.5,-468 879.5,-468 879.5,-376 772.5,-376"/>
+</g>
+<!-- documento_consentimiento -->
+<g id="node5" class="node">
+<title>documento_consentimiento</title>
+<polygon fill="#ffffff" stroke="transparent" points="925,-208 925,-300 1085,-300 1085,-208 925,-208"/>
+<polygon fill="#000b78" stroke="transparent" points="926,-281 926,-299 1084,-299 1084,-281 926,-281"/>
+<text text-anchor="start" x="930" y="-288.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">documento_consentimiento</text>
+<text text-anchor="start" x="930" y="-270.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_documento</text>
+<text text-anchor="start" x="1070" y="-270.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="930" y="-251.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_estudio</text>
+<text text-anchor="start" x="1070" y="-252.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="930" y="-233.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">tipo</text>
+<text text-anchor="start" x="1076" y="-233.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="930" y="-215.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">version</text>
+<text text-anchor="start" x="1076" y="-215.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<polygon fill="none" stroke="#c7ceef" points="925,-208 925,-300 1085,-300 1085,-208 925,-208"/>
+</g>
+<!-- documento_consentimiento&#45;&gt;evento_consentimiento -->
+<g id="edge9" class="edge">
+<title>documento_consentimiento&#45;&gt;evento_consentimiento</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M1005,-207.59C1005,-194.36 1005,-179.59 1005,-165.24"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="1007.1,-165.12 1005,-159.12 1002.9,-165.12 1007.1,-165.12"/>
+<text text-anchor="middle" x="1011.76" y="-171.32" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="998.24" y="-190.79" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- consentimiento -->
+<g id="node6" class="node">
+<title>consentimiento</title>
+<polygon fill="#ffffff" stroke="transparent" points="772.5,-217 772.5,-291 899.5,-291 899.5,-217 772.5,-217"/>
+<polygon fill="#000b78" stroke="transparent" points="774,-272 774,-290 899,-290 899,-272 774,-272"/>
+<text text-anchor="start" x="778" y="-279.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">consentimiento</text>
+<text text-anchor="start" x="778" y="-261.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_consentimiento</text>
+<text text-anchor="start" x="885" y="-261.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="778" y="-242.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_participacion</text>
+<text text-anchor="start" x="885" y="-243.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="778" y="-224.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">tipo</text>
+<text text-anchor="start" x="891" y="-224.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<polygon fill="none" stroke="#c7ceef" points="772.5,-217 772.5,-291 899.5,-291 899.5,-217 772.5,-217"/>
+</g>
+<!-- consentimiento&#45;&gt;evento_consentimiento -->
+<g id="edge8" class="edge">
+<title>consentimiento&#45;&gt;evento_consentimiento</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M874.77,-216.98C891.9,-201.07 912.6,-181.84 932.42,-163.43"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="933.93,-164.89 936.9,-159.27 931.07,-161.81 933.93,-164.89"/>
+<text text-anchor="middle" x="930.88" y="-171.79" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="880.79" y="-199.86" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- estudio -->
+<g id="node8" class="node">
+<title>estudio</title>
+<polygon fill="#ffffff" stroke="transparent" points="401,-544 401,-636 505,-636 505,-544 401,-544"/>
+<polygon fill="#000b78" stroke="transparent" points="402,-617 402,-635 504,-635 504,-617 402,-617"/>
+<text text-anchor="start" x="406" y="-624.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">estudio</text>
+<text text-anchor="start" x="406" y="-606.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_estudio</text>
+<text text-anchor="start" x="490" y="-606.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="406" y="-587.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">codigo_estudio</text>
+<text text-anchor="start" x="487" y="-588.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">UQ</text>
+<text text-anchor="start" x="406" y="-569.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_responsable</text>
+<text text-anchor="start" x="490" y="-570.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="406" y="-551.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">estado</text>
+<text text-anchor="start" x="496" y="-551.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<polygon fill="none" stroke="#c7ceef" points="401,-544 401,-636 505,-636 505,-544 401,-544"/>
+</g>
+<!-- estudio&#45;&gt;protocolo_version -->
+<g id="edge5" class="edge">
+<title>estudio&#45;&gt;protocolo_version</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M505.21,-572.38C533.23,-563.62 568.4,-552.88 600,-544 668.91,-524.63 695.15,-541.69 756,-504 769.11,-495.88 781.08,-484.51 791.27,-472.86"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="792.93,-474.13 795.23,-468.21 789.74,-471.41 792.93,-474.13"/>
+<text text-anchor="middle" x="790.97" y="-481.33" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="517.05" y="-559.31" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- estudio&#45;&gt;documento_consentimiento -->
+<g id="edge6" class="edge">
+<title>estudio&#45;&gt;documento_consentimiento</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M505.18,-570.78C533.04,-561.63 568.07,-551.03 600,-544 727.93,-515.85 786.97,-582.27 892,-504 955.9,-456.38 984.59,-364.13 996.77,-306.27"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="998.89,-306.38 998.03,-300.08 994.77,-305.54 998.89,-306.38"/>
+<text text-anchor="middle" x="1001.75" y="-313.35" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="516.88" y="-557.57" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- participacion -->
+<g id="node10" class="node">
+<title>participacion</title>
+<polygon fill="#ffffff" stroke="transparent" points="592,-367 592,-477 714,-477 714,-367 592,-367"/>
+<polygon fill="#000b78" stroke="transparent" points="593,-458 593,-476 713,-476 713,-458 593,-458"/>
+<text text-anchor="start" x="597" y="-465.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">participacion</text>
+<text text-anchor="start" x="597" y="-447.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_participacion</text>
+<text text-anchor="start" x="699" y="-447.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="597" y="-428.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_participante</text>
+<text text-anchor="start" x="699" y="-429.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="597" y="-410.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_estudio</text>
+<text text-anchor="start" x="699" y="-411.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="597" y="-392.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">codigo_seudonimo</text>
+<text text-anchor="start" x="696" y="-393.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">UQ</text>
+<text text-anchor="start" x="597" y="-374.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">estado</text>
+<text text-anchor="start" x="705" y="-374.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<polygon fill="none" stroke="#c7ceef" points="592,-367 592,-477 714,-477 714,-367 592,-367"/>
+</g>
+<!-- estudio&#45;&gt;participacion -->
+<g id="edge13" class="edge">
+<title>estudio&#45;&gt;participacion</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M505.03,-545.82C529.98,-525.11 560.15,-500.06 586.73,-478.01"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="588.37,-479.37 591.64,-473.93 585.69,-476.14 588.37,-479.37"/>
+<text text-anchor="middle" x="584.8" y="-486.09" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="511.87" y="-529.05" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- exportacion -->
+<g id="node13" class="node">
+<title>exportacion</title>
+<polygon fill="#ffffff" stroke="transparent" points="390.5,-358 390.5,-486 515.5,-486 515.5,-358 390.5,-358"/>
+<polygon fill="#000b78" stroke="transparent" points="392,-467 392,-485 515,-485 515,-467 392,-467"/>
+<text text-anchor="start" x="396" y="-474.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">exportacion</text>
+<text text-anchor="start" x="396" y="-456.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_exportacion</text>
+<text text-anchor="start" x="501" y="-456.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="396" y="-437.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_estudio</text>
+<text text-anchor="start" x="501" y="-438.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="396" y="-419.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">codigo_exportacion</text>
+<text text-anchor="start" x="498" y="-420.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">UQ</text>
+<text text-anchor="start" x="396" y="-401.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">estado</text>
+<text text-anchor="start" x="507" y="-401.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="396" y="-383.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_solicitante</text>
+<text text-anchor="start" x="501" y="-384.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="396" y="-365.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_aprobador</text>
+<text text-anchor="start" x="501" y="-366.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<polygon fill="none" stroke="#c7ceef" points="390.5,-358 390.5,-486 515.5,-486 515.5,-358 390.5,-358"/>
+</g>
+<!-- estudio&#45;&gt;exportacion -->
+<g id="edge18" class="edge">
+<title>estudio&#45;&gt;exportacion</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M453,-543.64C453,-527.82 453,-509.69 453,-492.38"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="455.1,-492.04 453,-486.04 450.9,-492.04 455.1,-492.04"/>
+<text text-anchor="middle" x="459.76" y="-498.24" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="446.24" y="-526.84" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- membresia_estudio -->
+<g id="node18" class="node">
+<title>membresia_estudio</title>
+<polygon fill="#ffffff" stroke="transparent" points="225,-340 225,-504 341,-504 341,-340 225,-340"/>
+<polygon fill="#000b78" stroke="transparent" points="226,-485 226,-503 340,-503 340,-485 226,-485"/>
+<text text-anchor="start" x="230" y="-492.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">membresia_estudio</text>
+<text text-anchor="start" x="230" y="-474.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_membresia</text>
+<text text-anchor="start" x="326" y="-474.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="230" y="-455.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_usuario</text>
+<text text-anchor="start" x="326" y="-456.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="230" y="-437.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_estudio</text>
+<text text-anchor="start" x="326" y="-438.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="230" y="-419.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">puede_consultar</text>
+<text text-anchor="start" x="332" y="-419.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="230" y="-401.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">puede_cargar</text>
+<text text-anchor="start" x="332" y="-401.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="230" y="-383.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">puede_modificar</text>
+<text text-anchor="start" x="332" y="-383.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="230" y="-365.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">puede_descargar</text>
+<text text-anchor="start" x="332" y="-365.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="230" y="-347.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">puede_exportar</text>
+<text text-anchor="start" x="332" y="-347.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<polygon fill="none" stroke="#c7ceef" points="225,-340 225,-504 341,-504 341,-340 225,-340"/>
+</g>
+<!-- estudio&#45;&gt;membresia_estudio -->
+<g id="edge24" class="edge">
+<title>estudio&#45;&gt;membresia_estudio</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M400.77,-544.54C386.31,-531.76 370.8,-517.59 357,-504 353.29,-500.35 349.53,-496.56 345.78,-492.69"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="347.05,-490.99 341.37,-488.13 344.03,-493.9 347.05,-490.99"/>
+<text text-anchor="middle" x="356.31" y="-491.57" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="385.44" y="-537.68" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- autorizacion -->
+<g id="node21" class="node">
+<title>autorizacion</title>
+<polygon fill="#ffffff" stroke="transparent" points="90,-358 90,-486 200,-486 200,-358 90,-358"/>
+<polygon fill="#000b78" stroke="transparent" points="91,-467 91,-485 199,-485 199,-467 91,-467"/>
+<text text-anchor="start" x="95" y="-474.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">autorizacion</text>
+<text text-anchor="start" x="95" y="-456.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_autorizacion</text>
+<text text-anchor="start" x="185" y="-456.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="95" y="-437.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_usuario</text>
+<text text-anchor="start" x="185" y="-438.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="95" y="-419.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_estudio</text>
+<text text-anchor="start" x="185" y="-420.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="95" y="-401.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">tipo</text>
+<text text-anchor="start" x="191" y="-401.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="95" y="-383.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">estado</text>
+<text text-anchor="start" x="191" y="-383.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="95" y="-365.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_autorizador</text>
+<text text-anchor="start" x="185" y="-366.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<polygon fill="none" stroke="#c7ceef" points="90,-358 90,-486 200,-486 200,-358 90,-358"/>
+</g>
+<!-- estudio&#45;&gt;autorizacion -->
+<g id="edge28" class="edge">
+<title>estudio&#45;&gt;autorizacion</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M400.74,-561.28C387.95,-555.1 374.15,-548.93 361,-544 296.79,-519.94 269.69,-541.06 212,-504 206,-500.15 200.27,-495.58 194.87,-490.62"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="196.21,-488.98 190.42,-486.36 193.3,-492.02 196.21,-488.98"/>
+<text text-anchor="middle" x="205.57" y="-489.19" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="384.74" y="-558.81" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- participante -->
+<g id="node9" class="node">
+<title>participante</title>
+<polygon fill="#ffffff" stroke="transparent" points="612.5,-562 612.5,-618 721.5,-618 721.5,-562 612.5,-562"/>
+<polygon fill="#000b78" stroke="transparent" points="614,-599 614,-617 721,-617 721,-599 614,-599"/>
+<text text-anchor="start" x="618" y="-606.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">participante</text>
+<text text-anchor="start" x="618" y="-588.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_participante</text>
+<text text-anchor="start" x="707" y="-588.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="618" y="-569.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">estado</text>
+<text text-anchor="start" x="713" y="-569.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<polygon fill="none" stroke="#c7ceef" points="612.5,-562 612.5,-618 721.5,-618 721.5,-562 612.5,-562"/>
+</g>
+<!-- participante&#45;&gt;vinculo_identidad -->
+<g id="edge2" class="edge">
+<title>participante&#45;&gt;vinculo_identidad</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M721.6,-589.16C808.34,-587.16 980.52,-573.81 1105,-504 1122.46,-494.21 1138.06,-478.8 1150.38,-464.04"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="1152.27,-465.04 1154.43,-459.07 1149.02,-462.39 1152.27,-465.04"/>
+<text text-anchor="middle" x="1150.52" y="-472.28" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+<text text-anchor="middle" x="735.86" y="-579.6" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- participante&#45;&gt;participacion -->
+<g id="edge12" class="edge">
+<title>participante&#45;&gt;participacion</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M664.72,-561.96C662.93,-540.69 660.36,-510.25 658.08,-483.28"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="660.17,-483.02 657.57,-477.22 655.98,-483.38 660.17,-483.02"/>
+<text text-anchor="middle" x="665.53" y="-488.8" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="656.76" y="-545.78" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- participacion&#45;&gt;consentimiento -->
+<g id="edge7" class="edge">
+<title>participacion&#45;&gt;consentimiento</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M708.18,-366.87C722.3,-353.34 737.58,-338.99 752,-326 763.27,-315.85 775.64,-305.16 787.33,-295.24"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="788.73,-296.81 791.95,-291.34 786.02,-293.61 788.73,-296.81"/>
+<text text-anchor="middle" x="785.25" y="-303.56" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="713.99" y="-349.66" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- sesion_investigacion -->
+<g id="node11" class="node">
+<title>sesion_investigacion</title>
+<polygon fill="#ffffff" stroke="transparent" points="553.5,-208 553.5,-300 708.5,-300 708.5,-208 553.5,-208"/>
+<polygon fill="#000b78" stroke="transparent" points="555,-281 555,-299 708,-299 708,-281 555,-281"/>
+<text text-anchor="start" x="559" y="-288.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">sesion_investigacion</text>
+<text text-anchor="start" x="559" y="-270.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_sesion_investigacion</text>
+<text text-anchor="start" x="694" y="-270.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="559" y="-251.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_participacion</text>
+<text text-anchor="start" x="694" y="-252.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="559" y="-233.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">estado</text>
+<text text-anchor="start" x="700" y="-233.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="559" y="-215.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_responsable</text>
+<text text-anchor="start" x="694" y="-216.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<polygon fill="none" stroke="#c7ceef" points="553.5,-208 553.5,-300 708.5,-300 708.5,-208 553.5,-208"/>
+</g>
+<!-- participacion&#45;&gt;sesion_investigacion -->
+<g id="edge14" class="edge">
+<title>participacion&#45;&gt;sesion_investigacion</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M645.8,-366.65C643.23,-347.28 640.35,-325.53 637.81,-306.42"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="639.84,-305.72 636.97,-300.05 635.68,-306.27 639.84,-305.72"/>
+<text text-anchor="middle" x="645.58" y="-311.23" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="637.19" y="-350.86" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- registro_datos -->
+<g id="node12" class="node">
+<title>registro_datos</title>
+<polygon fill="#ffffff" stroke="transparent" points="566.5,-22 566.5,-168 709.5,-168 709.5,-22 566.5,-22"/>
+<polygon fill="#000b78" stroke="transparent" points="568,-149 568,-167 709,-167 709,-149 568,-149"/>
+<text text-anchor="start" x="572" y="-156.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">registro_datos</text>
+<text text-anchor="start" x="572" y="-138.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_registro</text>
+<text text-anchor="start" x="695" y="-138.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="572" y="-119.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_participacion</text>
+<text text-anchor="start" x="695" y="-120.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="572" y="-101.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_sesion_investigacion</text>
+<text text-anchor="start" x="695" y="-102.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="572" y="-83.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">tipo_dato</text>
+<text text-anchor="start" x="701" y="-83.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="572" y="-65.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">dispositivo_origen</text>
+<text text-anchor="start" x="701" y="-65.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="572" y="-47.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">hash_sha256</text>
+<text text-anchor="start" x="701" y="-47.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="572" y="-29.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_registro_anterior</text>
+<text text-anchor="start" x="695" y="-30.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<polygon fill="none" stroke="#c7ceef" points="566.5,-22 566.5,-168 709.5,-168 709.5,-22 566.5,-22"/>
+</g>
+<!-- participacion&#45;&gt;registro_datos -->
+<g id="edge15" class="edge">
+<title>participacion&#45;&gt;registro_datos</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M691.18,-366.93C703.19,-346.87 714.9,-323.31 721,-300 731.35,-260.44 733.82,-246.83 721,-208 717.09,-196.15 711.38,-184.53 704.77,-173.53"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="706.4,-172.17 701.45,-168.18 702.83,-174.38 706.4,-172.17"/>
+<text text-anchor="middle" x="714.84" y="-174.64" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="692.68" y="-348.71" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- exportacion_participacion -->
+<g id="node14" class="node">
+<title>exportacion_participacion</title>
+<polygon fill="#ffffff" stroke="transparent" points="377.5,-217 377.5,-291 528.5,-291 528.5,-217 377.5,-217"/>
+<polygon fill="#000b78" stroke="transparent" points="379,-272 379,-290 528,-290 528,-272 379,-272"/>
+<text text-anchor="start" x="383" y="-279.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">exportacion_participacion</text>
+<text text-anchor="start" x="383" y="-261.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_exportacion</text>
+<text text-anchor="start" x="502" y="-261.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK FK</text>
+<text text-anchor="start" x="383" y="-243.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_participacion</text>
+<text text-anchor="start" x="502" y="-243.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK FK</text>
+<text text-anchor="start" x="383" y="-224.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">codigo_en_exportacion</text>
+<text text-anchor="start" x="520" y="-224.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<polygon fill="none" stroke="#c7ceef" points="377.5,-217 377.5,-291 528.5,-291 528.5,-217 377.5,-217"/>
+</g>
+<!-- participacion&#45;&gt;exportacion_participacion -->
+<g id="edge20" class="edge">
+<title>participacion&#45;&gt;exportacion_participacion</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M591.91,-370.29C562.8,-346.14 528.49,-317.66 501.25,-295.05"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="502.56,-293.4 496.6,-291.19 499.87,-296.63 502.56,-293.4"/>
+<text text-anchor="middle" x="512.07" y="-292.94" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="576.43" y="-363.93" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- sesion_investigacion&#45;&gt;registro_datos -->
+<g id="edge16" class="edge">
+<title>sesion_investigacion&#45;&gt;registro_datos</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M633.02,-207.59C633.49,-197.2 633.99,-185.86 634.5,-174.52"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="636.61,-174.31 634.78,-168.22 632.41,-174.13 636.61,-174.31"/>
+<text text-anchor="middle" x="640.89" y="-180.71" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="626.92" y="-190.5" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- registro_datos&#45;&gt;registro_datos -->
+<g id="edge17" class="edge">
+<title>registro_datos:e&#45;&gt;registro_datos:e</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M710,-95C717.83,-134.5 734.5,-134.5 734.5,-95 734.5,-57.66 719.61,-55.62 711.36,-88.87"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="709.25,-88.69 710,-95 713.35,-89.6 709.25,-88.69"/>
+<text text-anchor="middle" x="706.54" y="-77.08" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="719.99" y="-105.2" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- exportacion&#45;&gt;exportacion_participacion -->
+<g id="edge19" class="edge">
+<title>exportacion&#45;&gt;exportacion_participacion</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M453,-357.77C453,-337.52 453,-315.6 453,-297.23"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="455.1,-297.14 453,-291.14 450.9,-297.14 455.1,-297.14"/>
+<text text-anchor="middle" x="459.76" y="-303.34" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="446.24" y="-340.97" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- usuario -->
+<g id="node15" class="node">
+<title>usuario</title>
+<polygon fill="#ffffff" stroke="transparent" points="144,-687 144,-779 230,-779 230,-687 144,-687"/>
+<polygon fill="#000b78" stroke="transparent" points="145,-760 145,-778 229,-778 229,-760 145,-760"/>
+<text text-anchor="start" x="149" y="-767.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">usuario</text>
+<text text-anchor="start" x="149" y="-749.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_usuario</text>
+<text text-anchor="start" x="215" y="-749.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="149" y="-730.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">correo</text>
+<text text-anchor="start" x="212" y="-731.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">UQ</text>
+<text text-anchor="start" x="149" y="-712.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_rol</text>
+<text text-anchor="start" x="215" y="-713.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="149" y="-694.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">activo</text>
+<text text-anchor="start" x="221" y="-694.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<polygon fill="none" stroke="#c7ceef" points="144,-687 144,-779 230,-779 230,-687 144,-687"/>
+</g>
+<!-- usuario&#45;&gt;estudio -->
+<g id="edge11" class="edge">
+<title>usuario&#45;&gt;estudio</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M226.96,-686.95C231.71,-683.44 236.75,-680.36 242,-678 290.36,-656.3 311.94,-690.07 361,-670 377.81,-663.12 393.73,-651.91 407.46,-640.07"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="408.92,-641.58 412.03,-636.04 406.14,-638.43 408.92,-641.58"/>
+<text text-anchor="middle" x="405.64" y="-648.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="234.73" y="-670.66" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- usuario&#45;&gt;membresia_estudio -->
+<g id="edge23" class="edge">
+<title>usuario&#45;&gt;membresia_estudio</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M197.63,-686.8C206.97,-648.48 221.47,-592.22 237,-544 240.55,-532.98 244.53,-521.49 248.63,-510.18"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="250.7,-510.63 250.79,-504.28 246.76,-509.19 250.7,-510.63"/>
+<text text-anchor="middle" x="252.17" y="-517.92" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="194.53" y="-668.8" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- sesion_usuario -->
+<g id="node19" class="node">
+<title>sesion_usuario</title>
+<polygon fill="#ffffff" stroke="transparent" points="249.5,-553 249.5,-627 340.5,-627 340.5,-553 249.5,-553"/>
+<polygon fill="#000b78" stroke="transparent" points="251,-608 251,-626 340,-626 340,-608 251,-608"/>
+<text text-anchor="start" x="255" y="-615.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">sesion_usuario</text>
+<text text-anchor="start" x="255" y="-597.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_sesion</text>
+<text text-anchor="start" x="326" y="-597.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="255" y="-578.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_usuario</text>
+<text text-anchor="start" x="326" y="-579.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="255" y="-560.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">token_hash</text>
+<text text-anchor="start" x="323" y="-561.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">UQ</text>
+<polygon fill="none" stroke="#c7ceef" points="249.5,-553 249.5,-627 340.5,-627 340.5,-553 249.5,-553"/>
+</g>
+<!-- usuario&#45;&gt;sesion_usuario -->
+<g id="edge25" class="edge">
+<title>usuario&#45;&gt;sesion_usuario</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M221.47,-687C235.01,-669.32 250.45,-649.17 263.67,-631.9"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="265.35,-633.16 267.34,-627.12 262.02,-630.6 265.35,-633.16"/>
+<text text-anchor="middle" x="263.89" y="-640.44" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="224.92" y="-669.08" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- mfa_codigo_recuperacion -->
+<g id="node20" class="node">
+<title>mfa_codigo_recuperacion</title>
+<polygon fill="#ffffff" stroke="transparent" points="22,-553 22,-627 170,-627 170,-553 22,-553"/>
+<polygon fill="#000b78" stroke="transparent" points="23,-608 23,-626 169,-626 169,-608 23,-608"/>
+<text text-anchor="start" x="27" y="-615.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">mfa_codigo_recuperacion</text>
+<text text-anchor="start" x="27" y="-597.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_codigo</text>
+<text text-anchor="start" x="155" y="-597.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="27" y="-578.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_usuario</text>
+<text text-anchor="start" x="155" y="-579.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="27" y="-560.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">usado</text>
+<text text-anchor="start" x="161" y="-560.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<polygon fill="none" stroke="#c7ceef" points="22,-553 22,-627 170,-627 170,-553 22,-553"/>
+</g>
+<!-- usuario&#45;&gt;mfa_codigo_recuperacion -->
+<g id="edge26" class="edge">
+<title>usuario&#45;&gt;mfa_codigo_recuperacion</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M157.96,-687C146.64,-669.47 133.76,-649.51 122.69,-632.35"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="124.33,-631.02 119.31,-627.12 120.8,-633.3 124.33,-631.02"/>
+<text text-anchor="middle" x="132.85" y="-633.33" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="144.41" y="-676.18" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- usuario&#45;&gt;autorizacion -->
+<g id="edge27" class="edge">
+<title>usuario&#45;&gt;autorizacion</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M189.19,-686.86C190.25,-648.57 189.88,-592.34 182,-544 179.23,-527.01 174.69,-509.08 169.72,-492.38"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="171.62,-491.42 167.87,-486.29 167.6,-492.64 171.62,-491.42"/>
+<text text-anchor="middle" x="178.55" y="-495.9" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="182.76" y="-669.91" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- rol -->
+<g id="node16" class="node">
+<title>rol</title>
+<polygon fill="#ffffff" stroke="transparent" points="227,-855 227,-911 313,-911 313,-855 227,-855"/>
+<polygon fill="#000b78" stroke="transparent" points="228,-892 228,-910 312,-910 312,-892 228,-892"/>
+<text text-anchor="start" x="232" y="-899.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">rol</text>
+<text text-anchor="start" x="232" y="-881.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_rol</text>
+<text text-anchor="start" x="298" y="-881.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="232" y="-862.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">nombre_rol</text>
+<text text-anchor="start" x="295" y="-863.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">UQ</text>
+<polygon fill="none" stroke="#c7ceef" points="227,-855 227,-911 313,-911 313,-855 227,-855"/>
+</g>
+<!-- rol&#45;&gt;usuario -->
+<g id="edge21" class="edge">
+<title>rol&#45;&gt;usuario</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M254.78,-854.85C243.77,-835.23 228.57,-808.13 215.36,-784.56"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="217.16,-783.49 212.39,-779.28 213.5,-785.54 217.16,-783.49"/>
+<text text-anchor="middle" x="225.39" y="-786.32" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="241.79" y="-843.21" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- permiso -->
+<g id="node17" class="node">
+<title>permiso</title>
+<polygon fill="#ffffff" stroke="transparent" points="255,-678 255,-788 341,-788 341,-678 255,-678"/>
+<polygon fill="#000b78" stroke="transparent" points="256,-769 256,-787 340,-787 340,-769 256,-769"/>
+<text text-anchor="start" x="260" y="-776.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">permiso</text>
+<text text-anchor="start" x="260" y="-758.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_permiso</text>
+<text text-anchor="start" x="326" y="-758.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="260" y="-739.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_rol</text>
+<text text-anchor="start" x="326" y="-740.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">FK</text>
+<text text-anchor="start" x="260" y="-721.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">recurso</text>
+<text text-anchor="start" x="332" y="-721.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="260" y="-703.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">accion</text>
+<text text-anchor="start" x="332" y="-703.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="260" y="-685.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">alcance</text>
+<text text-anchor="start" x="332" y="-685.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<polygon fill="none" stroke="#c7ceef" points="255,-678 255,-788 341,-788 341,-678 255,-678"/>
+</g>
+<!-- rol&#45;&gt;permiso -->
+<g id="edge22" class="edge">
+<title>rol&#45;&gt;permiso</title>
+<path fill="none" stroke="#253ff6" stroke-width="1.2" d="M275.14,-854.85C278.34,-837.92 282.6,-815.42 286.57,-794.42"/>
+<polygon fill="#253ff6" stroke="#253ff6" stroke-width="1.2" points="288.68,-794.55 287.73,-788.26 284.56,-793.76 288.68,-794.55"/>
+<text text-anchor="middle" x="291.68" y="-801.46" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">N</text>
+<text text-anchor="middle" x="271.19" y="-837.05" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.50" fill="#000b78">1</text>
+</g>
+<!-- auditoria -->
+<g id="node22" class="node">
+<title>auditoria</title>
+<polygon fill="#ffffff" stroke="transparent" points="51,-828 51,-938 145,-938 145,-828 51,-828"/>
+<polygon fill="#000b78" stroke="transparent" points="52,-919 52,-937 144,-937 144,-919 52,-919"/>
+<text text-anchor="start" x="56" y="-926.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50" fill="#ffffff">auditoria</text>
+<text text-anchor="start" x="56" y="-908.4" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="bold" font-size="9.50">id_auditoria</text>
+<text text-anchor="start" x="130" y="-908.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">PK</text>
+<text text-anchor="start" x="56" y="-889.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">id_usuario</text>
+<text text-anchor="start" x="128" y="-890.1" font-family="Inter, Helvetica, Arial, sans-serif" font-size="8.00" fill="#6b7090">ref</text>
+<text text-anchor="start" x="56" y="-871.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">accion</text>
+<text text-anchor="start" x="136" y="-871.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="56" y="-853.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">resultado</text>
+<text text-anchor="start" x="136" y="-853.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<text text-anchor="start" x="56" y="-835.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50">justificacion</text>
+<text text-anchor="start" x="136" y="-835.4" font-family="Inter, Helvetica, Arial, sans-serif" font-size="9.50"> </text>
+<polygon fill="none" stroke="#c7ceef" points="51,-828 51,-938 145,-938 145,-828 51,-828"/>
+</g>
+</g>
+</svg>
+</div>
+    <p class="diagram-note">Cada recuadro muestra solo las claves y los campos principales; el detalle completo está en las secciones 3 y 4. Las flechas van del lado 1 al lado N. Para que el diagrama sea legible, no se dibujan las FK de autoría hacia <code>usuario</code> (quién cargó, registró, solicitó o aprobó) ni <code>documento_consentimiento → protocolo_version</code>; todas aparecen en la tabla de relaciones (sección 6).</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">6</span><h2>Relaciones entre entidades (detalle completo)</h2></div>
+    <div class="table-scroll"><table><thead><tr><th>Entidad origen</th><th>Cardinalidad</th><th>Entidad destino</th><th>Campo FK</th><th>En el diagrama</th></tr></thead><tbody><tr><td>identidad</td><td>1 : 1</td><td>vinculo_identidad</td><td><code>vinculo_identidad.id_identidad</code></td><td>Sí</td></tr><tr><td>participante</td><td>1 : 1</td><td>vinculo_identidad</td><td><code>vinculo_identidad.id_participante</code></td><td>Sí</td></tr><tr><td>identidad</td><td>1 : N</td><td>representante_legal</td><td><code>representante_legal.id_identidad_representante</code></td><td>Sí</td></tr><tr><td>identidad</td><td>1 : N</td><td>representante_legal</td><td><code>representante_legal.id_identidad_representado</code></td><td>Sí</td></tr><tr><td>estudio</td><td>1 : N</td><td>protocolo_version</td><td><code>protocolo_version.id_estudio</code></td><td>Sí</td></tr><tr><td>usuario</td><td>1 : N</td><td>protocolo_version</td><td><code>protocolo_version.id_usuario_registro</code></td><td>No (autoría)</td></tr><tr><td>estudio</td><td>1 : N</td><td>documento_consentimiento</td><td><code>documento_consentimiento.id_estudio</code></td><td>Sí</td></tr><tr><td>protocolo_version</td><td>1 : N</td><td>documento_consentimiento</td><td><code>documento_consentimiento.id_protocolo</code></td><td>No (autoría)</td></tr><tr><td>participacion</td><td>1 : N</td><td>consentimiento</td><td><code>consentimiento.id_participacion</code></td><td>Sí</td></tr><tr><td>consentimiento</td><td>1 : N</td><td>evento_consentimiento</td><td><code>evento_consentimiento.id_consentimiento</code></td><td>Sí</td></tr><tr><td>documento_consentimiento</td><td>1 : N</td><td>evento_consentimiento</td><td><code>evento_consentimiento.id_documento</code></td><td>Sí</td></tr><tr><td>representante_legal</td><td>1 : N</td><td>evento_consentimiento</td><td><code>evento_consentimiento.id_representacion</code></td><td>Sí</td></tr><tr><td>usuario</td><td>1 : N</td><td>evento_consentimiento</td><td><code>evento_consentimiento.id_usuario</code></td><td>No (autoría)</td></tr><tr><td>usuario</td><td>1 : N</td><td>estudio</td><td><code>estudio.id_responsable</code></td><td>Sí</td></tr><tr><td>participante</td><td>1 : N</td><td>participacion</td><td><code>participacion.id_participante</code></td><td>Sí</td></tr><tr><td>estudio</td><td>1 : N</td><td>participacion</td><td><code>participacion.id_estudio</code></td><td>Sí</td></tr><tr><td>participacion</td><td>1 : N</td><td>sesion_investigacion</td><td><code>sesion_investigacion.id_participacion</code></td><td>Sí</td></tr><tr><td>usuario</td><td>1 : N</td><td>sesion_investigacion</td><td><code>sesion_investigacion.id_responsable</code></td><td>No (autoría)</td></tr><tr><td>participacion</td><td>1 : N</td><td>registro_datos</td><td><code>registro_datos.id_participacion</code></td><td>Sí</td></tr><tr><td>sesion_investigacion</td><td>1 : N</td><td>registro_datos</td><td><code>registro_datos.id_sesion_investigacion</code></td><td>Sí</td></tr><tr><td>registro_datos</td><td>1 : N</td><td>registro_datos</td><td><code>registro_datos.id_registro_anterior</code></td><td>Sí</td></tr><tr><td>usuario</td><td>1 : N</td><td>registro_datos</td><td><code>registro_datos.id_usuario_carga</code></td><td>No (autoría)</td></tr><tr><td>estudio</td><td>1 : N</td><td>exportacion</td><td><code>exportacion.id_estudio</code></td><td>Sí</td></tr><tr><td>usuario</td><td>1 : N</td><td>exportacion</td><td><code>exportacion.id_solicitante</code></td><td>No (autoría)</td></tr><tr><td>usuario</td><td>1 : N</td><td>exportacion</td><td><code>exportacion.id_aprobador</code></td><td>No (autoría)</td></tr><tr><td>exportacion</td><td>1 : N</td><td>exportacion_participacion</td><td><code>exportacion_participacion.id_exportacion</code></td><td>Sí</td></tr><tr><td>participacion</td><td>1 : N</td><td>exportacion_participacion</td><td><code>exportacion_participacion.id_participacion</code></td><td>Sí</td></tr><tr><td>rol</td><td>1 : N</td><td>usuario</td><td><code>usuario.id_rol</code></td><td>Sí</td></tr><tr><td>rol</td><td>1 : N</td><td>permiso</td><td><code>permiso.id_rol</code></td><td>Sí</td></tr><tr><td>usuario</td><td>1 : N</td><td>membresia_estudio</td><td><code>membresia_estudio.id_usuario</code></td><td>Sí</td></tr><tr><td>estudio</td><td>1 : N</td><td>membresia_estudio</td><td><code>membresia_estudio.id_estudio</code></td><td>Sí</td></tr><tr><td>usuario</td><td>1 : N</td><td>membresia_estudio</td><td><code>membresia_estudio.id_otorgante</code></td><td>No (autoría)</td></tr><tr><td>usuario</td><td>1 : N</td><td>sesion_usuario</td><td><code>sesion_usuario.id_usuario</code></td><td>Sí</td></tr><tr><td>usuario</td><td>1 : N</td><td>mfa_codigo_recuperacion</td><td><code>mfa_codigo_recuperacion.id_usuario</code></td><td>Sí</td></tr><tr><td>usuario</td><td>1 : N</td><td>autorizacion</td><td><code>autorizacion.id_usuario</code></td><td>Sí</td></tr><tr><td>estudio</td><td>1 : N</td><td>autorizacion</td><td><code>autorizacion.id_estudio</code></td><td>Sí</td></tr><tr><td>usuario</td><td>1 : N</td><td>autorizacion</td><td><code>autorizacion.id_autorizador</code></td><td>No (autoría)</td></tr><tr><td>usuario / sesion_usuario / autorizacion / estudio</td><td>1 : N (lógica)</td><td>auditoria</td><td><code>id_usuario</code>, <code>id_sesion</code>, <code>id_autorizacion</code>, <code>id_estudio</code></td><td>No (sin FK física)</td></tr></tbody></table></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">7</span><h2>Trazabilidad con el documento del cliente</h2></div>
+    <p style="margin-top:-8px;">Cada objetivo específico y requisito de alcance del documento del cliente, y dónde queda cubierto en el modelo.</p>
+    <div class="table-scroll"><table><thead><tr><th>Ref.</th><th>Requisito del cliente</th><th>Cobertura en el modelo v3</th><th>Estado</th></tr></thead><tbody><tr><td>Obj. 1</td><td>Modelo que separe identificación, documentación ética, participación, resultados y auditoría</td><td>Cuatro esquemas: <code>identity_schema</code>, <code>ethics_schema</code>, <code>research_schema</code> y <code>security_schema</code> (auditoría)</td><td><span class="st ok">Cubierto</span></td></tr><tr><td>Obj. 2</td><td>Módulo UX Lab ID con identificador interno no publicable</td><td><code>identidad.ux_lab_id</code> (aleatorio, nunca sale de identity_schema)</td><td><span class="st ok">Cubierto</span></td></tr><tr><td>Obj. 3</td><td>Código seudónimo aleatorio y diferente por participación</td><td><code>participacion.codigo_seudonimo</code> aleatorio y UNIQUE</td><td><span class="st ok">Cubierto</span></td></tr><tr><td>Obj. 4</td><td>Estudios, responsables, versiones de protocolo y aprobación del CEC</td><td><code>estudio</code> (estado, responsable) + <code>protocolo_version</code> (estado_cec, código, fechas)</td><td><span class="st ok">Cubierto</span></td></tr><tr><td>Obj. 5</td><td>Consentimientos, asentimientos, versiones, evidencias, negativas, retiros y reconsentimientos</td><td><code>documento_consentimiento</code> (tipo y versión) + <code>consentimiento</code> (tipo) + <code>evento_consentimiento</code> (4 tipos de evento, evidencia, representante)</td><td><span class="st ok">Cubierto</span></td></tr><tr><td>Obj. 6</td><td>Sesiones y activos de investigación por participación (audio, video, pantalla, eye tracking, pupilometría, EEG, GSR/EDA, FC)</td><td><code>sesion_investigacion</code> + <code>registro_datos</code> con 14 tipos de dato y dispositivo de origen</td><td><span class="st ok">Cubierto</span></td></tr><tr><td>Obj. 7</td><td>Usuario, contraseña, MFA con QR, códigos de recuperación y control de sesiones</td><td><code>usuario</code> (mfa_secret, mfa_activo) + <code>mfa_codigo_recuperacion</code> + <code>sesion_usuario</code></td><td><span class="st ok">Cubierto</span></td></tr><tr><td>Obj. 8</td><td>Autorización por rol y por estudio: consulta, carga, modificación, descarga y exportación</td><td><code>permiso</code> (alcance global/estudio) + <code>membresia_estudio</code> (5 permisos) + <code>autorizacion</code></td><td><span class="st ok">Cubierto</span></td></tr><tr><td>Obj. 9</td><td>Repositorio de Excel, CSV, PDF, documentos, audio, video, imágenes y formatos de dispositivos</td><td><code>registro_datos</code> (extensión, MIME, tamaño, versión, original). Falta elegir la tecnología del contenedor de Storage (ADR-002)</td><td><span class="st parcial">Parcial</span></td></tr><tr><td>Obj. 10</td><td>Trazabilidad de acciones relevantes</td><td><code>auditoria</code> append-only con <code>descargar</code>, <code>desenmascarar</code> y justificación</td><td><span class="st ok">Cubierto</span></td></tr><tr><td>Obj. 11</td><td>Exportaciones desidentificadas con códigos independientes</td><td><code>exportacion</code> + <code>exportacion_participacion.codigo_en_exportacion</code></td><td><span class="st ok">Cubierto</span></td></tr><tr><td>Obj. 12</td><td>Pruebas funcionales, de seguridad, accesibilidad y usabilidad con datos sintéticos</td><td>Fuera del alcance del modelo de datos (fase de implementación y pruebas)</td><td><span class="st na">Fuera del DER</span></td></tr><tr><td>Alcance</td><td>Metadatos de archivo: versión, tamaño, origen y usuario responsable</td><td><code>registro_datos.version</code>, <code>tamano_bytes</code>, <code>dispositivo_origen</code>, <code>id_usuario_carga</code></td><td><span class="st ok">Cubierto</span></td></tr><tr><td>Alcance</td><td>Conservación de los archivos originales sin modificaciones</td><td><code>registro_datos.es_original</code> + versionado con <code>id_registro_anterior</code> + hash</td><td><span class="st ok">Cubierto</span></td></tr><tr><td>Alcance</td><td>Plantilla para futura importación desde Excel</td><td>Endpoint de descarga de plantilla en el catálogo v3; la importación misma es etapa posterior</td><td><span class="st parcial">Parcial</span></td></tr><tr><td>Director</td><td>Cerrar estudios; políticas de retención; acceso a identidad con justificación registrada</td><td><code>estudio.estado</code> / <code>retencion_hasta</code>; <code>auditoria.justificacion</code>. Políticas de respaldo: operativo, fuera del DER</td><td><span class="st parcial">Parcial</span></td></tr><tr><td>Invitado</td><td>Uso durante un período definido</td><td><code>usuario.fecha_expiracion</code> + <code>membresia_estudio.fecha_fin</code></td><td><span class="st ok">Cubierto</span></td></tr></tbody></table></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="n">8</span><h2>Pendiente de validación</h2></div>
+    <div class="callout pending"><strong>Por revisar con el equipo:</strong><ul class="clean" style="margin:8px 0 0"><li><strong>Plazo de eliminación:</strong> definir con asesoría jurídica el plazo entre la revocación y el borrado definitivo (Ley 19.628 y la nueva Ley 21.719 de protección de datos personales).</li><li><strong>Retiro de un estudio:</strong> definir con el CEC qué pasa con los datos ya recolectados cuando una persona se retira (se conservan seudonimizados o se eliminan).</li><li><strong>Gestión de llaves:</strong> dónde viven la llave AES y la llave del HMAC (variables de entorno del contenedor, gestor de secretos), y cómo se rotan.</li><li><strong>Storage y frontend:</strong> elegir la tecnología del contenedor de almacenamiento (con áreas separadas para investigación y documentos éticos) y el framework de frontend, en un ADR-002.</li><li><strong>Catálogo de recursos:</strong> fijar la lista cerrada de <code>recurso</code> para <code>permiso</code> y <code>autorizacion</code> (propuesta en el Catálogo de Endpoints v3).</li><li><strong>Validación de privacidad:</strong> contrastar la lista de campos PII y la clasificación de cada campo con la matriz de seudonimización de Felipe Cruz.</li></ul></div>
+  </section>
+
+  <footer>
+    <span>plaGesEtic · Observatorio UX / UXLab UTEM</span>
+    <span>Gestión de Proyectos de Ingeniería (2026-II) · Octubre 2026</span>
+  </footer>
+</div>
+</body>
+</html>
