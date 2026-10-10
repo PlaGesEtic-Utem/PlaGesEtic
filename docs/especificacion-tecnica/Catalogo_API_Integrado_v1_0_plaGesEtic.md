@@ -8,6 +8,7 @@ Anexo de la especificación documental v1.0. Transcripción estructurada del cat
 > - Las rutas se publican **sin prefijo** `/api/v1` (D2, propuesta).
 > - En `POST /identidades`, **correo y teléfono son obligatorios** (D1, aceptada).
 > - «Investigador (responsable)» significa membresía vigente con el permiso indicado en la columna «Permiso en estudio»; el responsable puede otorgarlo a otro investigador (D5, propuesta).
+> - Contactar a un participante: solo el Investigador responsable y el Director, con motivo registrado (`POST /participaciones/{id}/contacto`, D8, aceptada).
 > - Implementadas en `feature/backend-base` al 10/10: estudios (5 rutas), identidades (2) y participaciones (2). El ingreso (`/auth/*`) se implementa el 11/10 (D3).
 
 ## Autenticación y MFA
@@ -76,6 +77,7 @@ Anexo de la especificación documental v1.0. Transcripción estructurada del cat
 | POST /estudios/{id}/participaciones | Investigador, Asistente | puede_cargar | ux_lab_id | id_participacion y codigo_seudonimo aleatorio (ej. P-7K3QX9). Si la persona aún no es participante, crea participante y vinculo_identidad. Calcula es_menor_al_enrolar. |
 | GET /estudios/{id}/participaciones | Investigador, Asistente, Estudiante | puede_consultar | filtro: estado | Participaciones con seudónimo, estado y si era menor al enrolar. |
 | PATCH /participaciones/{id}/estado | Investigador, Asistente | puede_modificar | estado (activo / retirado) | Participación actualizada; no afecta participante.estado. |
+| POST /participaciones/{id}/contacto | Investigador responsable del estudio, Director | — (responsable del estudio o alcance global) | motivo (coordinar_sesion / reconsentimiento / incidente / retiro / otro), detalle (obligatorio si motivo = otro) | Solo nombre, correo y teléfono de la persona, para contactarla; nunca RUT ni fecha de nacimiento. Exige motivo; queda en auditoría como desenmascarar, con la justificación. Si la participación está retirada, solo se acepta el motivo retiro. Ver ADR-002, D8. |
 | GET /participaciones/{id}/sesiones | Investigador, Asistente, Estudiante | puede_consultar | — | Sesiones de investigación de la participación. |
 | POST /participaciones/{id}/sesiones | Investigador, Asistente | puede_modificar | fecha_programada, tecnicas, id_responsable | sesion_investigacion en estado programada. Rechaza con 409 si no hay consentimiento vigente. |
 | PATCH /sesiones-investigacion/{id} | Investigador, Asistente | puede_modificar | estado, fecha_realizada, observaciones | Sesión actualizada. |
