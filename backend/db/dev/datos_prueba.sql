@@ -6,6 +6,12 @@
 -- Las contraseñas son hashes de relleno: el login real llega con la Actividad 40.
 -- =====================================================================
 BEGIN;
+-- Participaciones e identidades creadas al probar (se borran primero por sus claves foráneas)
+DELETE FROM research_schema.participacion;
+DELETE FROM identity_schema.vinculo_identidad;
+DELETE FROM research_schema.participante;
+DELETE FROM identity_schema.representante_legal;
+DELETE FROM identity_schema.identidad;
 DELETE FROM security_schema.sesion_usuario;
 DELETE FROM security_schema.membresia_estudio;
 DELETE FROM ethics_schema.protocolo_version;

@@ -20,6 +20,8 @@ const { Router } = require('express');
 module.exports = (pool) => {
   const router = Router();
   // Actividad 45 · Registro de participantes y estudios
+  // Participaciones va antes que /estudios para que /estudios/:idEstudio/participaciones llegue a su router.
+  router.use('/estudios/:idEstudio/participaciones', require('./participaciones')(pool));
   router.use('/estudios', require('./estudios')(pool));
   router.use('/identidades', require('./identidades')(pool));
   return router;

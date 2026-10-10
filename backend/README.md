@@ -93,10 +93,13 @@ Mientras no esté integrado el login de la Actividad 40, se prueba con una **ses
    docker compose exec api node scripts/sesion-prueba.js test_investigador@uxlab.test
    docker compose exec api node scripts/sesion-prueba.js test_estudiante@uxlab.test
    docker compose exec api node scripts/sesion-prueba.js test_director@uxlab.test
+   docker compose exec api node scripts/sesion-prueba.js test_asistente@uxlab.test
    ```
    (Sin Docker: `node scripts/sesion-prueba.js <correo>` desde la carpeta `backend`.)
-5. Abre `pruebas/estudios.http` (y luego `pruebas/identidades.http`), pega los tokens arriba y haz clic en **Send Request** sobre cada prueba.
+5. Abre `pruebas/estudios.http`, luego `pruebas/identidades.http` y `pruebas/participaciones.http`, pega los tokens arriba y haz clic en **Send Request** sobre cada prueba.
    La respuesta (código y JSON) se abre al lado. Cada prueba dice qué resultado esperar.
+
+Volver a cargar `datos_prueba.sql` deja la base como al inicio: también borra las personas y participaciones creadas al probar.
 
 **Datos personales:** se cifran con la clave `CLAVE_CIFRADO` del `.env`. El valor de `.env.example` sirve solo para desarrollo; la API se niega a usarlo en producción.
 
@@ -116,4 +119,4 @@ npm test
 | Integrar login, MFA y JWT de la Actividad 40 en `routes/auth.js` | Benjamín Arias · 08/10 |
 | `GET /auditoria` (solo Director, con filtros) | Benjamín Arias · 10/10 |
 | Pruebas automatizadas de 401, 403, auditoría y filtro | Benjamín Arias · 11/10 |
-| Rutas de participantes y estudios | Actividad 45 · desde 08/10 |
+| ~~Rutas de estudios, identidades y participaciones~~ | Actividad 45 · listas el 10/10 |

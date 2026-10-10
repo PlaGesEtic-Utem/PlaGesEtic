@@ -1,0 +1,109 @@
+# =====================================================================
+# plaGesEtic · Pruebas visuales de participaciones (Actividad 45 · sábado 10)
+# Igual que los otros .http: pega los tokens y haz clic en «Send Request».
+# Tokens:  node scripts/sesion-prueba.js test_asistente@uxlab.test
+#          (y test_investigador, test_estudiante, test_director)
+# Orden: primero registra a la persona (prueba 1) y copia su UX Lab ID en @persona.
+# =====================================================================
+
+@base = http://localhost:3000
+@tokenAsistente    = PEGA_AQUI_EL_TOKEN_DE_test_asistente@uxlab.test
+@tokenInvestigador = PEGA_AQUI_EL_TOKEN_DE_test_investigador@uxlab.test
+@tokenEstudiante   = PEGA_AQUI_EL_TOKEN_DE_test_estudiante@uxlab.test
+@tokenDirector     = PEGA_AQUI_EL_TOKEN_DE_test_director@uxlab.test
+
+# EST-01 y EST-02 están activos; EST-03 está en borrador (ver db/dev/datos_prueba.sql)
+@est01 = 82bbf931-bc9f-594d-8203-77dc4608f2cc
+@est02 = 5f74778f-0d12-5b6f-9adf-e18fabee11ee
+@est03 = fa8cc559-9084-5018-b3fb-e080ba492f7e
+
+# Después de la prueba 1, pega aquí el UX Lab ID que te devolvió (ej. UXL-D4EDR9G4)
+@persona = PEGA_AQUI_EL_UX_LAB_ID
+
+### 1. Registrar a la persona (Asistente) → 201 { "ux_lab_id": "UXL-…" }  ← cópialo en @persona
+POST {{base}}/identidades
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{
+  "nombre": "Carla Díaz",
+  "correo": "carla.diaz@correo.test",
+  "telefono": "+56 9 3333 4444",
+  "fecha_nacimiento": "2000-01-15"
+}
+
+### 2. Inscribirla en EST-01 → 201 con su código P-XXXXXX (sin nombre ni UX Lab ID en la respuesta)
+POST {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{ "ux_lab_id": "{{persona}}" }
+
+### 3. Inscribirla otra vez en EST-01 → 409 YA_PARTICIPA
+POST {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{ "ux_lab_id": "{{persona}}" }
+
+### 4. Inscribirla en EST-02 (Investigador) → 201 con OTRO código distinto al de EST-01
+POST {{base}}/estudios/{{est02}}/participaciones
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "ux_lab_id": "{{persona}}" }
+
+### 5. Inscribirla en EST-03 (está en borrador) → 409 ESTUDIO_NO_ACTIVO
+POST {{base}}/estudios/{{est03}}/participaciones
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "ux_lab_id": "{{persona}}" }
+
+### 6. El Asistente no es parte de EST-02 → 403
+POST {{base}}/estudios/{{est02}}/participaciones
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{ "ux_lab_id": "{{persona}}" }
+
+### 7. El Estudiante no puede inscribir → 403
+POST {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenEstudiante}}
+Content-Type: application/json
+
+{ "ux_lab_id": "{{persona}}" }
+
+### 8. UX Lab ID que no existe → 404
+POST {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{ "ux_lab_id": "UXL-ZZZZZZZZ" }
+
+### 9. Un menor de edad (registrar y luego inscribir con su UX Lab ID) → es_menor_al_enrolar: true
+POST {{base}}/identidades
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{
+  "nombre": "Benjamín Soto",
+  "correo": "apoderado.soto@correo.test",
+  "telefono": "+56 9 2222 3333",
+  "fecha_nacimiento": "2012-06-01"
+}
+
+### 10. Lista de EST-01 vista por el Estudiante → 200, solo códigos y estados (sin nombres ni UX Lab ID)
+GET {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenEstudiante}}
+
+### 11. Lista de EST-01 vista por el Director (supervisión) → 200
+GET {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenDirector}}
+
+### 12. Solo las activas → 200
+GET {{base}}/estudios/{{est01}}/participaciones?estado=activo
+Authorization: Bearer {{tokenAsistente}}
+
+### 13. Sin token → 401
+GET {{base}}/estudios/{{est01}}/participaciones
