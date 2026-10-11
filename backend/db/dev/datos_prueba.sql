@@ -13,6 +13,7 @@ DELETE FROM research_schema.participante;
 DELETE FROM identity_schema.representante_legal;
 DELETE FROM identity_schema.identidad;
 DELETE FROM security_schema.sesion_usuario;
+DELETE FROM security_schema.mfa_codigo_recuperacion;
 DELETE FROM security_schema.membresia_estudio;
 DELETE FROM ethics_schema.protocolo_version;
 DELETE FROM research_schema.estudio;

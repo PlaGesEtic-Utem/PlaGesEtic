@@ -18,7 +18,7 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { cargarConfig } = require('../config');
-const { buscarSesionVigente } = require('../repositories/autenticacionRepository');
+const { buscarSesionVigente, renovarSesion } = require('../repositories/autenticacionRepository');
 const { ErrorApi, errores } = require('../utils/errores');
 
 // Secreto del JWT: viene de config (JWT_SECRET), el mismo que usa el login de la Actividad 40.
@@ -69,6 +69,9 @@ async function autenticacion(req, res, next) {
     // Un token_temporal del paso MFA no tiene fila en sesion_usuario, así que nunca pasa de aquí.
     const f = await buscarSesionVigente(hashDelToken(token));
     if (!f) return next(errores.noAutenticado());
+
+    // Sesión en uso: se extiende 30 minutos (sin pasar de 8 horas desde el inicio).
+    await renovarSesion(f.id_sesion);
 
     // Cambio de contraseña pendiente: solo /auth/password y /auth/logout.
     if (f.debe_cambiar_password && !rutaPermitidaConCambioPendiente(req)) {

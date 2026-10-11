@@ -99,11 +99,40 @@ Mientras no esté integrado el login de la Actividad 40, se prueba con una **ses
 5. Abre `pruebas/estudios.http`, luego `pruebas/identidades.http` y `pruebas/participaciones.http`, pega los tokens arriba y haz clic en **Send Request** sobre cada prueba.
    La respuesta (código y JSON) se abre al lado. Cada prueba dice qué resultado esperar.
 
+### Ingresar al sistema con el login real (Actividad 46)
+
+`sesion-prueba.js` sigue sirviendo como atajo, pero el ingreso de verdad ya funciona en dos pasos:
+
+1. Después de cargar `datos_prueba.sql`, da contraseña y segundo factor a los usuarios de prueba:
+   ```bash
+   docker compose exec api node scripts/usuarios-prueba.js
+   ```
+   Todos quedan con la contraseña **`Plagesetic.2026`**. El script imprime, por usuario, el secreto TOTP
+   (se puede escribir a mano en Google Authenticator) y 3 códigos de recuperación de un solo uso.
+   Hay que correrlo de nuevo cada vez que se recarga `datos_prueba.sql`.
+2. Para no usar el celular, el código de 6 dígitos del momento se obtiene con:
+   ```bash
+   docker compose exec api node scripts/codigo-totp.js test_investigador@uxlab.test
+   ```
+3. Abre `pruebas/auth.http` y sigue los pasos en orden.
+
+| Ruta | Qué hace |
+|---|---|
+| `POST /auth/login` | correo + contraseña → `token_temporal` (5 min, **no** es una sesión) |
+| `POST /auth/login/mfa` | `token_temporal` + `codigo` (6 dígitos) **o** `codigo_recuperacion` → `token` de sesión |
+| `POST /auth/logout` | cierra la sesión (con `Authorization: Bearer`) |
+| `POST /auth/password` | cambia la contraseña (mínimo 12 caracteres) y quita `debe_cambiar_password` |
+
+Reglas: errores de correo, contraseña o cuenta inactiva responden igual (`CREDENCIALES_INVALIDAS`);
+5 intentos fallidos en 15 minutos bloquean ese correo o usuario (`DEMASIADOS_INTENTOS`, 429);
+más de 20 pedidos por minuto desde una IP también dan 429; la sesión vence a los **30 minutos sin uso**
+y nunca dura más de **8 horas**. Fuera del Alfa (Actividad 74): QR para enrolar MFA, regenerar códigos y recuperar contraseña.
+
 Volver a cargar `datos_prueba.sql` deja la base como al inicio: también borra las personas y participaciones creadas al probar.
 
 **Datos personales:** se cifran con la clave `CLAVE_CIFRADO` del `.env`. El valor de `.env.example` sirve solo para desarrollo; la API se niega a usarlo en producción.
 
-`db/dev/` y `scripts/sesion-prueba.js` son **solo para desarrollo**: no se usan en producción.
+`db/dev/`, `scripts/sesion-prueba.js`, `scripts/usuarios-prueba.js` y `scripts/codigo-totp.js` son **solo para desarrollo**: se niegan a correr en producción.
 
 ## Pruebas
 
@@ -116,7 +145,9 @@ npm test
 | Qué | Quién · cuándo |
 |---|---|
 | Completar los 4 middlewares | Benjamín Arias · 08/10 |
-| Integrar login, MFA y JWT de la Actividad 40 en `routes/auth.js` | Benjamín Arias · 08/10 |
+| ~~Login, MFA (TOTP) y sesiones en `routes/auth.js`~~ | Actividad 46 · listo el 11/10 |
+| Ruta de contacto del participante `POST /participaciones/{id}/contacto` (ADR-002 D8) | Por asignar |
+| Enrolar MFA con QR, regenerar códigos, recuperar contraseña | Actividad 74 |
 | `GET /auditoria` (solo Director, con filtros) | Benjamín Arias · 10/10 |
 | Pruebas automatizadas de 401, 403, auditoría y filtro | Benjamín Arias · 11/10 |
 | ~~Rutas de estudios, identidades y participaciones~~ | Actividad 45 · listas el 10/10 |

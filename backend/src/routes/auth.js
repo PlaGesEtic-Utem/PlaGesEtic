@@ -1,11 +1,25 @@
 'use strict';
 /**
- * Rutas PÚBLICAS de autenticación (Actividad 40): /auth/login, /auth/login/mfa, etc.
- * Pasan por el middleware de auditoría (login_exitoso / login_fallido) pero NO por
- * autenticación ni control de acceso.
+ * Rutas de ingreso al sistema (Actividad 46 · Catálogo v3.1 · ADR-002 D3).
+ * Van ANTES del middleware general de autenticación (para entrar todavía no hay sesión),
+ * pero sí pasan por la auditoría: cada ingreso, fallo y cierre queda registrado.
  *
- * TODO: montar aquí el router del login y MFA de la Actividad 40 cuando se integre su rama:
- *   module.exports = (pool) => require('../modules/auth/routes')(pool);
+ *   POST /auth/login       público   correo + contraseña        → token_temporal
+ *   POST /auth/login/mfa   público   token_temporal + código    → token de sesión
+ *   POST /auth/logout      con sesión                            → cierra la sesión
+ *   POST /auth/password    con sesión (también si debe cambiarla) → cambia la contraseña
  */
 const { Router } = require('express');
-module.exports = (/* pool */) => Router();
+const { autenticacion } = require('../middlewares/autenticacion');
+const { limiteSolicitudes } = require('../middlewares/limiteSolicitudes');
+const c = require('../controllers/authController');
+
+module.exports = () => {
+  const r = Router();
+  const limite = limiteSolicitudes({ maximo: 20, ventanaMs: 60 * 1000 });
+  r.post('/login', limite, c.login);
+  r.post('/login/mfa', limite, c.loginMfa);
+  r.post('/logout', autenticacion, c.logout);
+  r.post('/password', autenticacion, c.cambiarPassword);
+  return r;
+};

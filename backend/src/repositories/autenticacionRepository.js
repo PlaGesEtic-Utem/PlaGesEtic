@@ -22,4 +22,16 @@ async function buscarSesionVigente(tokenHash) {
   return rows[0] || null;
 }
 
-module.exports = { buscarSesionVigente };
+/**
+ * Renueva la sesión en cada pedido: vence 30 minutos después del último uso y nunca
+ * más de 8 horas después de iniciada (Recomendación técnica v2). Todo con la hora de la base.
+ */
+async function renovarSesion(idSesion, minutosInactividad = 30, horasMaximo = 8) {
+  await obtenerPool().query(
+    `UPDATE security_schema.sesion_usuario
+        SET fecha_expiracion = LEAST(now() + make_interval(mins => $2), fecha_inicio + make_interval(hours => $3))
+      WHERE id_sesion = $1`,
+    [idSesion, minutosInactividad, horasMaximo]);
+}
+
+module.exports = { buscarSesionVigente, renovarSesion };

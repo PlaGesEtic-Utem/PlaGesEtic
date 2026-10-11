@@ -1,0 +1,72 @@
+# =====================================================================
+# plaGesEtic · Pruebas visuales del ingreso al sistema (Actividad 46)
+# Requiere la extensión «REST Client» de Visual Studio Code (autor: Huachao Mao).
+# Sobre cada «###» aparece el enlace «Send Request»: haz clic y la respuesta se abre al lado.
+#
+# Antes (una vez):  ver «Ingresar al sistema» en el README
+#   (cargar datos_prueba.sql y luego  node scripts/usuarios-prueba.js).
+# Contraseña de todos los usuarios de prueba: Plagesetic.2026
+# Código de 6 dígitos del momento:  node scripts/codigo-totp.js test_investigador@uxlab.test
+# =====================================================================
+
+@base = http://localhost:3000
+@correo = test_investigador@uxlab.test
+@password = Plagesetic.2026
+
+### 1. Paso 1 — correo y contraseña → 200 { token_temporal, mfa_requerido: true }
+# @name paso1
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "correo": "{{correo}}", "password": "{{password}}" }
+
+### 2. Paso 2 — código de 6 dígitos (cámbialo por el que da codigo-totp.js) → 200 { token, usuario }
+#    Tienes 5 minutos desde el paso 1; si vence, repite el paso 1.
+# @name paso2
+POST {{base}}/auth/login/mfa
+Content-Type: application/json
+
+{ "token_temporal": "{{paso1.response.body.token_temporal}}", "codigo": "000000" }
+
+### 3. Con la sesión del paso 2 → 200 (los estudios del Investigador)
+GET {{base}}/estudios
+Authorization: Bearer {{paso2.response.body.token}}
+
+### 4. El token del paso 1 NO sirve como sesión → 401 NO_AUTENTICADO
+GET {{base}}/estudios
+Authorization: Bearer {{paso1.response.body.token_temporal}}
+
+### 5. Contraseña incorrecta → 401 CREDENCIALES_INVALIDAS (el mismo mensaje que con un correo que no existe)
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "correo": "{{correo}}", "password": "otra-cosa" }
+
+### 6. Correo que no existe → 401 CREDENCIALES_INVALIDAS (no revela si el correo está registrado)
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "correo": "nadie@uxlab.test", "password": "{{password}}" }
+
+### 7. Código de recuperación en vez del de 6 dígitos → 200 (sirve UNA sola vez)
+#    Usa uno de los que imprimió usuarios-prueba.js. Antes repite el paso 1.
+POST {{base}}/auth/login/mfa
+Content-Type: application/json
+
+{ "token_temporal": "{{paso1.response.body.token_temporal}}", "codigo_recuperacion": "XXXX-XXXX-XXXX" }
+
+### 8. Cambiar la contraseña (mínimo 12 caracteres) → 200 «Contraseña actualizada.»
+#    Ojo: después la contraseña ya no es Plagesetic.2026 (usuarios-prueba.js la repone).
+POST {{base}}/auth/password
+Authorization: Bearer {{paso2.response.body.token}}
+Content-Type: application/json
+
+{ "password_actual": "{{password}}", "password_nueva": "Nueva.Clave.2026" }
+
+### 9. Cerrar sesión → 200 «Sesión cerrada.»
+POST {{base}}/auth/logout
+Authorization: Bearer {{paso2.response.body.token}}
+
+### 10. Después de cerrar sesión, el mismo token ya no sirve → 401
+GET {{base}}/estudios
+Authorization: Bearer {{paso2.response.body.token}}
