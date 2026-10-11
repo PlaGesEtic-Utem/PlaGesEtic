@@ -167,9 +167,9 @@ El DER y las fuentes v3 concretan cuatro esquemas, códigos independientes, cinc
 
 [DER v3](https://drive.google.com/file/d/1YnhCcu5Atab0iUC53ekw3O7d8CAoG0en/view)
 
-[Diccionario de datos v3](https://drive.google.com/file/d/1lHu6YkbNk8AL_j4kFryUXEL66SSHzw-S/view)
+[Diccionario de datos v3.1](https://drive.google.com/file/d/1e1g9YL--Hef9Zritw5-cFVUmXs24-FTd/view)
 
-[Catálogo de endpoints v3](https://drive.google.com/file/d/1E6hF6FkxxDuMAv8JcfXlSu_fw2IyEpau/view)
+[Catálogo de endpoints v3.1](https://drive.google.com/file/d/172V5EtjaF20uoevILh5StJMz4zkU-C_g/view)
 
 [Middlewares de seguridad v3](https://drive.google.com/file/d/1mJSEWUPjqA2g7kzBd127ka7tVsNWvenG/view)
 

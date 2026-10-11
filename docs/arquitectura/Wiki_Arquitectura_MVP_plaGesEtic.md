@@ -71,8 +71,8 @@ Antes de cerrar implementación: precisar sesión restringida del primer ingreso
 
 - [ADR-001 de origen en Drive](https://docs.google.com/document/d/1b1g4W84W3I38m8evO8mB_z9lKB_2METY/edit)
 - [DER v3](https://drive.google.com/file/d/1YnhCcu5Atab0iUC53ekw3O7d8CAoG0en/view)
-- [Diccionario v3](https://drive.google.com/file/d/1lHu6YkbNk8AL_j4kFryUXEL66SSHzw-S/view)
-- [Catálogo API v3](https://drive.google.com/file/d/1E6hF6FkxxDuMAv8JcfXlSu_fw2IyEpau/view)
+- [Diccionario v3.1](https://drive.google.com/file/d/1e1g9YL--Hef9Zritw5-cFVUmXs24-FTd/view)
+- [Catálogo API v3.1](https://drive.google.com/file/d/172V5EtjaF20uoevILh5StJMz4zkU-C_g/view)
 - [Middlewares v3](https://drive.google.com/file/d/1mJSEWUPjqA2g7kzBd127ka7tVsNWvenG/view)
 - [Matriz de seudonimización v3](https://drive.google.com/file/d/1qVsFcW1CLZ77TANQO-3x8EPfsxkwQ-eq/view)
 - [Flujo de consentimientos v2](https://drive.google.com/file/d/11o4oVrPt4zyeYwNCllJNZMBq9yPl91OC/view)

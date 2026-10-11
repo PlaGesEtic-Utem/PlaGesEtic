@@ -1,6 +1,6 @@
 # ADR-002: Decisiones para el prototipo Alfa
 
-**Estado:** Propuesto el 10/10/2026. D1, D6 y D7 ya están aceptadas; D2 a D5 se revisan en la reunión interna del lunes 12/10 (Actividad 47).
+**Estado:** Propuesto el 10/10/2026. D1, D6, D7 y D8 ya están aceptadas; D2 a D5 se revisan en la reunión interna del lunes 12/10 (Actividad 47).
 **Versión de la decisión:** 1.0
 **Propuesta y registro:** Benjamín Barrientos, Líder de Proyecto
 **Relacionado con:** ADR-001, Diccionario de datos v3.1, Catálogo API integrado, Recomendación técnica de autenticación v2 (Felipe Cruz)
@@ -19,10 +19,12 @@ Al implementar el backend base (Actividades 42 y 45) aparecieron diferencias ent
 | D4 | Dónde viaja la sesión | En el Alfa, `Authorization: Bearer`. Cuando exista el frontend (Actividades 58 y 73), se pasa a cookie HttpOnly + SameSite=Strict, como pide la recomendación técnica v2. | Propuesta | Nada en el Alfa; queda registrado como deuda técnica. |
 | D5 | Quién edita y activa un estudio | Puede hacerlo quien tenga membresía vigente con `puede_modificar` en ese estudio (el responsable, o a quien el responsable se lo otorgue), además del Director. «Investigador (responsable)» en el catálogo se entiende así. | Propuesta | Nota en el Catálogo API. El código no cambia. Alternativa: exigir además `id_responsable = usuario` (cambio de una línea en el servicio). |
 | D6 | Tecnología del frontend | HTML, CSS y JavaScript sin framework, reutilizando el diseño del prototipo navegable v2.3.1, en su propio contenedor Docker (ADR-001). | Aceptada (10/10, Líder) | Especificación técnica §3.1 («framework por definir» queda resuelto). |
+| D8 | Quién ve el contacto del participante | Solo el **Investigador responsable** del estudio y el **Director** pueden ver el **nombre, correo y teléfono** de un participante, para contactarlo. Nunca el RUT ni la fecha de nacimiento. Deben elegir un **motivo** (coordinar una sesión, firmar una nueva versión del consentimiento, incidente o seguimiento, gestión de un retiro, u otro con detalle) y cada consulta queda en la auditoría como `desenmascarar`, con su justificación. Si la persona se retiró, solo se acepta el motivo «retiro». Asistentes, Estudiantes, Invitados y Soporte no la ven, salvo con una autorización `ver_identidad` aprobada por el Director. | Aceptada (10/10, Líder) | Nueva ruta `POST /participaciones/{id}/contacto` en el Catálogo API. Complementa la regla A1 de la Matriz de seudonimización v3. Coincide con la pantalla «Datos de contacto» del prototipo v2.3.1. Usa la acción `desenmascarar` y el campo `justificacion` que ya existen en `auditoria`, así que no cambia la base de datos. |
 | D7 | Flujo de ramas | Los Pull Request de funcionalidades van a `develop`; `develop` pasa a `main` solo en entregas (por ejemplo `v0.1.0-alfa`). | Aceptada (10/10, Líder) | `develop` alineada con `main` (PR #12). |
 
 ## 3. Consecuencias
 
+- D8 respeta el documento del cliente: el Director accede a la identidad solo con justificación registrada, y Asistentes, Estudiantes e Invitados no acceden a datos de contacto sin autorización formal. Al Investigador se le permite solo lo necesario para contactar a la persona, con motivo y registro, aplicando la minimización de datos.
 - El Informe de Avance N.º 2 cita este ADR para explicar por qué el código y los documentos v3 difieren en estos puntos.
 - Cuando D2 a D5 se aprueben, su estado cambia a «Aceptada» con la fecha de la reunión.
 - Las bases ya creadas antes del 10/10 (por ejemplo, la de pgAdmin) deben aplicar D1 con:
