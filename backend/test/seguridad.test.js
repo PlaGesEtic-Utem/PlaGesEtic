@@ -45,17 +45,31 @@ const ORDEN_INSERT_AUDITORIA = [
   'id_estudio', 'accion', 'resultado', 'justificacion', 'id_autorizacion', 'fecha_hora',
 ];
 
+const sesionVigente = (hash) => {
+  const s = estado.sesiones.get(hash);
+  return s && !s.cerrada ? s : null;
+};
+const resultadoDeSesion = (s) => ({
+  rows: s ? [{ id_sesion: s.id_sesion, id_usuario: s.id_usuario, debe_cambiar_password: false, nombre_rol: s.nombre_rol }] : [],
+  rowCount: s ? 1 : 0,
+});
+
 const bdFalsa = {
   async query(sql, p = []) {
     const t = sql.replace(/\s+/g, ' ').trim();
     estado.consultas.push(t);
 
+    if (t.startsWith('UPDATE security_schema.sesion_usuario')) {
+      // Renovación de la sesión por actividad (vence tras un tiempo sin uso). Puede ir sola o
+      // junto con la búsqueda de la sesión (RETURNING): se contesta como lo haría PostgreSQL.
+      const s = sesionVigente(p[0]);
+      if (!t.includes('RETURNING')) return { rows: [], rowCount: s ? 1 : 0 };
+      return resultadoDeSesion(s);
+    }
     if (t.includes('FROM security_schema.sesion_usuario')) {
       // Emula el filtro del SQL real (sin cierre y sin vencer); la prueba de "sesión cerrada"
       // además comprueba que el SQL real conserve esas condiciones.
-      const s = estado.sesiones.get(p[0]);
-      const vigente = s && !s.cerrada;
-      return { rows: vigente ? [{ id_sesion: s.id_sesion, id_usuario: s.id_usuario, debe_cambiar_password: false, nombre_rol: s.nombre_rol }] : [] };
+      return resultadoDeSesion(sesionVigente(p[0]));
     }
     if (t.includes('FROM security_schema.permiso')) {
       const [rol, recurso, accion] = p;
@@ -198,8 +212,10 @@ describe('Seguridad del backend', () => {
       estado.sesiones.get(hash).cerrada = true; // logout
       assert.equal((await pedir(real, '/auditoria', { token })).status, 401);
 
-      // El SQL real debe seguir exigiendo sesión sin cerrar y sin vencer.
-      const sqlSesion = estado.consultas.find((c) => c.includes('FROM security_schema.sesion_usuario'));
+      // El SQL real debe seguir exigiendo sesión sin cerrar y sin vencer (en el SELECT o en el UPDATE ... RETURNING).
+      const sqlSesion = estado.consultas
+        .filter((c) => c.includes('security_schema.sesion_usuario') && c.includes('token_hash'))
+        .join(' ; ');
       assert.match(sqlSesion, /fecha_cierre IS NULL/);
       assert.match(sqlSesion, /fecha_expiracion > now\(\)/);
     });
@@ -303,8 +319,8 @@ describe('Seguridad del backend', () => {
           assert.equal(r.headers.get('allow'), 'GET');
         }
       }
-      const escrituras = estado.consultas.filter((c) => /^(UPDATE|DELETE|TRUNCATE)\b/i.test(c));
-      assert.deepEqual(escrituras, [], 'no debe ejecutarse ningún UPDATE/DELETE');
+      const escrituras = estado.consultas.filter((c) => /^(UPDATE|DELETE|TRUNCATE)\b.*security_schema\.auditoria/i.test(c));
+      assert.deepEqual(escrituras, [], 'no debe ejecutarse ningún UPDATE/DELETE/TRUNCATE sobre security_schema.auditoria');
     });
 
     it('el repositorio solo ofrece registrar (INSERT) y consultar (SELECT)', () => {
