@@ -5,7 +5,11 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    # Hora de Chile en la base: CURRENT_DATE y now() (vencimientos, fecha de inscripción) usan el día chileno.
+    command: ["postgres", "-c", "timezone=America/Santiago"]
     environment:
+      TZ: America/Santiago
+      PGTZ: America/Santiago
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -29,6 +33,7 @@ services:
     env_file: .env
     environment:
       DB_HOST: db
+      TZ: America/Santiago   # misma zona que la base: fechas y «menor de edad» con el día chileno
     ports:
       - "${PORT:-3000}:3000"
     depends_on:
