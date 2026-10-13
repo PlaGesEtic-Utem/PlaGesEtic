@@ -92,7 +92,7 @@ Pasos:
 
 1. Monta el router **en `src/routes/protegidas.js`**, nunca en `index.js`: lo que se monta ahí hereda auditoría, autenticación y filtro de privacidad. Lo que se monte en `index.js` antes de `autenticacion` queda público.
 2. En cada ruta, encadena `marcarAuditoria(recurso, accion)` y luego `requierePermiso({ recurso, accion })` antes del controlador. Agrega `permisoEstudio` si la ruta pertenece a un estudio (`:idEstudio`): además exige que el usuario tenga membresía en ese estudio con ese permiso.
-3. El `recurso` + `accion` debe existir en la tabla de permisos y estar asignado al rol (permisos base en `db/init/05_permisos_base.sql`; el de `auditoria` está en `db/auditoria_permiso_e_indices.sql`). Si no existe, la ruta responde 403 a todos.
+3. El `recurso` + `accion` debe existir en la tabla de permisos y estar asignado al rol (permisos base en `db/init/05_permisos_base.sql`). Si no existe, la ruta responde 403 a todos.
 4. Lanza los errores con `new ErrorApi(status, 'CODIGO', 'Mensaje')` y `next(...)`, para que salgan con el formato común.
 5. Agrega pruebas siguiendo `test/seguridad.test.js`: 401 sin token, 403 sin permiso, 403 sin membresía y fila de auditoría en éxito y en rechazo.
 
@@ -158,6 +158,8 @@ más de 20 pedidos por minuto desde una IP también dan 429; la sesión vence a 
 y nunca dura más de **8 horas**. Fuera del Alfa (Actividad 74): QR para enrolar MFA, regenerar códigos y recuperar contraseña.
 
 Volver a cargar `datos_prueba.sql` deja la base como al inicio: también borra las personas y participaciones creadas al probar.
+
+**Demo en el navegador (Act. 46):** hay una página de demostración del ingreso en dos pasos que usa este backend real (con «celular simulado» y panel de pedidos a la API). **No forma parte del repositorio**: se entrega aparte (`Demo_Login_Act46.zip`, con su `LEEME`) y se corre en el puerto 8080 con la API levantada con Docker y los usuarios de prueba cargados (pasos 1 y 2 de arriba).
 
 **Datos personales:** se cifran con la clave `CLAVE_CIFRADO` del `.env`. El valor de `.env.example` sirve solo para desarrollo; la API se niega a usarlo en producción.
 
