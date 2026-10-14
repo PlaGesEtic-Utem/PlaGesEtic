@@ -1,0 +1,14 @@
+ID,Caso,Precondicion,Entrada,Resultado esperado,Resultado obtenido,Estado
+CP-01,Crear estudio,Investigador autenticado (USR-04),POST /estudios {codigo_estudio,nombre,fecha_inicio,retencion_hasta},201 en borrador + membresia del creador con 5 permisos,201 Created,OK
+CP-02,Activar estudio sin protocolo aprobado,EST-03 en borrador sin protocolo aprobado (PRO-04 pendiente),POST /estudios/fa8cc559-9084-5018-b3fb-e080ba492f7e/activar,409 protocolo no aprobado,409 Conflict,OK
+CP-03,Activar estudio con protocolo aprobado,EST-01 ya activo con PRO-01 y PRO-02 aprobados,POST /estudios/82bbf931-bc9f-594d-8203-77dc4608f2cc/activar,200 con estado activo (o 409 si ya estaba),409 ya estaba activo,OK
+CP-04,Registrar identidad nueva,RUT 77.777.777-7 no registrado. Investigador autenticado.,POST /identidades {rut,nombre,correo,telefono,fecha_nacimiento,tipo},201 devolviendo SOLO ux_lab_id; cifrado en BD,201 + {ux_lab_id:UXL-97MBNHJS},OK
+CP-05,Registrar identidad con RUT existente,RUT 77.777.777-7 ya registrado,POST /identidades mismo RUT,409 rut_hash UNIQUE,409 Conflict,OK
+CP-06,Buscar identidad existente,ID con RUT 77.777.777-7 ya registrado,POST /identidades/buscar {rut:"77.777.777-7"},200 con ux_lab_id sin otros datos,200 + {existe:true,ux_lab_ids:[UXL-97MBNHJS]},OK
+CP-07,Misma persona en dos estudios,Identidad UXL-97MBNHJS existe; EST-01 y EST-02 activos,POST participaciones en EST-01 y EST-02 con mismo ux_lab_id,201 en ambos con codigo_seudonimo P-XXXXXX distintos,201+201 con P-3LWDRV y P-WFRQLK,OK
+CP-08,Misma persona dos veces en el mismo estudio,Ya inscrita en EST-01,POST /estudios/EST-01/participaciones con mismo ux_lab_id,409 UNIQUE(id_participante,id_estudio),409 Conflict,OK
+CP-09,Inscribir en estudio en borrador,EST-03 en estado borrador,POST /estudios/fa8cc559-9084-5018-b3fb-e080ba492f7e/participaciones,409 estudio no activo,409 Conflict,OK
+CP-10,Estudiante intenta registrar identidad,Autenticado como test_estudiante@uxlab.test (USR-06),POST /identidades,403 permiso insuficiente,403 SIN_PERMISO,OK
+CP-11,Invitado intenta crear estudio,Autenticado como test_invitado@uxlab.test (USR-08),POST /estudios,403 permiso insuficiente,403 SIN_PERMISO,OK
+CP-12,Listar participaciones sin PII,EST-01 con UXL-97MBNHJS inscrito,GET /estudios/EST-01/participaciones,200 solo codigo_seudonimo+estado+es_menor_al_enrolar; sin nombre/RUT/correo/telefono/ux_lab_id,200 sin datos personales (solo id_participacion,codigo_seudonimo,estado,fecha_inicio,es_menor_al_enrolar),OK
+CP-13,Auditoria registrada tras operaciones,Ejecutados CP-01..CP-12,SELECT entidad,accion,resultado,fecha_hora FROM security_schema.auditoria ORDER BY fecha_hora DESC LIMIT 15,Filas con entidad estudio/identidad/participacion y resultado exito/error,15 filas con estudio+identidad+participacion y resultado exito/error,OK

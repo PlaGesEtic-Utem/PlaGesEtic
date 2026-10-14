@@ -1,0 +1,1 @@
+{"error":{"codigo":"PERSONA_YA_REGISTRADA","mensaje":"Ya existe una persona con ese RUT. Búscala con /identidades/buscar para usar su UX Lab ID."}}
