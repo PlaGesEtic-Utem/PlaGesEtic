@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="3020" viewBox="0 0 1800 3020" role="img"><title>Secuencia UML — Exportación desidentificada</title><desc>plaGesEtic · Solicitud, aprobación, códigos independientes y descarga</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#1C2FB9"/></marker></defs><rect width="1800" height="3020" fill="white"/>
+<rect x="60" y="42" width="60" height="7" rx="10" fill="#B9E20E" stroke="none" stroke-width="2"/>
+<text x="60" y="100.0" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="35" font-weight="700" fill="#000B78">Secuencia UML — Exportación desidentificada</text>
+<text x="60" y="155.0" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="21" font-weight="400" fill="#57627A">plaGesEtic · Solicitud, aprobación, códigos independientes y descarga</text>
+<text x="60" y="194.0" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#57627A">Versión 1.0 · Diseño lógico según modelo v3</text>
+<rect x="65" y="250" width="290" height="105" rx="4" fill="#F3F5FC" stroke="#1C2FB9" stroke-width="2"/>
+<text x="210.0" y="288.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">Solicitante /</text>
+<text x="210.0" y="314.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">Responsable del estudio</text>
+<path d="M 210 355 L 210 2860" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="410" y="250" width="290" height="105" rx="4" fill="#F3F5FC" stroke="#1C2FB9" stroke-width="2"/>
+<text x="555.0" y="301.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">API / Seguridad</text>
+<path d="M 555 355 L 555 2860" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="755" y="250" width="290" height="105" rx="4" fill="#F3F5FC" stroke="#1C2FB9" stroke-width="2"/>
+<text x="900.0" y="288.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">Servicio de</text>
+<text x="900.0" y="314.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">exportaciones</text>
+<path d="M 900 355 L 900 2860" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="1100" y="250" width="290" height="105" rx="4" fill="#F3F5FC" stroke="#1C2FB9" stroke-width="2"/>
+<text x="1245.0" y="288.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">PostgreSQL</text>
+<text x="1245.0" y="314.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">research / security</text>
+<path d="M 1245 355 L 1245 2860" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="1445" y="250" width="290" height="105" rx="4" fill="#F3F5FC" stroke="#1C2FB9" stroke-width="2"/>
+<text x="1590.0" y="288.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">Almacenamiento</text>
+<text x="1590.0" y="314.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">de investigación</text>
+<path d="M 1590 355 L 1590 2860" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="90" y="390" width="1620" height="75" rx="4" fill="#F8FAE8" stroke="#A3B624" stroke-width="2"/>
+<text x="110" y="415.3" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#17233D">La auditoría se arma antes de autenticar y registra resultados, incluidos rechazos 401 / 403.</text>
+<text x="110" y="438.7" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#17233D">El acceso combina rol, alcance, membresía vigente y puede_exportar; no se consultan identidades para generar el paquete.</text>
+<path d="M 210 540 L 555 540" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="224" y="481" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="382.5" y="497.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">1. POST /estudios/{id}/exportaciones</text>
+<text x="382.5" y="517.9" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">JWT + propósito + filtros</text>
+<path d="M 555 630 L 660 630 L 660 666 L 555 666" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="567" y="570" width="450" height="54" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="792.0" y="586.6" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Validar cuenta, sesión, rol y estudio;</text>
+<text x="792.0" y="607.4" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">puede_exportar o autorización aplicable</text>
+<path d="M 555 725 L 900 725" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="569" y="666" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="727.5" y="692.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Crear solicitud autorizada</text>
+<path d="M 900 820 L 1245 820" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="914" y="761" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1072.5" y="777.75" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="15" font-weight="400" fill="#17233D">Guardar exportacion + codigo_exportacion</text>
+<text x="1072.5" y="797.25" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="15" font-weight="400" fill="#17233D">Responsable: aprobada; Estudiante: solicitada</text>
+<path d="M 1245 910 L 900 910" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="914" y="851" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1072.5" y="877.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">id_exportacion + estado</text>
+<path d="M 555 1000 L 210 1000" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="224" y="941" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="382.5" y="967.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Solicitud registrada; auditar resultado</text>
+<rect x="75" y="1050" width="1650" height="280" rx="0" fill="none" stroke="#8993AB" stroke-width="2"/>
+<rect x="75" y="1050" width="560" height="35" rx="0" fill="#F3F5FC" stroke="#8993AB" stroke-width="2"/>
+<text x="87" y="1067.5" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="17" font-weight="700" fill="#000B78">opt [Estudiante requiere aprobación]</text>
+<path d="M 210 1165 L 555 1165" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="224" y="1106" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="382.5" y="1122.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">2. PATCH /exportaciones/{id}/aprobacion</text>
+<text x="382.5" y="1142.8999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Responsable / Director · decisión + motivo</text>
+<path d="M 555 1270 L 1245 1270" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="569" y="1211" width="662" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="900.0" y="1227.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Validar aprobador; registrar decisión</text>
+<text x="900.0" y="1247.8999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Aprobada → procesando; rechazada → detener</text>
+<rect x="90" y="1365" width="1620" height="75" rx="4" fill="#F8FAE8" stroke="#A3B624" stroke-width="2"/>
+<text x="110" y="1390.3" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#17233D">Continuar únicamente con aprobación válida. La forma de ejecutar el procesamiento se define en implementación.</text>
+<text x="110" y="1413.7" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#17233D">Excluir participaciones retiradas, PII, fechas exactas y archivos sensibles identificables sin autorización del CEC.</text>
+<path d="M 900 1515 L 1245 1515" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="914" y="1456" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1072.5" y="1473.4" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="14" font-weight="400" fill="#17233D">3. Seleccionar datos elegibles del estudio</text>
+<text x="1072.5" y="1491.6000000000001" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="14" font-weight="400" fill="#17233D">Generar codigo_en_exportacion independiente</text>
+<path d="M 1245 1605 L 900 1605" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="914" y="1546" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1072.5" y="1562.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Datos y códigos de este paquete</text>
+<text x="1072.5" y="1582.8999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Sin UX Lab ID ni seudónimos del estudio</text>
+<path d="M 900 1700 L 1590 1700" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="914" y="1641" width="662" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1245.0" y="1667.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Leer únicamente archivos elegibles</text>
+<path d="M 1590 1790 L 900 1790" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="914" y="1731" width="662" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1245.0" y="1757.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Archivos autorizados</text>
+<path d="M 900 1890 L 1005 1890 L 1005 1926 L 900 1926" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="912" y="1830" width="450" height="54" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1137.0" y="1846.6" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Filtrar contenido, nombres y metadatos;</text>
+<text x="1137.0" y="1867.3999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">usar códigos de exportación en el .zip</text>
+<path d="M 900 1990 L 1245 1990" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="914" y="1931" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1072.5" y="1947.75" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="15" font-weight="400" fill="#17233D">Revalidar permisos y retiro antes de publicar</text>
+<text x="1072.5" y="1967.25" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="15" font-weight="400" fill="#17233D">Persistir mapeo interno; nunca incluirlo en .zip</text>
+<path d="M 900 2090 L 1590 2090" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="914" y="2031" width="662" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1245.0" y="2047.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Guardar paquete restringido .zip</text>
+<text x="1245.0" y="2067.9" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Calcular hash_paquete</text>
+<path d="M 1590 2180 L 900 2180" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="914" y="2121" width="662" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1245.0" y="2147.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">ruta_paquete + hash_paquete</text>
+<path d="M 900 2270 L 1245 2270" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="914" y="2211" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1072.5" y="2227.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Guardar estado lista, fecha_generacion</text>
+<text x="1072.5" y="2247.9" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">y fecha_vencimiento; auditar resultado</text>
+<path d="M 210 2370 L 555 2370" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="224" y="2311" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="382.5" y="2327.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">4. GET /exportaciones/{id}</text>
+<text x="382.5" y="2347.9" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Consultar estado autorizado</text>
+<path d="M 555 2455 L 210 2455" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="224" y="2396" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="382.5" y="2422.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Estado del paquete</text>
+<path d="M 210 2550 L 555 2550" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="224" y="2491" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="382.5" y="2517.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">5. GET /exportaciones/{id}/descarga</text>
+<path d="M 555 2635 L 900 2635" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="569" y="2576" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="727.5" y="2592.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Revalidar acceso, vigencia y retiro</text>
+<text x="727.5" y="2612.9" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">antes de conceder descarga</text>
+<path d="M 900 2720 L 1590 2720" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="914" y="2661" width="662" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1245.0" y="2687.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Leer paquete elegible y vigente</text>
+<path d="M 555 2810 L 210 2810" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="224" y="2751" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="382.5" y="2777.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Paquete .zip; auditar como exportar</text>
+<text x="60" y="2916.6" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#57627A">El mapeo exportacion_participacion permanece interno. La desidentificación no garantiza anonimato irreversible.</text>
+<text x="60" y="2940.0" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#57627A">Si cambia la elegibilidad: impedir publicación o descarga hasta regenerar. Caducidad concreta y concurrencia por definir.</text>
+<text x="60" y="2963.4" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#57627A">Base: Catálogo API v3, DER y diccionario v3, Matriz de Seudonimización v3 y Flujo de Consentimientos v2.</text>
+</svg>

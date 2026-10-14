@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="2660" viewBox="0 0 1800 2660" role="img"><title>Secuencia UML — Registro con consentimiento</title><desc>plaGesEtic · Aceptación, alta de participación y evidencia de consentimiento</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#1C2FB9"/></marker></defs><rect width="1800" height="2660" fill="white"/>
+<rect x="60" y="42" width="60" height="7" rx="10" fill="#B9E20E" stroke="none" stroke-width="2"/>
+<text x="60" y="100.0" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="35" font-weight="700" fill="#000B78">Secuencia UML — Registro con consentimiento</text>
+<text x="60" y="155.0" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="21" font-weight="400" fill="#57627A">plaGesEtic · Aceptación, alta de participación y evidencia de consentimiento</text>
+<text x="60" y="194.0" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#57627A">Versión 1.0 · Diseño lógico del registro inicial</text>
+<rect x="65" y="250" width="290" height="105" rx="4" fill="#F3F5FC" stroke="#1C2FB9" stroke-width="2"/>
+<text x="210.0" y="301.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">Participante</text>
+<path d="M 210 355 L 210 2510" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="410" y="250" width="290" height="105" rx="4" fill="#F3F5FC" stroke="#1C2FB9" stroke-width="2"/>
+<text x="555.0" y="288.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">Equipo autorizado</text>
+<text x="555.0" y="314.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">/ Aplicación web</text>
+<path d="M 555 355 L 555 2510" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="755" y="250" width="290" height="105" rx="4" fill="#F3F5FC" stroke="#1C2FB9" stroke-width="2"/>
+<text x="900.0" y="288.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">Backend / API</text>
+<text x="900.0" y="314.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">Servicios de registro</text>
+<path d="M 900 355 L 900 2510" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="1100" y="250" width="290" height="105" rx="4" fill="#F3F5FC" stroke="#1C2FB9" stroke-width="2"/>
+<text x="1245.0" y="288.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">PostgreSQL</text>
+<text x="1245.0" y="314.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">Tres esquemas</text>
+<path d="M 1245 355 L 1245 2510" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="1445" y="250" width="290" height="105" rx="4" fill="#F3F5FC" stroke="#1C2FB9" stroke-width="2"/>
+<text x="1590.0" y="288.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">Almacenamiento</text>
+<text x="1590.0" y="314.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="20" font-weight="700" fill="#000B78">de evidencias</text>
+<path d="M 1590 355 L 1590 2510" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="90" y="385" width="1620" height="75" rx="4" fill="#F8FAE8" stroke="#A3B624" stroke-width="2"/>
+<text x="110" y="410.3" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#17233D">El equipo presenta el consentimiento por el canal establecido; registra la decisión y evidencia del participante.</text>
+<text x="110" y="433.7" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#17233D">Cada operación autenticada valida permisos y prepara auditoría; el acceso al estudio exige membresía y nivel de acceso.</text>
+<path d="M 555 525 L 210 525" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="224" y="466" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="382.5" y="482.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">1. Presentar documento vigente</text>
+<text x="382.5" y="502.90000000000003" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">y explicar el alcance del estudio</text>
+<path d="M 210 610 L 555 610" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="224" y="551" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="382.5" y="567.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">[Acepta] Entregar aceptación expresa</text>
+<text x="382.5" y="587.9" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">y evidencia firmada</text>
+<path d="M 555 710 L 900 710" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="569" y="651" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="727.5" y="667.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">2. POST /identidades</text>
+<text x="727.5" y="687.9" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Datos de identidad autorizados</text>
+<path d="M 900 805 L 1005 805 L 1005 841 L 900 841" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="912" y="745" width="450" height="54" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1137.0" y="761.6" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Validar JWT y permiso explícito de PII;</text>
+<text x="1137.0" y="782.4" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">validar datos de entrada</text>
+<rect x="75" y="870" width="1650" height="150" rx="0" fill="none" stroke="#8993AB" stroke-width="2"/>
+<rect x="75" y="870" width="560" height="35" rx="0" fill="#F3F5FC" stroke="#8993AB" stroke-width="2"/>
+<text x="87" y="887.5" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="17" font-weight="700" fill="#000B78">break [Autenticación o permiso inválido]</text>
+<path d="M 900 980 L 555 980" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="569" y="921" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="727.5" y="937.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">401 / 403 · Finalizar la operación</text>
+<text x="727.5" y="957.9" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">sin persistir el alta</text>
+<path d="M 900 1110 L 1245 1110" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="914" y="1051" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1072.5" y="1067.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Validar / persistir Identidad</text>
+<text x="1072.5" y="1087.8999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">en identity_schema</text>
+<path d="M 1245 1195 L 900 1195" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="914" y="1136" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1072.5" y="1152.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">id_identidad</text>
+<text x="1072.5" y="1172.8999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Identidad nueva o existente</text>
+<path d="M 900 1280 L 555 1280" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="569" y="1221" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="727.5" y="1237.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Referencia de identidad</text>
+<text x="727.5" y="1257.8999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">solo para el equipo autorizado</text>
+<path d="M 555 1370 L 900 1370" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="569" y="1311" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="727.5" y="1327.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">3. POST /estudios/{id}/participaciones</text>
+<text x="727.5" y="1347.8999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Referencia del alta + estudio</text>
+<path d="M 900 1465 L 1005 1465 L 1005 1501 L 900 1501" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="912" y="1405" width="450" height="54" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1137.0" y="1421.6" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Validar JWT, rol, membresía y acceso;</text>
+<text x="1137.0" y="1442.3999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">resolver referencia y evitar duplicados</text>
+<path d="M 900 1570 L 1245 1570" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="914" y="1511" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1072.5" y="1527.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Transacción: Participante + vínculo</text>
+<text x="1072.5" y="1547.8999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Participación + codigo_seudonimo</text>
+<path d="M 1245 1655 L 900 1655" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="914" y="1596" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1072.5" y="1612.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">COMMIT · id_participacion</text>
+<text x="1072.5" y="1632.8999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">y seudónimo del estudio</text>
+<path d="M 900 1740 L 555 1740" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="569" y="1681" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="727.5" y="1697.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Participación creada</text>
+<text x="727.5" y="1717.8999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Respuesta operativa sin PII</text>
+<path d="M 555 1830 L 900 1830" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="569" y="1771" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="727.5" y="1787.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">4. POST /participaciones/{id}/</text>
+<text x="727.5" y="1807.8999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">consentimientos · Versión + evidencia</text>
+<path d="M 900 1925 L 1005 1925 L 1005 1961 L 900 1961" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="912" y="1865" width="450" height="54" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1137.0" y="1881.6" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Validar autorización y participación;</text>
+<text x="1137.0" y="1902.3999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">aceptación, versión y evidencia</text>
+<path d="M 900 2030 L 1590 2030" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="914" y="1971" width="662" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1245.0" y="1987.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Guardar evidencia restringida</text>
+<text x="1245.0" y="2007.8999999999999" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">y calcular hash SHA-256</text>
+<path d="M 1590 2115 L 900 2115" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="914" y="2056" width="662" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1245.0" y="2082.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">evidencia_ruta + evidencia_hash</text>
+<path d="M 900 2210 L 1245 2210" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="914" y="2151" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1072.5" y="2167.75" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="15" font-weight="400" fill="#17233D">Transacción: Consentimiento + Evento</text>
+<text x="1072.5" y="2187.25" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="15" font-weight="400" fill="#17233D">aceptar · fecha · versión · usuario · evidencia</text>
+<path d="M 1245 2295 L 900 2295" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="914" y="2236" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1072.5" y="2262.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">COMMIT · Aceptación registrada</text>
+<path d="M 900 2380 L 555 2380" fill="none" stroke="#1C2FB9" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="569" y="2321" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="727.5" y="2337.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Consentimiento registrado</text>
+<text x="727.5" y="2357.9" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Habilitar actividades autorizadas</text>
+<path d="M 900 2465 L 1245 2465" fill="none" stroke="#1C2FB9" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="914" y="2406" width="317" height="53" rx="0" fill="#FFFFFF" stroke="none" stroke-width="2"/>
+<text x="1072.5" y="2422.1" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Auditoría append-only al finalizar</text>
+<text x="1072.5" y="2442.9" text-anchor="middle" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="400" fill="#17233D">Acción y resultado en security_schema</text>
+<text x="60" y="2551.6" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#57627A">Si no hay aceptación, no se registra consentimiento ni se habilita ingesta. El alta por sí sola no autoriza capturar datos.</text>
+<text x="60" y="2575.0" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#57627A">Si falla la evidencia o el COMMIT: no confirmar consentimiento, revertir la transacción y compensar el archivo almacenado.</text>
+<text x="60" y="2598.4" text-anchor="start" dominant-baseline="central" font-family="Arial,Liberation Sans,sans-serif" font-size="18" font-weight="400" fill="#57627A">Base: DER y diccionario v2, catálogo de API, middlewares y flujo de consentimientos. IDs expresados según el modelo v2.</text>
+</svg>
