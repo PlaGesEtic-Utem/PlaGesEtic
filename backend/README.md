@@ -117,6 +117,7 @@ Mientras no esté integrado el login de la Actividad 40, se prueba con una **ses
    docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/dev/datos_prueba.sql
    ```
    (Sin Docker: ejecuta `db/dev/datos_prueba.sql` en pgAdmin sobre la base `plagesetic`.)
+   En Windows, si los textos con tilde se ven rotos (por ejemplo «EstrÃ©s»), carga el script con `PGCLIENTENCODING=UTF8` delante del comando `psql`.
 4. Pide un token por usuario y cópialo:
    ```bash
    docker compose exec api node scripts/sesion-prueba.js test_investigador@uxlab.test

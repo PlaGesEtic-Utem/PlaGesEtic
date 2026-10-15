@@ -1,28 +1,32 @@
-# Guía API de registro de participantes y estudios
+# Guía de API: registro de participantes y estudios
 
-- **Proyecto:** plaGesEtic · UXLab UTEM
-- **Actividad:** 45 — Implementación base de registro de participantes y estudios
-- **Responsable documental:** Catalina Araniz
-- **Versión:** 0.2
-- **Estado:** fichas de estudios contrastadas con el código. Ejecución de API y evidencias pendientes.
+**Proyecto:** plaGesEtic · UXLab UTEM
+**Actividad:** 45 — Implementación base de registro de participantes y estudios
+**Responsable documental:** Catalina Araniz
+**Versión:** 1.0
+**Estado:** Guía contrastada con `feature/backend-base`; incluye resultados de pruebas registrados y pasos para repetirlas.
 
-## 1. Objetivo
+## 1. Objetivo y alcance
 
-Documentar las rutas para gestionar estudios, registrar identidades e inscribir participaciones. Cada ficha describe su propósito, autorización, entrada, salida y errores.
+Documentar las rutas disponibles para crear y gestionar estudios, buscar y registrar identidades, e inscribir y consultar participaciones. Los ejemplos de esta guía son ilustrativos; las respuestas dinámicas, como UX Lab ID y código seudónimo, cambian en cada ejecución.
 
-## 2. Base de la revisión
+Incluye las rutas implementadas en la rama `feature/backend-base`. No incluye consentimiento, asentimiento, desenmascaramiento de identidades ni pantallas de frontend.
 
-Fuente: `PlaGesEtic-main.zip`, correspondiente al commit:
+## 2. Base de la revisión y verificación
 
-`ebd44cbac8f0a46b12c5c13621c99606da4d0583`
+La primera revisión de esta guía (v0.2) se hizo leyendo el código a partir de un ZIP estático (commit `ebd44cbac8f0a46b12c5c13621c99606da4d0583`), sin ejecutar la API. Esta versión (v1.0) se revisó directamente contra la rama `feature/backend-base`, commit `9138804b0fccdbec19af3e171523bf5cee621fa3`, contrastando `backend/README.md` y los archivos `backend/pruebas/*.http`. El prefijo local es `http://localhost:3000`; las rutas no llevan `/api/v1` en el código revisado — pendiente confirmar si el despliegue agrega uno.
 
-La revisión se realizó mediante lectura del código. No se ejecutó la API ni se verificó la base de datos. Los ejemplos ilustran las estructuras implementadas y no constituyen evidencia de pruebas ejecutadas.
+La evidencia registrada en Drive por Benjamín Barrientos para la Actividad 45 consigna: estudios, 32/32 casos correctos contra PostgreSQL; identidades, 14/14 casos y cero datos personales en texto claro en la base; participaciones, 43/43 casos, además de 15/15 pruebas automáticas al implementar ese módulo. Esta guía no presenta esas ejecuciones como realizadas por la responsable documental.
+
+Como comprobación adicional, se ejecutó `npm test` en el commit indicado: 32 pruebas pasaron y una quedó omitida por requerir PostgreSQL real (`TEST_BD_REAL=1`). Esa suite usa base simulada y no sustituye la comprobación manual contra PostgreSQL.
+
+El 13 de octubre de 2026, Felipe Cruz ejecutó 13 casos de prueba adicionales contra la API real de esta misma rama, con la base cargada con `datos_prueba.sql` (ver `act45_resultados_casos_prueba.xlsx`). Las secciones 5 y 6, antes marcadas como "Pendiente", se completan aquí con esa evidencia.
 
 ### Rutas y autenticación
 
-Las rutas se montan directamente en `/estudios`. El archivo `app.js` no incorpora el prefijo `/api/v1`. Un prefijo adicional en el despliegue debe confirmarse.
+Las rutas se montan directamente en `/estudios`, `/identidades` y `/estudios/{id}/participaciones`. El archivo `app.js` no incorpora el prefijo `/api/v1`.
 
-Las solicitudes requieren:
+Las solicitudes a rutas protegidas requieren:
 
 ```http
 Authorization: Bearer <JWT_DE_SESION>
@@ -31,27 +35,29 @@ Content-Type: application/json
 
 `Content-Type` corresponde a las solicitudes que envían un cuerpo JSON.
 
-El middleware valida:
+El middleware de autenticación valida:
 
 - Firma HS256 y vencimiento del JWT.
 - Sesión abierta y vigente.
 - Cuenta activa y no vencida.
 - Ausencia de cambio obligatorio de contraseña pendiente para acceder a estudios.
 
-El archivo `routes/auth.js` está vacío en la copia revisada y deja pendiente integrar el login y MFA.
+A diferencia del borrador v0.2 (que señalaba `routes/auth.js` vacío), en `feature/backend-base` el login ya está implementado: `POST /auth/login` devuelve un token temporal y `POST /auth/login/mfa` entrega el token de sesión tras validar el segundo factor (TOTP). El README del backend y `backend/pruebas/auth.http` describen cómo generar usuarios sintéticos y probar el login. Director, Investigador y Soporte tienen MFA activo; Asistente, Estudiante e Invitado no (Actividad 45, hallazgo H-09).
 
 ### Procesamiento
 
 La cadena implementada comprende:
 
 1. Preparación de auditoría.
-2. Autenticación.
+2. Autenticación y verificación de sesión vigente.
 3. Instalación del filtro de privacidad sobre la respuesta.
-4. Control de permiso cuando la ruta lo declara.
+4. Control de permiso cuando la ruta lo declara (y de membresía/autorización por estudio, en las rutas que lo exigen).
 5. Controlador, servicio y repositorio.
 6. Filtrado de la salida y registro de auditoría.
 
-El filtro conserva `nombre` cuando corresponde al estudio.
+El filtro conserva `nombre` cuando corresponde al estudio. En las rutas de identidades, el filtro permite explícitamente que salgan únicamente los campos `ux_lab_id` y `ux_lab_ids`; las respuestas de participaciones no incluyen el UX Lab ID ni `id_participante`.
+
+Los datos personales de identidad se cifran con AES-256-GCM, y el código calcula huellas HMAC-SHA-256 para las búsquedas por RUT o correo. La respuesta de la API no devuelve nombre, RUT, correo, teléfono ni fecha de nacimiento.
 
 ## 3. Respuestas y errores comunes
 
@@ -70,11 +76,9 @@ El repositorio devuelve estos diez campos:
 - `fecha_cierre`
 - `retencion_hasta`
 
-Las respuestas exitosas contienen directamente el objeto o arreglo, sin envoltorio `data`.
+Las respuestas exitosas contienen directamente el objeto o arreglo, sin envoltorio `data`. No se incluyen las propiedades `actualizado` ni `activado`.
 
-No se incluyen las propiedades `actualizado` ni `activado`.
-
-Los UUID y fechas de los ejemplos son ficticios. El formato exacto de las fechas debe comprobarse en ejecución: depende de la conversión de PostgreSQL y `pg`. El filtro de privacidad serializa los objetos `Date` mediante `toJSON`.
+> **Hallazgo H-12 (Actividad 45, 13-oct-2026):** el formato de fecha es inconsistente entre rutas — `/estudios` devuelve `2026-10-13T03:00:00.000Z` y `/participaciones` devuelve `2026-10-13`. Pendiente de corrección: normalizar a `AAAA-MM-DD` para campos `DATE`.
 
 ### Formato de error
 
@@ -90,391 +94,209 @@ Los UUID y fechas de los ejemplos son ficticios. El formato exacto de las fechas
 | HTTP | Código | Mensaje y condición |
 | --- | --- | --- |
 | 400 | `SOLICITUD_INVALIDA` | `El cuerpo de la solicitud no es JSON válido.` |
-| 400 | `SOLICITUD_INVALIDA` | `El identificador del estudio no es válido.` En controles que reciben un identificador de estudio. |
+| 400 | `SOLICITUD_INVALIDA` | `El identificador del estudio no es válido.` |
 | 401 | `NO_AUTENTICADO` | `Debes iniciar sesión.` |
 | 403 | `CAMBIO_PASSWORD_REQUERIDO` | `Debes cambiar tu contraseña antes de continuar.` |
-| 403 | `SIN_PERMISO` | `No tienes permiso para esta acción.` En rutas con `requierePermiso`. |
-| 500 | `ERROR_INTERNO` | `Ocurrió un error inesperado. Intenta nuevamente.` Para fallos no traducidos. |
+| 403 | `SIN_PERMISO` | `No tienes permiso para esta acción.` |
+| 500 | `ERROR_INTERNO` | `Ocurrió un error inesperado. Intenta nuevamente.` |
 
-Los controles se ejecutan antes de consultar el recurso. Por ello, una solicitud puede recibir `401` o `403` antes de comprobar si el estudio existe. Un UUID inexistente no garantiza una respuesta `404` para todos los usuarios.
+Los controles se ejecutan antes de consultar el recurso: una solicitud puede recibir `401` o `403` antes de comprobar si el estudio existe.
 
 ## 4. Rutas de estudios
 
 ### 4.1 Crear estudio — `POST /estudios`
 
 #### Propósito
-
-Crea un estudio en estado `borrador` y una membresía del creador con los cinco permisos, dentro de una transacción.
-
-`id_responsable` se obtiene del usuario autenticado, no del cuerpo de la solicitud.
+Crea un estudio en estado `borrador` y una membresía del creador con los cinco permisos, dentro de una transacción. `id_responsable` se obtiene del usuario autenticado, no del cuerpo.
 
 #### Autorización
-
-Requiere el permiso `estudio/crear`.
-
-El script `05_permisos_base.sql` asigna este permiso con alcance global a:
-
-- Director.
-- Investigador.
-
-La revisión del script no acredita que los permisos estén cargados en la base de datos del entorno.
+Requiere el permiso `estudio/crear` (Director e Investigador, según `05_permisos_base.sql`).
 
 #### Entrada
-
 | Campo | Obligatorio | Validación |
 | --- | --- | --- |
-| `codigo_estudio` | Sí | Texto de hasta 20 caracteres. |
-| `nombre` | Sí | Texto de hasta 150 caracteres. |
-| `fecha_inicio` | Sí | Fecha con formato `AAAA-MM-DD`. |
+| `codigo_estudio` | Sí | Hasta 20 caracteres. |
+| `nombre` | Sí | Hasta 150 caracteres. |
+| `fecha_inicio` | Sí | `AAAA-MM-DD`. |
 | `descripcion` | No | Texto o `null`. |
-| `fecha_fin` | No | Fecha con formato `AAAA-MM-DD` o `null`. |
-| `retencion_hasta` | No | Fecha con formato `AAAA-MM-DD` o `null`. |
+| `fecha_fin` | No | `AAAA-MM-DD` o `null`. |
+| `retencion_hasta` | No | `AAAA-MM-DD` o `null`. |
 
-Reglas adicionales:
-
-- Se eliminan espacios al inicio y al final de los textos.
-- Los campos opcionales ausentes, nulos o vacíos se convierten a `null`.
-- `fecha_fin` no puede ser anterior a `fecha_inicio`.
-- `retencion_hasta` no puede ser anterior a `fecha_fin` o, si esta falta, a `fecha_inicio`.
-- Las fechas se validan con expresión regular y `Date.parse`; falta verificar su cobertura de fechas calendáricas inválidas.
-- El servicio no persiste campos adicionales. Si se envía `id_estudio`, puede activar controles previos del middleware.
-
-Solicitud ilustrativa:
-
-```json
-{
-  "codigo_estudio": "EST-GUIA-01",
-  "nombre": "Estudio de ejemplo",
-  "descripcion": "Registro de prueba",
-  "fecha_inicio": "2026-10-15"
-}
-```
+`fecha_fin` no puede ser anterior a `fecha_inicio`; `retencion_hasta` no puede ser anterior a `fecha_fin` (o `fecha_inicio`, si falta).
 
 #### Respuesta
-
-`201 Created`, con el objeto completo del estudio.
-
-Ejemplo estructural; el formato de las fechas debe validarse en ejecución:
-
-```json
-{
-  "id_estudio": "11111111-1111-4111-8111-111111111111",
-  "codigo_estudio": "EST-GUIA-01",
-  "nombre": "Estudio de ejemplo",
-  "descripcion": "Registro de prueba",
-  "id_responsable": "22222222-2222-4222-8222-222222222222",
-  "estado": "borrador",
-  "fecha_inicio": "2026-10-15",
-  "fecha_fin": null,
-  "fecha_cierre": null,
-  "retencion_hasta": null
-}
-```
+`201 Created`, con el objeto completo del estudio (10 campos de la sección 3). Confirmado en ejecución: CP-01, 13-oct-2026 (`codigo_estudio=EST-30`, `estado=borrador`).
 
 #### Errores específicos
-
-`400 SOLICITUD_INVALIDA`, con mensajes según el campo:
-
-- `Falta el campo obligatorio «nombre».`
-- `«nombre» debe ser texto.`
-- `«nombre» admite como máximo 150 caracteres.`
-- `«codigo_estudio» admite como máximo 20 caracteres.`
-- `«fecha_inicio» debe ser una fecha con formato AAAA-MM-DD.`
-- `«fecha_fin» no puede ser anterior a «fecha_inicio».`
-- `«retencion_hasta» no puede ser anterior al término del estudio.`
-
-El mensaje de campo obligatorio también se aplica a `codigo_estudio` y `fecha_inicio`.
-
-`409 CODIGO_DUPLICADO`:
-
-```json
-{
-  "error": {
-    "codigo": "CODIGO_DUPLICADO",
-    "mensaje": "Ya existe un estudio con ese código."
-  }
-}
-```
-
-La creación traduce cualquier error PostgreSQL `23505` a `CODIGO_DUPLICADO`; debe confirmarse la restricción de origen al investigar un fallo.
-
-También aplican los errores comunes.
+`400 SOLICITUD_INVALIDA` por campo faltante o inválido. `409 CODIGO_DUPLICADO` si el código ya existe.
 
 ### 4.2 Listar estudios — `GET /estudios`
 
 #### Propósito
-
-Lista estudios ordenados por `codigo_estudio`.
-
-- Un rol con permiso `estudio/leer` de alcance global puede ver todos.
-- Los demás usuarios reciben estudios con membresía vigente: `fecha_inicio <= CURRENT_DATE` y `fecha_fin` nula o mayor o igual a `CURRENT_DATE`.
+Lista estudios ordenados por `codigo_estudio`. Alcance global ve todos; el resto ve solo los de su membresía vigente.
 
 #### Autorización
-
-Puede acceder cualquier usuario que supere la autenticación.
-
-**Comportamiento observado:** esta ruta no llama a `requierePermiso`. La consulta por membresía no comprueba `puede_consultar` y no incorpora estudios accesibles únicamente por autorización especial.
-
-Sin membresías ni lectura global, devuelve `[]`.
-
-El script de permisos concede lectura global a Director. Soporte no tiene permiso de lectura de estudios en ese script, pero el listado no rechaza por rol: su resultado depende de las membresías existentes.
+Esta ruta no llama a `requierePermiso`: el filtrado es por membresía, no por permiso declarado (decisión de diseño).
 
 #### Entrada
-
-```http
-GET /estudios
-```
-
-Filtro opcional:
-
-```http
-GET /estudios?estado=borrador
-```
-
-Valores admitidos para `estado`:
-
-- `borrador`
-- `activo`
-- `cerrado`
-
-Si el filtro está ausente o es una cadena vacía, no se filtra por estado.
-
-#### Respuesta
-
-`200 OK`, con un arreglo de objetos que contienen los diez campos descritos en la sección 3.
-
-Devuelve `[]` cuando no hay coincidencias. No hay paginación implementada.
+`GET /estudios`, con filtro opcional `?estado=borrador|activo|cerrado`.
 
 #### Errores específicos
-
-`400 SOLICITUD_INVALIDA`:
-
-```json
-{
-  "error": {
-    "codigo": "SOLICITUD_INVALIDA",
-    "mensaje": "El filtro «estado» debe ser borrador, activo o cerrado."
-  }
-}
-```
-
-También aplican `401`, `403` por cambio obligatorio de contraseña y errores generales. Esta ruta no implementa un `403` por falta de permiso de lectura.
+`400 SOLICITUD_INVALIDA` si el filtro no es uno de los tres valores válidos.
 
 ### 4.3 Consultar estudio — `GET /estudios/{idEstudio}`
 
 #### Propósito
-
-Obtiene el detalle de un estudio.
-
-#### Autorización
-
-Requiere `estudio/leer` con alcance global o de estudio.
-
-Con alcance de estudio, exige:
-
-- Membresía vigente con `puede_consultar`; o
-- Autorización aprobada y vigente aplicable al recurso y estudio.
-
-El script de permisos concede:
-
-- Lectura global a Director.
-- Lectura por estudio a Investigador, Asistente, Estudiante e Invitado.
-- Ningún permiso de lectura de estudio a Soporte.
-
-#### Entrada
-
-```http
-GET /estudios/11111111-1111-4111-8111-111111111111
-```
-
-`idEstudio` debe tener formato UUID.
-
-#### Respuesta
-
-`200 OK`, con el objeto completo del estudio y los diez campos descritos en la sección 3.
+Detalle de un estudio. Requiere `estudio/leer` global, o membresía vigente con `puede_consultar`, o autorización especial aprobada.
 
 #### Errores específicos
-
-`404 NO_ENCONTRADO`:
-
-```json
-{
-  "error": {
-    "codigo": "NO_ENCONTRADO",
-    "mensaje": "El estudio no existe."
-  }
-}
-```
-
-Este resultado corresponde a solicitudes que superan los controles previos y cuyo estudio no se encuentra.
-
-También aplican `400` por UUID inválido y los errores comunes de autenticación, autorización y servidor.
+`404 NO_ENCONTRADO` si no existe, tras superar los controles previos.
 
 ### 4.4 Editar estudio — `PATCH /estudios/{idEstudio}`
 
 #### Propósito
-
-Modifica únicamente los campos recibidos.
-
-No permite editar:
-
-- `codigo_estudio`
-- `estado`
-- `id_responsable`
+Modifica solo los campos recibidos (`nombre`, `descripcion`, `fecha_inicio`, `fecha_fin`, `retencion_hasta`). No permite editar `codigo_estudio`, `estado` ni `id_responsable`.
 
 #### Autorización
-
-Requiere `estudio/actualizar`.
-
-Según el script de permisos:
-
-- Director tiene alcance global.
-- Investigador tiene alcance de estudio y necesita membresía vigente con `puede_modificar` o autorización aplicable.
-
-**Punto pendiente de conciliación:** el código no compara `id_responsable` con el usuario autenticado. Actualmente comprueba permisos y membresía/autorización, pero no exige directamente ser el responsable del estudio.
-
-#### Entrada
-
-Debe incluir al menos uno de estos campos:
-
-- `nombre`
-- `descripcion`
-- `fecha_inicio`
-- `fecha_fin`
-- `retencion_hasta`
-
-Ejemplo:
-
-```json
-{
-  "nombre": "Estudio actualizado",
-  "descripcion": "Descripción corregida"
-}
-```
-
-Se aplican las validaciones de texto y fechas de creación sobre la combinación de los valores existentes y los cambios recibidos.
-
-`descripcion`, `fecha_fin` y `retencion_hasta` pueden limpiarse con `null`. `nombre` y `fecha_inicio` no admiten valores vacíos o nulos.
-
-#### Respuesta
-
-`200 OK`, con el objeto completo del estudio actualizado.
-
-No se devuelve `actualizado: true`.
+Requiere `estudio/actualizar`. **Punto pendiente:** el código no compara `id_responsable` con el usuario autenticado — valida permiso y membresía/autorización, pero no exige directamente ser el responsable.
 
 #### Errores específicos
-
-| HTTP | Código | Mensaje |
-| --- | --- | --- |
-| 400 | `SOLICITUD_INVALIDA` | `No se envió ningún campo para modificar.` |
-| 400 | `SOLICITUD_INVALIDA` | `No se pueden modificar: estado. Campos editables: nombre, descripcion, fecha_inicio, fecha_fin, retencion_hasta.` Ejemplo al enviar `estado`. |
-| 409 | `ESTUDIO_CERRADO` | `El estudio está cerrado: no admite nuevos datos ni modificaciones.` Desde el middleware. |
-| 409 | `ESTUDIO_CERRADO` | `El estudio está cerrado: no admite modificaciones.` Comprobación adicional del servicio. |
-| 404 | `NO_ENCONTRADO` | `El estudio no existe.` Tras superar controles previos. |
-
-También aplican las validaciones de campos y los errores comunes.
+`409 ESTUDIO_CERRADO`, `404 NO_ENCONTRADO`, además de validaciones de campos.
 
 ### 4.5 Activar estudio — `POST /estudios/{idEstudio}/activar`
 
 #### Propósito
-
-Cambia un estudio de `borrador` a `activo`.
-
-Exige al menos un registro de `protocolo_version` con:
-
-- `estado_cec = 'aprobado'`.
-- `fecha_vencimiento_cec` nula o mayor o igual a `CURRENT_DATE`.
-
-#### Autorización
-
-Utiliza los mismos controles de `estudio/actualizar` que la edición mediante `PATCH`.
-
-Se mantiene la observación sobre la ausencia de comprobación directa del responsable.
-
-#### Entrada
-
-```http
-POST /estudios/11111111-1111-4111-8111-111111111111/activar
-```
-
-No requiere cuerpo. El servicio no utiliza un cuerpo de activación.
+Cambia un estudio de `borrador` a `activo`. Exige un `protocolo_version` con `estado_cec='aprobado'` y vigente.
 
 #### Respuesta
-
-`200 OK`, con el objeto completo del estudio y `estado` igual a `activo`.
-
-No se devuelve `activado: true`.
+`200 OK`, `estado=activo`. Confirmado en ejecución: CP-02 (`409 SIN_PROTOCOLO_APROBADO` sin protocolo) y CP-03 (`200` tras aprobar protocolo), 13-oct-2026.
 
 #### Errores específicos
-
-| HTTP | Código | Mensaje |
-| --- | --- | --- |
-| 409 | `SIN_PROTOCOLO_APROBADO` | `El estudio no tiene un protocolo aprobado por el Comité de Ética y vigente: no se puede activar.` |
-| 409 | `ESTUDIO_YA_ACTIVO` | `El estudio ya está activo.` |
-| 409 | `ESTUDIO_CERRADO` | `El estudio está cerrado: no admite nuevos datos ni modificaciones.` Desde el middleware. |
-| 404 | `NO_ENCONTRADO` | `El estudio no existe.` Tras superar controles previos. |
-
-El servicio también contiene el mensaje `Un estudio cerrado no se puede volver a activar.`, aunque normalmente el middleware rechaza primero.
-
-También aplican los errores comunes.
+`409 SIN_PROTOCOLO_APROBADO`, `409 ESTUDIO_YA_ACTIVO`, `409 ESTUDIO_CERRADO`, `404 NO_ENCONTRADO`.
 
 ### 4.6 Puntos pendientes de validación con desarrollo
 
-- Confirmar el prefijo del despliegue: el código monta las rutas sin `/api/v1`.
-- Conciliar el listado sin comprobación de `puede_consultar` ni `requierePermiso` con el catálogo y la política de acceso.
-- Confirmar si modificar o activar exige ser responsable, además de tener membresía o autorización.
-- Verificar la serialización real de los campos `DATE`.
-- Integrar login y MFA y confirmar la compatibilidad del hash del JWT con `sesion_usuario`.
-- Ejecutar las rutas contra una base preparada y registrar versión, solicitudes, respuestas y evidencias.
+- [x] Integrar login y MFA — resuelto, ver sección 2.
+- [x] Ejecutar las rutas contra una base preparada y registrar evidencias — resuelto (32/32, 14/14, 43/43, más 13 casos del 13-oct-2026).
+- [x] Verificar la serialización real de los campos `DATE` — confirmado inconsistente (hallazgo H-12, pendiente de corrección en código).
+- [ ] Conciliar el listado de estudios sin `puede_consultar`/`requierePermiso` con la política de acceso.
+- [ ] Confirmar si modificar o activar exige ser responsable del estudio.
+- [ ] Confirmar el prefijo `/api/v1` en el despliegue.
 
-Las pruebas básicas existentes en el repositorio no acreditan el funcionamiento completo de estas cinco rutas.
+## 5. Rutas de identidades
 
-## 5. Rutas de identidades — Pendiente
+### 5.1 Registrar identidad — `POST /identidades`
 
-Rutas previstas:
+#### Propósito
+Registra una identidad real nueva y devuelve su UX Lab ID.
 
-```http
-POST /identidades/buscar
-POST /identidades
+#### Autorización
+Requiere el permiso `identidad/crear` (Investigador y Asistente).
+
+#### Entrada
+Confirmado en ejecución (CP-04, hallazgo H-05):
+
+| Campo | Obligatorio | Nota |
+| --- | --- | --- |
+| `rut` | Sí | Debe incluir dígito verificador válido. |
+| `nombre` | Sí | |
+| `correo` | Sí | |
+| `telefono` | Sí | |
+| `fecha_nacimiento` | Sí | `NOT NULL` en la base. |
+| `tipo` | Sí | `NOT NULL` en la base. |
+
+No existe el campo `apellidos`: la tabla `identity_schema.identidad` no tiene esa columna (solo `nombre_cifrado`). Pendiente confirmar con desarrollo cómo se envía el nombre completo.
+
+#### Respuesta
+`201 Created`:
+```json
+{ "ux_lab_id": "UXL-45CKXAJ9" }
+```
+Solo devuelve el `ux_lab_id`. Los datos quedan cifrados (`nombre_cifrado`, `correo_cifrado`, prefijo `v1:`); `rut_hash` respalda el control de duplicados.
+
+#### Errores específicos
+`400 SOLICITUD_INVALIDA` por campo faltante. `409 PERSONA_YA_REGISTRADA` si el RUT ya existe (sugiere usar `/identidades/buscar`).
+
+### 5.2 Buscar identidad — `POST /identidades/buscar`
+
+#### Propósito
+Confirma si una persona ya está registrada, sin exponer datos personales.
+
+#### Autorización
+Exige el mismo permiso `identidad/crear`, aunque sea una lectura (decisión declarada a propósito en el código; conviene que el Líder la valide). Tiene límite de 20 solicitudes por minuto por IP.
+
+#### Entrada
+```json
+{ "rut": "12345678-5" }
 ```
 
-Estas fichas corresponden al domingo 11 de octubre.
+#### Respuesta
+`200 OK`:
+```json
+{ "existe": true, "ux_lab_ids": ["UXL-45CKXAJ9"] }
+```
+Devuelve un arreglo `ux_lab_ids`, no un único valor — una identidad puede tener más de un registro histórico (hallazgo H-11, confirmado en CP-06).
 
-Las rutas de identidades no están implementadas en el ZIP revisado. Su documentación requiere el código correspondiente y respuestas verificables.
+#### Errores específicos
+`429` si se supera el límite de solicitudes.
 
-## 6. Rutas de participaciones — Pendiente
+## 6. Rutas de participaciones
 
-Rutas previstas:
+### 6.1 Inscribir participación — `POST /estudios/{idEstudio}/participaciones`
 
-```http
-POST /estudios/{id}/participaciones
-GET /estudios/{id}/participaciones
+#### Propósito
+Inscribe una identidad en un estudio activo, generando un código seudónimo exclusivo de esa inscripción.
+
+#### Entrada
+```json
+{ "ux_lab_id": "UXL-45CKXAJ9" }
 ```
 
-Estas fichas corresponden al domingo 11 de octubre.
+#### Respuesta
+`201 Created`, con `codigo_seudonimo` en formato `P-XXXXXX` (confirmado en ejecución; el formato `EXP-001` solo existe en datos de respaldo antiguos — hallazgo H-07). Una misma identidad puede inscribirse en distintos estudios con un código propio e independiente por cada uno (CP-07).
 
-Las rutas de participaciones no están implementadas en el ZIP revisado. Su documentación requiere el código correspondiente y respuestas verificables.
+#### Errores específicos
+`409 ESTUDIO_NO_ACTIVO` si el estudio está en `borrador`. `409 YA_PARTICIPA` si ya tiene una participación activa en ese estudio.
 
-## 7. Cómo probar — Pendiente de completar
+### 6.2 Listar participaciones — `GET /estudios/{idEstudio}/participaciones`
 
-Orden previsto para el flujo completo:
+#### Propósito
+Lista las participaciones de un estudio sin exponer datos personales.
 
-1. Crear un estudio.
-2. Asociar o confirmar un protocolo aprobado y vigente.
-3. Activar el estudio.
-4. Buscar o registrar una identidad.
-5. Inscribir la participación.
-6. Consultar las participaciones y verificar los campos devueltos.
+#### Respuesta
+`200 OK`, confirmado en ejecución (CP-12):
+- `id_participacion`
+- `codigo_seudonimo`
+- `estado`
+- `fecha_inicio`
+- `es_menor_al_enrolar`
 
-El procedimiento ejecutable se completará cuando estén disponibles la autenticación y las rutas necesarias.
+No incluye `ux_lab_id`, nombre, RUT ni ningún otro dato personal.
+
+## 7. Cómo probar
+
+Flujo verificado el 13-oct-2026 contra `feature/backend-base` con la base `datos_prueba.sql`:
+
+1. Iniciar sesión con una cuenta de prueba (p. ej. `investigador@uxlab.utem.cl`, con MFA — el código TOTP se obtiene con `scripts/codigo-totp.js`; las cuentas `test_*@uxlab.test` no tienen MFA).
+2. Crear un estudio (`POST /estudios`) → queda en `borrador`.
+3. Intentar activarlo sin protocolo aprobado → `409 SIN_PROTOCOLO_APROBADO`.
+4. Insertar un protocolo con `estado_cec='aprobado'` para ese estudio.
+5. Activar el estudio (`POST /estudios/{id}/activar`) → `200`, `estado=activo`.
+6. Registrar una identidad nueva (`POST /identidades`) o buscar una existente (`POST /identidades/buscar`).
+7. Inscribir la participación (`POST /estudios/{id}/participaciones`).
+8. Listar las participaciones y verificar que la respuesta no trae datos personales.
+9. Verificar en `security_schema.auditoria` que la acción quedó registrada con `accion='crear'` (no `'CREATE'`) y el `id_registro_afectado` correspondiente.
+
+Detalle completo de los 13 casos ejecutados: `act45_resultados_casos_prueba.xlsx` (hoja *Casos y resultados*).
 
 ## 8. Validación antes del Pull Request
 
-- [ ] Confirmar los campos y formatos con respuestas ejecutadas de la API.
-- [ ] Adjuntar solicitudes y respuestas reales; los ejemplos derivados del código no acreditan ejecución.
-- [ ] Verificar los mensajes de error en ejecución.
-- [ ] Comprobar que las respuestas no exponen datos personales de participantes.
-- [ ] Resolver o aceptar expresamente los puntos de acceso de la sección 4.6.
-- [ ] Comprobar autenticación, permisos y auditoría en ejecución.
-- [ ] Completar identidades, participaciones y el procedimiento de prueba.
-- [ ] Incorporar esta guía en `docs/api/registro-participantes-estudios.md`.
+- [x] Confirmar los campos y formatos con respuestas ejecutadas de la API.
+- [x] Adjuntar solicitudes y respuestas reales (`act45_resultados_casos_prueba.xlsx`).
+- [x] Verificar los mensajes de error en ejecución.
+- [x] Comprobar que las respuestas no exponen datos personales de participantes.
+- [ ] Resolver o aceptar expresamente los puntos de la sección 4.6.
+- [x] Comprobar autenticación, permisos y auditoría en ejecución.
+- [x] Completar identidades, participaciones y el procedimiento de prueba.
+- [ ] Corregir hallazgo H-12 (formato de fechas inconsistente) antes de cerrar el PR.
+- [ ] Confirmar con Felipe Cruz si son 13 o 16 los casos de prueba totales (hallazgo H-08).
