@@ -33,7 +33,10 @@ services:
     env_file: .env
     environment:
       DB_HOST: db
+      ALMACENAMIENTO_DIR: /app/almacenamiento
       TZ: America/Santiago   # misma zona que la base: fechas y «menor de edad» con el día chileno
+    volumes:
+      - almacenamiento:/app/almacenamiento
     ports:
       - "${PORT:-3000}:3000"
     depends_on:
@@ -42,3 +45,4 @@ services:
 
 volumes:
   pgdata:
+  almacenamiento:
