@@ -60,4 +60,16 @@ async function estudioEstaCerrado(idEstudio) {
   return rows.length > 0 && rows[0].estado === 'cerrado';
 }
 
-module.exports = { alcanceDelPermiso, buscarMembresia, buscarAutorizacion, estudioEstaCerrado };
+module.exports = {
+  alcanceDelPermiso, buscarMembresia, buscarAutorizacion, estudioEstaCerrado, estudioDeParticipacion,
+};
+
+
+/** Estudio al que pertenece una participación, o null si no existe. */
+async function estudioDeParticipacion(idParticipacion) {
+  const { rows } = await query(
+    'SELECT id_estudio FROM research_schema.participacion WHERE id_participacion = $1',
+    [idParticipacion]
+  );
+  return rows.length ? rows[0].id_estudio : null;
+}
