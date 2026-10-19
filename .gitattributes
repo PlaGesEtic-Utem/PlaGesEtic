@@ -1,0 +1,2 @@
+# Los PDF son binarios: Git no debe convertir sus finales de línea (en Windows los corrompería).
+*.pdf binary

@@ -1,0 +1,404 @@
+# =====================================================================
+# plaGesEtic · Pruebas de consentimientos digitales (Actividad 55, casos CP-14 a CP-25)
+# Requiere la extensión «REST Client» de Visual Studio Code (autor: Huachao Mao).
+# Sobre cada «###» aparece «Send Request». Ejecuta las pruebas EN ORDEN, de arriba hacia abajo:
+# varias usan la respuesta de una anterior (las que tienen «# @name»), así no hay que copiar ids.
+#
+# Antes (una vez):
+#   1. Cargar los datos de prueba (trae los documentos v1.0 de EST-01 y EST-02):
+#        docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/dev/datos_prueba.sql
+#   2. Sacar un token por usuario y pegarlo abajo (duran 8 horas):
+#        docker compose exec api node scripts/sesion-prueba.js test_investigador@uxlab.test
+#        (y test_asistente, test_estudiante, test_director)
+# Para empezar de cero: vuelve a cargar datos_prueba.sql (borra consentimientos y participaciones) y
+# saca tokens nuevos.
+#
+# Reglas que se prueban: ADR-002, decisiones D9 (archivos), D10 (estado vigente) y D11 (eventos válidos).
+# Los archivos son PDF ficticios de pruebas/archivos/. Ninguna respuesta debe traer nombres, RUT,
+# contacto ni rutas de archivos (documento_ruta / evidencia_ruta).
+# =====================================================================
+
+@base = http://localhost:3000
+@tokenInvestigador = PEGA_AQUI_EL_TOKEN_DE_test_investigador@uxlab.test
+@tokenAsistente    = PEGA_AQUI_EL_TOKEN_DE_test_asistente@uxlab.test
+@tokenEstudiante   = PEGA_AQUI_EL_TOKEN_DE_test_estudiante@uxlab.test
+@tokenDirector     = PEGA_AQUI_EL_TOKEN_DE_test_director@uxlab.test
+
+# Estudios y documentos fijos (ver el final de db/dev/datos_prueba.sql)
+@est01 = 82bbf931-bc9f-594d-8203-77dc4608f2cc
+@est02 = 5f74778f-0d12-5b6f-9adf-e18fabee11ee
+@docConsentimientoEst01v10 = a7d33f8a-00de-5eab-9c77-e43433f95084
+@docAsentimientoEst01v10   = 7094fc30-60c6-57da-bbce-8f760d77e8e0
+@docConsentimientoEst02v10 = d6a3faed-4e8e-5b85-becb-b11c9772006a
+
+### 0. Documentos de EST-01 (Investigador) → 200: consentimiento v1.0 y asentimiento v1.0, ambos vigente: true.
+#      Cada uno trae documento_hash (64 caracteres) y NO trae documento_ruta.
+GET {{base}}/estudios/{{est01}}/documentos-consentimiento
+Authorization: Bearer {{tokenInvestigador}}
+
+
+### CP-14. El Investigador sube el consentimiento v1.1 de EST-01 → 201 con vigente: true
+# @name docV11
+POST {{base}}/estudios/{{est01}}/documentos-consentimiento
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: multipart/form-data; boundary=----plagesetic55
+
+------plagesetic55
+Content-Disposition: form-data; name="tipo"
+
+consentimiento
+------plagesetic55
+Content-Disposition: form-data; name="version"
+
+1.1
+------plagesetic55
+Content-Disposition: form-data; name="archivo"; filename="consentimiento_EST-01_v1.1.pdf"
+Content-Type: application/pdf
+
+< ./archivos/consentimiento_EST-01_v1.1.pdf
+------plagesetic55--
+
+### CP-14 (comprobación) → 200: el consentimiento v1.0 ahora dice vigente: false y el v1.1 vigente: true
+GET {{base}}/estudios/{{est01}}/documentos-consentimiento?tipo=consentimiento
+Authorization: Bearer {{tokenInvestigador}}
+
+
+### CP-15. La Asistente intenta subir un documento → 403 SIN_PERMISO
+POST {{base}}/estudios/{{est01}}/documentos-consentimiento
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic55
+
+------plagesetic55
+Content-Disposition: form-data; name="tipo"
+
+consentimiento
+------plagesetic55
+Content-Disposition: form-data; name="version"
+
+9.9
+------plagesetic55
+Content-Disposition: form-data; name="archivo"; filename="consentimiento_EST-01_v1.1.pdf"
+Content-Type: application/pdf
+
+< ./archivos/consentimiento_EST-01_v1.1.pdf
+------plagesetic55--
+
+
+# ---------------------------------------------------------------------
+# Preparación: una persona adulta inscrita en EST-01 (persona ficticia)
+# ---------------------------------------------------------------------
+
+### Preparación A. Registrar a la persona → 201 { ux_lab_id }
+# @name adulta
+POST {{base}}/identidades
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{
+  "nombre": "Laura Contreras",
+  "correo": "laura.contreras@correo.test",
+  "telefono": "+56 9 4444 1010",
+  "fecha_nacimiento": "1994-06-21"
+}
+
+### Preparación B. Inscribirla en EST-01 → 201 { id_participacion, codigo_seudonimo P-XXXXXX }
+# @name partAdulta
+POST {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{ "ux_lab_id": "{{adulta.response.body.$.ux_lab_id}}" }
+
+
+### CP-16. Registrar «aceptar» con la evidencia firmada → 201, estado_vigente: otorgado,
+#      evidencia_hash de 64 caracteres. Se usa la versión vigente: la v1.1 subida en CP-14.
+# @name cp16
+POST {{base}}/participaciones/{{partAdulta.response.body.$.id_participacion}}/consentimientos
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic55
+
+------plagesetic55
+Content-Disposition: form-data; name="tipo"
+
+consentimiento
+------plagesetic55
+Content-Disposition: form-data; name="id_documento"
+
+{{docV11.response.body.$.id_documento}}
+------plagesetic55
+Content-Disposition: form-data; name="tipo_evento"
+
+aceptar
+------plagesetic55
+Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
+Content-Type: application/pdf
+
+< ./archivos/evidencia_firmada.pdf
+------plagesetic55--
+
+### CP-17. Un segundo consentimiento del mismo tipo para la misma participación → 409
+#      (los cambios posteriores van por POST /consentimientos/{id}/eventos)
+POST {{base}}/participaciones/{{partAdulta.response.body.$.id_participacion}}/consentimientos
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic55
+
+------plagesetic55
+Content-Disposition: form-data; name="tipo"
+
+consentimiento
+------plagesetic55
+Content-Disposition: form-data; name="id_documento"
+
+{{docV11.response.body.$.id_documento}}
+------plagesetic55
+Content-Disposition: form-data; name="tipo_evento"
+
+negar
+------plagesetic55
+Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
+Content-Type: application/pdf
+
+< ./archivos/evidencia_firmada.pdf
+------plagesetic55--
+
+
+# ---------------------------------------------------------------------
+# Preparación: otra persona adulta en EST-01, todavía sin consentimiento
+# ---------------------------------------------------------------------
+
+### Preparación C. Registrar a la segunda persona → 201
+# @name segunda
+POST {{base}}/identidades
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{
+  "nombre": "Matías Fuenzalida",
+  "correo": "matias.fuenzalida@correo.test",
+  "telefono": "+56 9 4444 2020",
+  "fecha_nacimiento": "1989-11-03"
+}
+
+### Preparación D. Inscribirla en EST-01 → 201
+# @name partSegunda
+POST {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{ "ux_lab_id": "{{segunda.response.body.$.ux_lab_id}}" }
+
+### CP-18. Registrar con un documento de OTRO estudio (consentimiento v1.0 de EST-02) → 409
+POST {{base}}/participaciones/{{partSegunda.response.body.$.id_participacion}}/consentimientos
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic55
+
+------plagesetic55
+Content-Disposition: form-data; name="tipo"
+
+consentimiento
+------plagesetic55
+Content-Disposition: form-data; name="id_documento"
+
+{{docConsentimientoEst02v10}}
+------plagesetic55
+Content-Disposition: form-data; name="tipo_evento"
+
+aceptar
+------plagesetic55
+Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
+Content-Type: application/pdf
+
+< ./archivos/evidencia_firmada.pdf
+------plagesetic55--
+
+### CP-19. Registrar sin evidencia (formulario sin el archivo) → 400
+POST {{base}}/participaciones/{{partSegunda.response.body.$.id_participacion}}/consentimientos
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic55
+
+------plagesetic55
+Content-Disposition: form-data; name="tipo"
+
+consentimiento
+------plagesetic55
+Content-Disposition: form-data; name="id_documento"
+
+{{docV11.response.body.$.id_documento}}
+------plagesetic55
+Content-Disposition: form-data; name="tipo_evento"
+
+aceptar
+------plagesetic55--
+
+
+# ---------------------------------------------------------------------
+# Nueva versión, reconsentimiento y retiro (sobre la persona de CP-16)
+# ---------------------------------------------------------------------
+
+### CP-20 (paso 1). El Investigador sube el consentimiento v1.2 → 201 (la v1.1 deja de ser vigente)
+# @name docV12
+POST {{base}}/estudios/{{est01}}/documentos-consentimiento
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: multipart/form-data; boundary=----plagesetic55
+
+------plagesetic55
+Content-Disposition: form-data; name="tipo"
+
+consentimiento
+------plagesetic55
+Content-Disposition: form-data; name="version"
+
+1.2
+------plagesetic55
+Content-Disposition: form-data; name="archivo"; filename="consentimiento_EST-01_v1.1.pdf"
+Content-Type: application/pdf
+
+< ./archivos/consentimiento_EST-01_v1.1.pdf
+------plagesetic55--
+
+### CP-20. Estado de la persona de CP-16 → 200: estado «pendiente_reconsentir» y
+#      estado_general «pendiente_reconsentir» (aceptó la v1.1 y ahora la vigente es la v1.2)
+GET {{base}}/participaciones/{{partAdulta.response.body.$.id_participacion}}/consentimientos
+Authorization: Bearer {{tokenAsistente}}
+
+
+### CP-21. Reconsentir con la versión vigente (v1.2) → 201, estado_vigente: otorgado
+POST {{base}}/consentimientos/{{cp16.response.body.$.id_consentimiento}}/eventos
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic55
+
+------plagesetic55
+Content-Disposition: form-data; name="tipo_evento"
+
+reconsentir
+------plagesetic55
+Content-Disposition: form-data; name="id_documento"
+
+{{docV12.response.body.$.id_documento}}
+------plagesetic55
+Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
+Content-Type: application/pdf
+
+< ./archivos/evidencia_firmada.pdf
+------plagesetic55--
+
+### CP-22. Retirar (con evidencia firmada del retiro) → 201, estado_vigente: revocado.
+#      Sin id_documento: se usa el documento de la última aceptación (v1.2).
+POST {{base}}/consentimientos/{{cp16.response.body.$.id_consentimiento}}/eventos
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic55
+
+------plagesetic55
+Content-Disposition: form-data; name="tipo_evento"
+
+retirar
+------plagesetic55
+Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
+Content-Type: application/pdf
+
+< ./archivos/evidencia_firmada.pdf
+------plagesetic55--
+
+### CP-22 (comprobación). La participación quedó «retirado» → 200, busca el código de CP-16 en la lista
+GET {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenAsistente}}
+
+
+### CP-22 (comprobación). Estado → estado «revocado» y estado_general «retirado»; historial con
+#      aceptar, reconsentir y retirar (del más nuevo al más antiguo), sin rutas de archivos
+GET {{base}}/participaciones/{{partAdulta.response.body.$.id_participacion}}/consentimientos
+Authorization: Bearer {{tokenAsistente}}
+
+
+### CP-23. Cualquier evento después de retirar → 409
+POST {{base}}/consentimientos/{{cp16.response.body.$.id_consentimiento}}/eventos
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic55
+
+------plagesetic55
+Content-Disposition: form-data; name="tipo_evento"
+
+reconsentir
+------plagesetic55
+Content-Disposition: form-data; name="id_documento"
+
+{{docV12.response.body.$.id_documento}}
+------plagesetic55
+Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
+Content-Type: application/pdf
+
+< ./archivos/evidencia_firmada.pdf
+------plagesetic55--
+
+
+# ---------------------------------------------------------------------
+# Participante menor de edad (CP-24)
+# Un menor necesita las DOS firmas: el consentimiento de su representante legal y su propio
+# asentimiento. Como todavía no existe la ruta para registrar al representante (POST /representaciones),
+# aquí se registra solo el asentimiento: el estado general debe quedar «incompleto».
+# ---------------------------------------------------------------------
+
+### Preparación E. Registrar a una persona menor de edad (ficticia) → 201
+# @name menor
+POST {{base}}/identidades
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{
+  "nombre": "Josefa Contreras",
+  "correo": "laura.contreras.tutora@correo.test",
+  "telefono": "+56 9 4444 1010",
+  "fecha_nacimiento": "2012-05-20"
+}
+
+### Preparación F. Inscribirla en EST-01 → 201 con es_menor_al_enrolar: true
+# @name partMenor
+POST {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{ "ux_lab_id": "{{menor.response.body.$.ux_lab_id}}" }
+
+### CP-24 (paso 1). Asentimiento de la menor («aceptar», documento de asentimiento v1.0) → 201
+POST {{base}}/participaciones/{{partMenor.response.body.$.id_participacion}}/consentimientos
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic55
+
+------plagesetic55
+Content-Disposition: form-data; name="tipo"
+
+asentimiento
+------plagesetic55
+Content-Disposition: form-data; name="id_documento"
+
+{{docAsentimientoEst01v10}}
+------plagesetic55
+Content-Disposition: form-data; name="tipo_evento"
+
+aceptar
+------plagesetic55
+Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
+Content-Type: application/pdf
+
+< ./archivos/evidencia_firmada.pdf
+------plagesetic55--
+
+### CP-24. Estado de la menor → 200: asentimiento «otorgado», consentimiento «sin_registro» y
+#      estado_general «incompleto» (completo: false)
+GET {{base}}/participaciones/{{partMenor.response.body.$.id_participacion}}/consentimientos
+Authorization: Bearer {{tokenAsistente}}
+
+
+# ---------------------------------------------------------------------
+# Permisos y auditoría (CP-25)
+# ---------------------------------------------------------------------
+
+### CP-25. El Estudiante consulta consentimientos → 403 SIN_PERMISO
+GET {{base}}/participaciones/{{partAdulta.response.body.$.id_participacion}}/consentimientos
+Authorization: Bearer {{tokenEstudiante}}
+
+
+### CP-25 (comprobación). Cada acción quedó en la auditoría (Director) → 200 con registros de
+#      entidad consentimiento y documento_consentimiento, acciones crear y leer, resultado exito o error
+GET {{base}}/auditoria?id_estudio={{est01}}&limite=40
+Authorization: Bearer {{tokenDirector}}

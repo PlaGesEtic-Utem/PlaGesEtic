@@ -112,7 +112,7 @@ Mientras no esté integrado el login de la Actividad 40, se prueba con una **ses
 
 1. Instala en Visual Studio Code la extensión **REST Client** (autor: Huachao Mao).
 2. Levanta todo: `docker compose up --build` (en otra terminal sigue con los pasos).
-3. Carga los datos de prueba (usuarios, estudios, protocolos y membresías de los datos sintéticos):
+3. Carga los datos de prueba (usuarios, estudios, protocolos, documentos de consentimiento y membresías de los datos sintéticos):
    ```bash
    docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/dev/datos_prueba.sql
    ```
@@ -128,6 +128,9 @@ Mientras no esté integrado el login de la Actividad 40, se prueba con una **ses
    (Sin Docker: `node scripts/sesion-prueba.js <correo>` desde la carpeta `backend`.)
 5. Abre `pruebas/estudios.http`, luego `pruebas/identidades.http` y `pruebas/participaciones.http`, pega los tokens arriba y haz clic en **Send Request** sobre cada prueba.
    La respuesta (código y JSON) se abre al lado. Cada prueba dice qué resultado esperar.
+6. Consentimientos (Actividad 55): `pruebas/consentimientos.http` recorre los casos CP-14 a CP-25 **en orden**
+   (también necesita el token de `test_director` para revisar la auditoría). Sube los PDF ficticios de
+   `pruebas/archivos/` como formularios multipart; las reglas que prueba están en el ADR-002 (D9 a D11).
 
 ### Ingresar al sistema con el login real (Actividad 46)
 
@@ -158,7 +161,7 @@ Reglas: errores de correo, contraseña o cuenta inactiva responden igual (`CREDE
 más de 20 pedidos por minuto desde una IP también dan 429; la sesión vence a los **30 minutos sin uso**
 y nunca dura más de **8 horas**. Fuera del Alfa (Actividad 74): QR para enrolar MFA, regenerar códigos y recuperar contraseña.
 
-Volver a cargar `datos_prueba.sql` deja la base como al inicio: también borra las personas y participaciones creadas al probar.
+Volver a cargar `datos_prueba.sql` deja la base como al inicio: también borra las personas, participaciones, consentimientos y eventos creados al probar (los archivos subidos quedan en el volumen `almacenamiento`).
 
 **Demo en el navegador (Act. 46):** hay una página de demostración del ingreso en dos pasos que usa este backend real (con «celular simulado» y panel de pedidos a la API). **No forma parte del repositorio**: se entrega aparte (`Demo_Login_Act46.zip`, con su `LEEME`) y se corre en el puerto 8080 con la API levantada con Docker y los usuarios de prueba cargados (pasos 1 y 2 de arriba).
 
