@@ -8,22 +8,15 @@
  *    saber quién es la persona ni relacionar sus participaciones entre estudios.
  *  - es_menor_al_enrolar se calcula con la fecha de nacimiento a la fecha de hoy y queda fijo.
  */
-const crypto = require('crypto');
 const db = require('../config/db');
 const repo = require('../repositories/participacionesRepository');
 const { ErrorApi, errores } = require('../utils/errores');
+const { generarCodigoSeudonimo, conReintentoPorColision } = require('../utils/codigos');
 
-const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // el mismo del UX Lab ID: sin 0/O ni 1/I/L
 const UX_LAB_ID_RE = /^UXL-[A-Z0-9]{8}$/;
 const ESTADOS = ['activo', 'retirado'];
-const INTENTOS = 5;
 
 const conflicto = (codigo, mensaje) => new ErrorApi(409, codigo, mensaje);
-
-function nuevoCodigoSeudonimo() {
-  const bytes = crypto.randomBytes(6);
-  return 'P-' + Array.from(bytes, (b) => ALFABETO[b % ALFABETO.length]).join('');
-}
 
 /** El cliente pg entrega DATE como Date local; se pasa a AAAA-MM-DD sin correr el día. */
 function fechaComoTexto(d) {
@@ -49,11 +42,15 @@ function validarUxLabId(v) {
   return id;
 }
 
+// Choque del código aleatorio o dos inscripciones simultáneas de la misma persona nueva:
+// se repite todo (la transacción anterior ya se deshizo).
+const esColision = (err) => err.code === '23505' && /codigo_seudonimo|vinculo_identidad/.test(err.constraint || '');
+
 /** POST /estudios/:idEstudio/participaciones */
 async function inscribir(idEstudio, cuerpo = {}) {
   const uxLabId = validarUxLabId(cuerpo.ux_lab_id);
 
-  for (let intento = 0; intento < INTENTOS; intento++) {
+  return conReintentoPorColision(async () => {
     try {
       return presentar(await db.transaccion(async (c) => {
         const estado = await repo.estadoEstudio(c, idEstudio);
@@ -74,24 +71,17 @@ async function inscribir(idEstudio, cuerpo = {}) {
         return repo.crearParticipacion(c, {
           id_participante: idParticipante,
           id_estudio: idEstudio,
-          codigo_seudonimo: nuevoCodigoSeudonimo(),
+          codigo_seudonimo: generarCodigoSeudonimo(),
           es_menor_al_enrolar: esMenorDeEdad(identidad.fecha_nacimiento),
         });
       }));
     } catch (err) {
-      if (err.code === '23505') {
-        const restriccion = err.constraint || '';
-        if (/participante_estudio/.test(restriccion)) {
-          throw conflicto('YA_PARTICIPA', 'Esta persona ya está inscrita en este estudio.');
-        }
-        // Choque del código aleatorio o dos inscripciones simultáneas de la misma persona nueva:
-        // se repite todo (la transacción anterior ya se deshizo).
-        if (/codigo_seudonimo|vinculo_identidad/.test(restriccion)) continue;
+      if (err.code === '23505' && /participante_estudio/.test(err.constraint || '')) {
+        throw conflicto('YA_PARTICIPA', 'Esta persona ya está inscrita en este estudio.');
       }
       throw err;
     }
-  }
-  throw new Error('No se pudo generar un código seudónimo único');
+  }, { esColision, mensaje: 'No se pudo generar un código seudónimo único' });
 }
 
 /** GET /estudios/:idEstudio/participaciones */
@@ -103,4 +93,4 @@ async function listar(idEstudio, estado) {
   return (await repo.listarPorEstudio(idEstudio, estado || null)).map(presentar);
 }
 
-module.exports = { inscribir, listar, nuevoCodigoSeudonimo, esMenorDeEdad };
+module.exports = { inscribir, listar, esMenorDeEdad };

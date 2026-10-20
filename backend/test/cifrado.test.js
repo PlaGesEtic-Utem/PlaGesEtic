@@ -5,7 +5,7 @@ const assert = require('node:assert');
 process.env.CLAVE_CIFRADO = 'cGxhR2VzRXRpYy1zb2xvLWRlc2Fycm9sbG8tMzJieXQ=';
 const { cifrar, descifrar, huella } = require('../src/utils/cifrado');
 const { validarRut } = require('../src/utils/rut');
-const { nuevoUxLabId } = require('../src/services/identidadesService');
+const { generarUxLabId } = require('../src/utils/codigos');
 
 test('Cifrar y descifrar devuelve el mismo texto, y el cifrado no contiene el original', () => {
   const c = cifrar('Pedro Parra');
@@ -38,5 +38,5 @@ test('RUT: acepta formatos con y sin puntos, rechaza dígito verificador incorre
 });
 
 test('UX Lab ID: formato UXL- + 8 caracteres sin letras confundibles', () => {
-  for (let i = 0; i < 50; i++) assert.match(nuevoUxLabId(), /^UXL-[A-HJ-NP-Z2-9]{8}$/);
+    for (let i = 0; i < 50; i++) assert.match(generarUxLabId(), /^UXL-[A-HJ-NP-Z2-9]{8}$/);
 });

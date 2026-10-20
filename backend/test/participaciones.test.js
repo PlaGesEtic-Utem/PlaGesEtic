@@ -1,17 +1,8 @@
 'use strict';
-/** Pruebas del código seudónimo y del cálculo de menor de edad (no necesitan base de datos). */
+/** Pruebas del cálculo de menor de edad (no necesitan base de datos). Las del generador de códigos están en codigos.test.js. */
 const test = require('node:test');
 const assert = require('node:assert');
-const { nuevoCodigoSeudonimo, esMenorDeEdad } = require('../src/services/participacionesService');
-
-test('El código seudónimo tiene el formato P-XXXXXX, sin letras ni números confusos', () => {
-  for (let i = 0; i < 200; i++) assert.match(nuevoCodigoSeudonimo(), /^P-[A-HJ-NP-Z2-9]{6}$/);
-});
-
-test('Los códigos seudónimos son aleatorios (no se repiten en 1.000 intentos)', () => {
-  const codigos = new Set(Array.from({ length: 1000 }, nuevoCodigoSeudonimo));
-  assert.ok(codigos.size >= 999);
-});
+const { esMenorDeEdad } = require('../src/services/participacionesService');
 
 test('Menor de edad: se calcula con la fecha de hoy y cambia justo el día que cumple 18', () => {
   const hoy = new Date(2026, 9, 10); // 10/10/2026
