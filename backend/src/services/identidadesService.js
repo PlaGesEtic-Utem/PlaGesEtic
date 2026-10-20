@@ -7,23 +7,17 @@
  *    si es menor y no tiene, se ingresan los de su representante). Pendiente reflejarlo en el diccionario v3.1.
  *  - RUT opcional (personas sin RUT), pero si viene debe ser válido y no estar registrado (409).
  */
-const crypto = require('crypto');
 const repo = require('../repositories/identidadesRepository');
 const { cifrar, huella } = require('../utils/cifrado');
 const { validarRut } = require('../utils/rut');
 const { ErrorApi, errores } = require('../utils/errores');
+const { generarUxLabId, conReintentoPorColision } = require('../utils/codigos');
 
-const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sin 0/O ni 1/I/L, para no confundirlos al leerlos
 const TIPOS = ['participante', 'representante'];
 const CORREO_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const conflicto = (codigo, mensaje) => new ErrorApi(409, codigo, mensaje);
-
-function nuevoUxLabId() {
-  const bytes = crypto.randomBytes(8);
-  return 'UXL-' + Array.from(bytes, (b) => ALFABETO[b % ALFABETO.length]).join('');
-}
 
 const normalizarCorreo = (c) => c.trim().toLowerCase();
 const normalizarTelefono = (t) => t.replace(/[\s\-()]/g, '');
@@ -86,6 +80,9 @@ async function buscar(c = {}) {
   return { existe: ids.length > 0, ux_lab_ids: ids };
 }
 
+// Choque del código aleatorio: se genera otro.
+const esColision = (err) => err.code === '23505' && /ux_lab_id/.test(err.constraint || '');
+
 /** POST /identidades · cifra todo y responde solo con el UX Lab ID. */
 async function crear(c = {}) {
   const d = validarEntrada(c);
@@ -99,18 +96,17 @@ async function crear(c = {}) {
     tipo: d.tipo,
     fecha_nacimiento: d.fecha_nacimiento,
   };
-  for (let intento = 0; intento < 5; intento++) {
+
+  return conReintentoPorColision(async () => {
     try {
-      return await repo.crear({ ...fila, ux_lab_id: nuevoUxLabId() });
+      return await repo.crear({ ...fila, ux_lab_id: generarUxLabId() });
     } catch (err) {
       if (err.code === '23505' && /rut_hash/.test(err.constraint || '')) {
         throw conflicto('PERSONA_YA_REGISTRADA', 'Ya existe una persona con ese RUT. Búscala con /identidades/buscar para usar su UX Lab ID.');
       }
-      if (err.code === '23505' && /ux_lab_id/.test(err.constraint || '')) continue; // choque del código aleatorio: se genera otro
       throw err;
     }
-  }
-  throw new Error('No se pudo generar un UX Lab ID único');
+  }, { esColision, mensaje: 'No se pudo generar un UX Lab ID único' });
 }
 
-module.exports = { buscar, crear, nuevoUxLabId, validarEntrada };
+module.exports = { buscar, crear, validarEntrada };
