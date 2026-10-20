@@ -14,4 +14,10 @@ const listar = envolver(async (req, res) => {
   res.json(await servicio.listar(req.params.idParticipacion));
 });
 
-module.exports = { registrar, listar };
+const registrarEvento = envolver(async (req, res) => {
+  const evento = await servicio.registrarEvento(req.params.idConsentimiento, req.usuario, req.body || {}, req.file);
+  req.auditoria.id_registro_afectado = evento.id_consentimiento; // nunca la evidencia ni datos personales
+  res.status(201).json(evento);
+});
+
+module.exports = { registrar, listar, registrarEvento };

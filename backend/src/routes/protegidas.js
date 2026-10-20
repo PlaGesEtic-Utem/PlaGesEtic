@@ -25,6 +25,7 @@ module.exports = (pool) => {
   router.use('/estudios', require('./estudios')(pool));
   router.use('/identidades', require('./identidades')(pool));
   router.use('/participaciones/:idParticipacion/consentimientos', require('./consentimientos')(pool));
+  router.use('/consentimientos/:idConsentimiento/eventos', require('./eventosConsentimiento')(pool));
   // GET /auditoria (solo Director, solo lectura)
   router.use(auditoriaRoutes);
   return router;

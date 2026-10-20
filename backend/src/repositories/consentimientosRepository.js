@@ -71,7 +71,46 @@ async function eventosDeParticipacion(idParticipacion) {
   return rows;
 }
 
+/** Consentimiento con su participación (sin bloqueo), o null si no existe. */
+async function consentimientoConParticipacion(cliente, idConsentimiento) {
+  const { rows } = await cliente.query(
+    `SELECT id_consentimiento, id_participacion, tipo
+       FROM ethics_schema.consentimiento WHERE id_consentimiento = $1`, [idConsentimiento]);
+  return rows[0] || null;
+}
+
+/** Participación bloqueada para modificarla (el retiro cambia su estado). */
+async function participacionBloqueadaParaActualizar(cliente, idParticipacion) {
+  const { rows } = await cliente.query(
+    `SELECT id_participacion, id_estudio, estado, es_menor_al_enrolar
+       FROM research_schema.participacion WHERE id_participacion = $1 FOR UPDATE`, [idParticipacion]);
+  return rows[0] || null;
+}
+
+/** Bloquea el consentimiento: serializa los eventos de ese par (participación + tipo). */
+async function bloquearConsentimiento(cliente, idConsentimiento) {
+  await cliente.query(
+    'SELECT 1 FROM ethics_schema.consentimiento WHERE id_consentimiento = $1 FOR UPDATE', [idConsentimiento]);
+}
+
+async function marcarParticipacionRetirada(cliente, idParticipacion) {
+  await cliente.query(
+    `UPDATE research_schema.participacion SET estado = 'retirado' WHERE id_participacion = $1`, [idParticipacion]);
+}
+
+/** Estudio al que pertenece un consentimiento (para el control de acceso), o null si no existe. */
+async function estudioDeConsentimiento(idConsentimiento) {
+  const { rows } = await db.query(
+    `SELECT p.id_estudio
+       FROM ethics_schema.consentimiento c
+       JOIN research_schema.participacion p ON p.id_participacion = c.id_participacion
+      WHERE c.id_consentimiento = $1`, [idConsentimiento]);
+  return rows.length ? rows[0].id_estudio : null;
+}
+
 module.exports = {
   participacionBloqueada, documentoPorVersion, consentimientoBloqueado, ultimoEvento, agregarEvento,
   participacion, eventosDeParticipacion,
+  consentimientoConParticipacion, participacionBloqueadaParaActualizar, bloquearConsentimiento,
+  marcarParticipacionRetirada, estudioDeConsentimiento,
 };

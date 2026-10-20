@@ -171,4 +171,114 @@ async function listar(idParticipacion) {
   };
 }
 
-module.exports = { registrar, listar, TIPOS, EVENTOS };
+const EVENTOS_NUEVOS = ['negar', 'retirar', 'reconsentir'];
+// Estado vigente (efecto del último evento) desde el que se admite cada evento; desde otro → 409.
+const DESDE_ESTADO = { negar: ['otorgado'], retirar: ['otorgado'], reconsentir: ['negado', 'revocado'] };
+
+function validarEvento(cuerpo, archivo) {
+  const tipoEvento = texto(cuerpo.tipo_evento);
+  if (!EVENTOS_NUEVOS.includes(tipoEvento)) {
+    throw errores.solicitudInvalida('«tipo_evento» debe ser negar, retirar o reconsentir.');
+  }
+  let version = null;
+  if (tipoEvento === 'reconsentir') {
+    version = texto(cuerpo.version);
+    if (!VERSION_RE.test(version)) {
+      throw errores.solicitudInvalida('Para reconsentir, «version» es obligatoria: la del documento vigente.');
+    }
+  }
+  const idRepresentacion = texto(cuerpo.id_representacion) || null;
+  if (idRepresentacion && !UUID_RE.test(idRepresentacion)) {
+    throw errores.solicitudInvalida('«id_representacion» no es un identificador válido.');
+  }
+  let extension = null;
+  if (archivo && archivo.buffer && archivo.buffer.length > 0) {
+    extension = extensionReal(archivo.buffer);
+    if (!extension) throw errores.tipoNoPermitido('La evidencia debe ser un PDF, JPEG o PNG válido.');
+  } else if (tipoEvento === 'reconsentir') {
+    throw errores.solicitudInvalida('Para reconsentir se requiere la evidencia firmada en el campo «evidencia».');
+  }
+  return { tipoEvento, version, idRepresentacion, extension };
+}
+
+/** POST /consentimientos/:idConsentimiento/eventos  (negar, retirar o reconsentir) */
+async function registrarEvento(idConsentimiento, usuario, cuerpo, archivo) {
+  const d = validarEvento(cuerpo, archivo);
+
+  const guardado = d.extension ? await almacenamiento.guardar(SUBCARPETA, archivo.buffer, d.extension) : null;
+  try {
+    return await db.transaccion(async (c) => {
+      const cons = await repo.consentimientoConParticipacion(c, idConsentimiento);
+      if (!cons) throw errores.noEncontrado('El consentimiento no existe.');
+      // Mismo orden de bloqueos que registrar(): primero la participación, luego el consentimiento.
+      const p = await repo.participacionBloqueadaParaActualizar(c, cons.id_participacion);
+      await repo.bloquearConsentimiento(c, idConsentimiento);
+
+      if (d.tipoEvento !== 'retirar'
+          && (await participacionesRepo.estadoEstudio(c, p.id_estudio)) === 'cerrado') {
+        throw conflicto('ESTUDIO_CERRADO', 'El estudio está cerrado: solo se admite el retiro del consentimiento.');
+      }
+
+      const ultimo = await repo.ultimoEvento(c, idConsentimiento);
+      if (!ultimo) throw conflicto('SIN_DECISION_PREVIA', 'El consentimiento no tiene ninguna decisión registrada.');
+      const estadoActual = ESTADO_DE_EVENTO[ultimo.tipo_evento];
+      if (!DESDE_ESTADO[d.tipoEvento].includes(estadoActual)) {
+        throw conflicto('TRANSICION_INVALIDA',
+          `No se puede registrar «${d.tipoEvento}» cuando el consentimiento está ${estadoActual}.`);
+      }
+
+      const exigeRepresentacion = p.es_menor_al_enrolar && cons.tipo === 'consentimiento';
+      if (exigeRepresentacion) {
+        if (!d.idRepresentacion) {
+          if (d.tipoEvento === 'reconsentir') {
+            throw errores.solicitudInvalida('Para un menor, el consentimiento lo entrega su representante legal: falta «id_representacion».');
+          }
+        } else if (!(await participacionesRepo.representacionVigente(c, d.idRepresentacion, p.id_participacion))) {
+          throw conflicto('REPRESENTACION_NO_VALIDA', 'La representación no existe, no está vigente o no corresponde a esta persona.');
+        }
+      } else if (d.idRepresentacion) {
+        throw errores.solicitudInvalida('«id_representacion» solo aplica al consentimiento de un menor.');
+      }
+
+      let idDocumento = ultimo.id_documento; // negar y retirar quedan sobre el documento de la última decisión
+      if (d.tipoEvento === 'reconsentir') {
+        const documento = await repo.documentoPorVersion(c, p.id_estudio, cons.tipo, d.version);
+        if (!documento) throw errores.noEncontrado('No existe un documento de ese tipo y versión en el estudio.');
+        if (!documento.vigente) {
+          throw conflicto('DOCUMENTO_NO_VIGENTE', 'Esa versión del documento ya no está vigente: usa la versión vigente del estudio.');
+        }
+        idDocumento = documento.id_documento;
+      }
+
+      const evento = await repo.agregarEvento(c, {
+        id_consentimiento: idConsentimiento,
+        id_documento: idDocumento,
+        id_representacion: d.idRepresentacion,
+        tipo_evento: d.tipoEvento,
+        evidencia_ruta: guardado ? guardado.ruta : null,
+        evidencia_hash: guardado ? guardado.hash : null,
+        id_usuario: usuario.id_usuario,
+      });
+
+      // El retiro y el cambio de estado de la participación se confirman (o se revierten) juntos.
+      if (d.tipoEvento === 'retirar') await repo.marcarParticipacionRetirada(c, p.id_participacion);
+
+      return {
+        id_evento: evento.id_evento,
+        id_consentimiento: evento.id_consentimiento,
+        id_participacion: p.id_participacion,
+        tipo: cons.tipo,
+        tipo_evento: evento.tipo_evento,
+        fecha: evento.fecha,
+        evidencia_hash: evento.evidencia_hash,
+        estado_vigente: ESTADO_DE_EVENTO[evento.tipo_evento],
+        participacion_estado: d.tipoEvento === 'retirar' ? 'retirado' : p.estado,
+      };
+    });
+  } catch (err) {
+    if (guardado) await almacenamiento.eliminar(guardado.ruta).catch(() => {});
+    throw err;
+  }
+}
+
+module.exports = { registrar, listar, registrarEvento, TIPOS, EVENTOS };
