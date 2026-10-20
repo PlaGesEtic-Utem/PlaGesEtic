@@ -18,6 +18,7 @@ const errores = {
   sinPermiso: (m = 'No tienes permiso para esta acción.') => new ErrorApi(403, 'SIN_PERMISO', m),
   noEncontrado: (m = 'El recurso no existe.') => new ErrorApi(404, 'NO_ENCONTRADO', m),
   conflicto: (m = 'La operación no se puede realizar en el estado actual.') => new ErrorApi(409, 'CONFLICTO', m),
+  demasiadosIntentos: (m = 'Demasiados intentos. Espera un momento.') => new ErrorApi(429, 'DEMASIADOS_INTENTOS', m),
   tipoNoPermitido: (m = 'El tipo de archivo no está permitido.') => new ErrorApi(415, 'TIPO_NO_PERMITIDO', m),
   servicioNoDisponible: (m = 'El servicio no está disponible.') => new ErrorApi(503, 'SERVICIO_NO_DISPONIBLE', m),
 };
