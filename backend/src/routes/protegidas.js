@@ -85,14 +85,14 @@ module.exports = (pool) => {
    * La respuesta contiene únicamente:
    * nombre, correo y telefono.
    */
-  router.post(
-    '/participaciones/:idParticipacion/contacto',
-    noAlmacenar,
-    marcarAuditoria('identidad', 'desenmascarar'),
-    resolverEstudioDeParticipacion,
-    accesoContacto,
-    participacionesController.contacto
-  );
+ router.post(
+  '/participaciones/:idParticipacion/contacto',
+  noAlmacenar,
+  marcarAuditoria('contacto_participante', 'desenmascarar'),
+  resolverEstudioDeParticipacion,
+  accesoContacto,
+  participacionesController.contacto
+);
 
   /**
    * Gestión de consentimientos por participación.

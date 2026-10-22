@@ -59,15 +59,15 @@ const listar = envolver(async (req, res) => {
  *   los permisos y el estudio correspondiente.
  * - La solicitud debe incluir un motivo válido.
  * - Si el motivo es "otro", debe incluir detalle.
- * - La respuesta solo puede contener nombre,
- *   correo y teléfono.
+ * - La respuesta contiene únicamente:
+ *   codigo_seudonimo, nombre, correo y telefono.
  *
  * La operación se registra como desenmascaramiento.
  */
 const contacto = envolver(async (req, res) => {
   const cuerpo = req.body || {};
 
-  // Validar antes de registrar la justificación.
+
   const { motivo, detalle } =
     servicio.validarMotivoContacto(cuerpo);
 
@@ -86,11 +86,12 @@ const contacto = envolver(async (req, res) => {
     cuerpo
   );
 
-  // Impide almacenar datos personales en caché.
+
   res.set('Cache-Control', 'no-store');
 
-  // El servicio devuelve exclusivamente estos campos.
+
   res.json({
+    codigo_seudonimo: datosContacto.codigo_seudonimo,
     nombre: datosContacto.nombre,
     correo: datosContacto.correo,
     telefono: datosContacto.telefono,

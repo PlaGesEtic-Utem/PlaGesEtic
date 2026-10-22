@@ -8,6 +8,7 @@
  * - Acceso del Director.
  * - Acceso del investigador responsable.
  * - Autorizaciones especiales.
+ * - Justificación mínima de 20 caracteres.
  * - Aislamiento entre estudios.
  * - Restricciones de participación retirada.
  * - Respuestas y auditoría.
@@ -39,6 +40,7 @@ const PARTICIPACION = '66666666-6666-4666-8666-666666666666';
 const IDENTIDAD = '77777777-7777-4777-8777-777777777777';
 const AUTORIZACION = '88888888-8888-4888-8888-888888888888';
 const UX_LAB_ID = 'UXL-ABCDEFGH';
+const CODIGO_SEUDONIMO = 'P-ABC234';
 
 let estado;
 
@@ -103,6 +105,7 @@ const bdFalsa = {
 
     if (texto.includes('FROM security_schema.permiso')) {
       const [rol, recurso, accion] = parametros;
+
       return {
         rows: rol === 'Director' &&
           recurso === 'identidad' &&
@@ -197,7 +200,9 @@ const bdFalsa = {
       return { rows: [], rowCount: 1 };
     }
 
-    throw new Error(`Consulta no simulada: ${texto.slice(0, 180)}`);
+    throw new Error(
+      `Consulta no simulada: ${texto.slice(0, 180)}`
+    );
   },
 };
 
@@ -232,6 +237,7 @@ identidadesRepo.obtenerContactoPorParticipacion =
 
     return {
       estado: estado.estadoParticipacion,
+      codigo_seudonimo: CODIGO_SEUDONIMO,
       nombre: 'Persona de prueba',
       correo: 'persona@example.test',
       telefono: '+56912345678',
@@ -244,12 +250,12 @@ identidadesRepo.obtenerDescifradaPorUxLabId = async (uxLabId) => {
 
   return {
     id_identidad: IDENTIDAD,
+    ux_lab_id: UX_LAB_ID,
     nombre: 'Persona de prueba',
     correo: 'persona@example.test',
     telefono: '+56912345678',
     rut: '12345678-5',
     fecha_nacimiento: '2000-01-01',
-    tipo: 'participante',
   };
 };
 
@@ -370,7 +376,7 @@ describe('Desenmascaramiento HTTP', () => {
     assert.equal(estado.llamadasContacto, 0);
   });
 
-  it('Director consulta contacto con respuesta mínima y auditoría', async () => {
+  it('Director consulta contacto con cuatro campos y auditoría', async () => {
     const token = sesion(DIRECTOR, 'Director');
 
     const respuesta = await solicitar(
@@ -384,6 +390,7 @@ describe('Desenmascaramiento HTTP', () => {
     assert.equal(respuesta.cache, 'no-store');
 
     assert.deepEqual(respuesta.cuerpo, {
+      codigo_seudonimo: CODIGO_SEUDONIMO,
       nombre: 'Persona de prueba',
       correo: 'persona@example.test',
       telefono: '+56912345678',
@@ -391,11 +398,20 @@ describe('Desenmascaramiento HTTP', () => {
 
     const auditoria = await esperarAuditoria();
 
-    assert.equal(auditoria.entidad, 'identidad');
+    assert.equal(
+      auditoria.entidad,
+      'contacto_participante'
+    );
     assert.equal(auditoria.accion, 'desenmascarar');
     assert.equal(auditoria.id_estudio, ESTUDIO_1);
-    assert.equal(auditoria.id_registro_afectado, PARTICIPACION);
-    assert.equal(auditoria.justificacion, 'coordinar_sesion');
+    assert.equal(
+      auditoria.id_registro_afectado,
+      PARTICIPACION
+    );
+    assert.equal(
+      auditoria.justificacion,
+      'coordinar_sesion'
+    );
     assert.equal(auditoria.resultado, 'exito');
   });
 
@@ -411,6 +427,10 @@ describe('Desenmascaramiento HTTP', () => {
 
     assert.equal(respuesta.estado, 200);
     assert.equal(estado.llamadasContacto, 1);
+    assert.equal(
+      respuesta.cuerpo.codigo_seudonimo,
+      CODIGO_SEUDONIMO
+    );
   });
 
   it('investigador no responsable recibe 403', async () => {
@@ -442,7 +462,10 @@ describe('Desenmascaramiento HTTP', () => {
     );
 
     assert.equal(respuesta.estado, 409);
-    assert.equal(respuesta.cuerpo.error.codigo, 'PARTICIPACION_RETIRADA');
+    assert.equal(
+      respuesta.cuerpo.error.codigo,
+      'PARTICIPACION_RETIRADA'
+    );
   });
 
   it('participación retirada admite contacto por retiro', async () => {
@@ -458,6 +481,10 @@ describe('Desenmascaramiento HTTP', () => {
     );
 
     assert.equal(respuesta.estado, 200);
+    assert.equal(
+      respuesta.cuerpo.codigo_seudonimo,
+      CODIGO_SEUDONIMO
+    );
   });
 
   it('motivo otro exige detalle', async () => {
@@ -474,7 +501,7 @@ describe('Desenmascaramiento HTTP', () => {
     assert.equal(estado.llamadasContacto, 0);
   });
 
-  it('Director desenmascara identidad asociada al estudio', async () => {
+  it('Director desenmascara los seis campos de D12', async () => {
     const token = sesion(DIRECTOR, 'Director');
 
     const respuesta = await solicitar(
@@ -486,19 +513,96 @@ describe('Desenmascaramiento HTTP', () => {
 
     assert.equal(respuesta.estado, 200);
     assert.equal(respuesta.cache, 'no-store');
-    assert.equal(respuesta.cuerpo.nombre, 'Persona de prueba');
-    assert.equal(respuesta.cuerpo.rut, '12345678-5');
+
+    assert.deepEqual(respuesta.cuerpo, {
+      ux_lab_id: UX_LAB_ID,
+      nombre: 'Persona de prueba',
+      correo: 'persona@example.test',
+      telefono: '+56912345678',
+      rut: '12345678-5',
+      fecha_nacimiento: '2000-01-01',
+    });
+
     assert.equal(
       Object.hasOwn(respuesta.cuerpo, 'id_identidad'),
+      false
+    );
+    assert.equal(
+      Object.hasOwn(respuesta.cuerpo, 'tipo'),
       false
     );
 
     const auditoria = await esperarAuditoria();
 
+    assert.equal(auditoria.entidad, 'identidad');
     assert.equal(auditoria.accion, 'desenmascarar');
     assert.equal(auditoria.id_estudio, ESTUDIO_1);
-    assert.equal(auditoria.id_registro_afectado, IDENTIDAD);
-    assert.equal(auditoria.justificacion, 'Investigación autorizada');
+    assert.equal(
+      auditoria.id_registro_afectado,
+      IDENTIDAD
+    );
+    assert.equal(
+      auditoria.justificacion,
+      'Investigación autorizada'
+    );
+  });
+
+  it('rechaza justificación de menos de 20 caracteres', async () => {
+    const token = sesion(DIRECTOR, 'Director');
+
+    const respuesta = await solicitar(
+      servidor,
+      rutaIdentidad,
+      token,
+      {
+        id_estudio: ESTUDIO_1,
+        justificacion: 'revisar',
+      }
+    );
+
+    assert.equal(respuesta.estado, 400);
+    assert.equal(estado.llamadasIdentidad, 0);
+    assert.match(
+      respuesta.cuerpo.error.mensaje,
+      /al menos 20 caracteres/
+    );
+  });
+
+  it('ignora espacios externos al validar la justificación', async () => {
+    const token = sesion(DIRECTOR, 'Director');
+
+    const respuesta = await solicitar(
+      servidor,
+      rutaIdentidad,
+      token,
+      {
+        id_estudio: ESTUDIO_1,
+        justificacion: '   revisar   ',
+      }
+    );
+
+    assert.equal(respuesta.estado, 400);
+    assert.equal(estado.llamadasIdentidad, 0);
+  });
+
+  it('acepta una justificación de exactamente 20 caracteres', async () => {
+    const token = sesion(DIRECTOR, 'Director');
+
+    const justificacion = '12345678901234567890';
+    assert.equal(justificacion.length, 20);
+
+    const respuesta = await solicitar(
+      servidor,
+      rutaIdentidad,
+      token,
+      {
+        id_estudio: ESTUDIO_1,
+        justificacion,
+      }
+    );
+
+    assert.equal(respuesta.estado, 200);
+    assert.equal(estado.llamadasIdentidad, 1);
   });
 
   it('investigador sin autorización no ve identidad completa', async () => {
@@ -528,13 +632,20 @@ describe('Desenmascaramiento HTTP', () => {
     );
 
     assert.equal(respuesta.estado, 200);
+    assert.equal(
+      respuesta.cuerpo.ux_lab_id,
+      UX_LAB_ID
+    );
 
     const auditoria = await esperarAuditoria();
 
-    assert.equal(auditoria.id_autorizacion, AUTORIZACION);
+    assert.equal(
+      auditoria.id_autorizacion,
+      AUTORIZACION
+    );
   });
 
-  it('autorización especial válida permite consultar contacto', async () => {
+  it('autorización especial no permite consultar contacto', async () => {
     concederAutorizacion(ASISTENTE);
 
     const token = sesion(ASISTENTE, 'Asistente');
@@ -546,7 +657,25 @@ describe('Desenmascaramiento HTTP', () => {
       { motivo: 'reconsentimiento' }
     );
 
-    assert.equal(respuesta.estado, 200);
+    assert.equal(respuesta.estado, 403);
+    assert.equal(estado.llamadasContacto, 0);
+
+    assert.equal(
+      Object.hasOwn(respuesta.cuerpo, 'codigo_seudonimo'),
+      false
+    );
+    assert.equal(
+      Object.hasOwn(respuesta.cuerpo, 'nombre'),
+      false
+    );
+    assert.equal(
+      Object.hasOwn(respuesta.cuerpo, 'correo'),
+      false
+    );
+    assert.equal(
+      Object.hasOwn(respuesta.cuerpo, 'telefono'),
+      false
+    );
   });
 
   it('autorización vencida se rechaza', async () => {

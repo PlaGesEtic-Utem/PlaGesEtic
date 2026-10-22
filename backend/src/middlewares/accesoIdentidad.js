@@ -4,21 +4,22 @@
 /**
  * Control de acceso a datos personales.
  *
- * ADR-002, decisión D8.
+ * ADR-002, decisiones D8 y D12.
  *
  * CONTACTO DE PARTICIPACIÓN:
  * - Director con permiso global identidad/leer.
  * - Investigador responsable del estudio.
- * - Usuario con autorización ver_identidad
- *   aprobada por un Director y vigente.
+ *
+ * La autorización especial ver_identidad NO
+ * permite consultar datos de contacto.
  *
  * IDENTIDAD COMPLETA:
  * - Director con permiso global identidad/leer.
  * - Usuario con autorización ver_identidad
  *   aprobada por un Director y vigente.
  *
- * En todos los casos se comprueba el estudio
- * al que pertenece la identidad consultada.
+ * En el desenmascaramiento completo se comprueba
+ * que la identidad pertenece al estudio declarado.
  */
 
 const db = require('../config/db');
@@ -54,35 +55,6 @@ const permisoDirector = requierePermiso({
   accion: 'leer',
   desenmascara: true,
 });
-
-/**
- * Obtiene el identificador interno de la identidad
- * asociada a una participación.
- *
- * No devuelve ni descifra datos personales.
- */
-async function identidadDeParticipacion(
-  idParticipacion,
-  idEstudio
-) {
-  const { rows } = await db.query(
-    `SELECT i.id_identidad
-       FROM research_schema.participacion p
-       INNER JOIN identity_schema.vinculo_identidad v
-         ON v.id_participante = p.id_participante
-       INNER JOIN identity_schema.identidad i
-         ON i.id_identidad = v.id_identidad
-      WHERE p.id_participacion = $1
-        AND p.id_estudio = $2
-        AND i.tipo = 'participante'
-        AND i.fecha_revocacion IS NULL
-        AND i.fecha_eliminacion IS NULL
-      LIMIT 1`,
-    [idParticipacion, idEstudio]
-  );
-
-  return rows[0] || null;
-}
 
 /**
  * Comprueba que una identidad está vinculada
@@ -237,6 +209,13 @@ function autorizarDirector(req, res, next) {
  *
  * Debe ejecutarse después de
  * resolverEstudioDeParticipacion.
+ *
+ * Solo pueden acceder:
+ * - Director.
+ * - Investigador responsable del estudio.
+ *
+ * Las autorizaciones especiales ver_identidad
+ * no conceden acceso a esta ruta.
  */
 async function accesoContacto(req, res, next) {
   try {
@@ -299,43 +278,11 @@ async function accesoContacto(req, res, next) {
     }
 
     /**
-     * Autorización especial:
-     * Primero resolvemos la identidad real
-     * de la participación, sin descifrarla.
+     * Cualquier otro usuario recibe 403,
+     * incluso cuando tenga una autorización
+     * especial ver_identidad aprobada y vigente.
      */
-    const identidad =
-      await identidadDeParticipacion(
-        idParticipacion,
-        idEstudio
-      );
-
-    if (!identidad) {
-      return next(
-        errores.noEncontrado(
-          'No existe una identidad vigente para esta participación.'
-        )
-      );
-    }
-
-    const idAutorizacion =
-      await buscarAutorizacionIdentidad(
-        idUsuario,
-        idEstudio,
-        identidad.id_identidad
-      );
-
-    if (!idAutorizacion) {
-      return next(errores.sinPermiso());
-    }
-
-    registrarAcceso(
-      req,
-      idEstudio,
-      'autorizacion',
-      idAutorizacion
-    );
-
-    return next();
+    return next(errores.sinPermiso());
   } catch (err) {
     return next(err);
   }
