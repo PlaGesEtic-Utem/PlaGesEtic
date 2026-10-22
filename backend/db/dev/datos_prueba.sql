@@ -1,6 +1,7 @@
 -- =====================================================================
 -- plaGesEtic · datos_prueba.sql  (SOLO DESARROLLO — nunca en producción)
--- Carga usuarios, estudios, protocolos, documentos de consentimiento y membresías de los datos sintéticos
+-- Carga usuarios, estudios, protocolos, documentos de consentimiento, membresías y una autorización
+-- especial de los datos sintéticos
 -- (Datos_Sinteticos_plaGesEtic_vFinal.xlsx) para probar las rutas a mano.
 -- Requiere los scripts 01 a 05 de db/init. Se puede ejecutar de nuevo: borra y recarga.
 -- Las contraseñas son hashes de relleno: el login real llega con la Actividad 40.
@@ -19,6 +20,8 @@ DELETE FROM identity_schema.representante_legal;
 DELETE FROM identity_schema.identidad;
 DELETE FROM security_schema.sesion_usuario;
 DELETE FROM security_schema.mfa_codigo_recuperacion;
+-- Autorizaciones especiales (Actividad 56): apuntan al usuario y al estudio, por eso van antes
+DELETE FROM security_schema.autorizacion;
 DELETE FROM security_schema.membresia_estudio;
 DELETE FROM ethics_schema.documento_consentimiento;
 DELETE FROM ethics_schema.protocolo_version;
@@ -56,6 +59,9 @@ INSERT INTO security_schema.membresia_estudio (id_membresia,id_usuario,id_estudi
 INSERT INTO security_schema.membresia_estudio (id_membresia,id_usuario,id_estudio,puede_consultar,puede_cargar,puede_modificar,puede_descargar,puede_exportar,id_otorgante,fecha_inicio,fecha_fin) VALUES ('a22c5446-f769-59e3-99ff-211706ada49d','ef298acc-ded2-5f5f-95d7-55b43e6915cc','82bbf931-bc9f-594d-8203-77dc4608f2cc',true,false,false,false,false,'f709e3ea-c031-5ded-9a0e-9b6188d3eb90','2026-10-01','2026-11-30');
 INSERT INTO security_schema.membresia_estudio (id_membresia,id_usuario,id_estudio,puede_consultar,puede_cargar,puede_modificar,puede_descargar,puede_exportar,id_otorgante,fecha_inicio,fecha_fin) VALUES ('d1dc66c3-6af8-5d42-8711-97f02fed4f26','955846fa-5235-5428-aa14-d898079a1b86','82bbf931-bc9f-594d-8203-77dc4608f2cc',true,false,false,false,false,'f709e3ea-c031-5ded-9a0e-9b6188d3eb90','2026-10-02',NULL);
 INSERT INTO security_schema.membresia_estudio (id_membresia,id_usuario,id_estudio,puede_consultar,puede_cargar,puede_modificar,puede_descargar,puede_exportar,id_otorgante,fecha_inicio,fecha_fin) VALUES ('984d8f9e-a480-549c-8755-d7cacb29b6d8','f709e3ea-c031-5ded-9a0e-9b6188d3eb90','fa8cc559-9084-5018-b3fb-e080ba492f7e',true,true,true,true,true,'f4c13880-ed8a-5b4c-8ce7-f6ddfd84d063','2026-10-01',NULL);
+-- Autorización especial ver_identidad (Actividad 56, ADR-002 D13): la Asistente puede desenmascarar
+-- en EST-01 (y solo ahí) hasta fin de año. La aprobó el Director. Sirve para los casos CP-34 y CP-35.
+INSERT INTO security_schema.autorizacion (id_autorizacion,id_usuario,id_estudio,tipo,recurso,id_registro_objetivo,motivo,estado,id_autorizador,fecha_solicitud,fecha_resolucion,fecha_vencimiento) VALUES ('7ad0e9a5-3af5-58d6-a046-7f4b491e7c0d','80887807-24c8-5d42-ae7e-7cc9d7335a55','82bbf931-bc9f-594d-8203-77dc4608f2cc','ver_identidad','identidad',NULL,'Verificar la identidad de participantes de EST-01 a pedido del Comité de Ética (ficticio, solo pruebas).','aprobada','f4c13880-ed8a-5b4c-8ce7-f6ddfd84d063','2026-10-19 10:00','2026-10-19 12:00','2026-12-31 23:59');
 COMMIT;
 
 -- IDs fijos de los estudios (para usarlos en pruebas/estudios.http):
@@ -67,3 +73,6 @@ COMMIT;
 --   EST-01 consentimiento v1.0: a7d33f8a-00de-5eab-9c77-e43433f95084
 --   EST-01 asentimiento   v1.0: 7094fc30-60c6-57da-bbce-8f760d77e8e0
 --   EST-02 consentimiento v1.0: d6a3faed-4e8e-5b85-becb-b11c9772006a
+
+-- ID fijo de la autorización especial (para pruebas/seudonimizacion.http):
+--   ver_identidad de test_asistente en EST-01: 7ad0e9a5-3af5-58d6-a046-7f4b491e7c0d

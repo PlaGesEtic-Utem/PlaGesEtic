@@ -1,0 +1,265 @@
+# =====================================================================
+# plaGesEtic · Pruebas de seudonimización (Actividad 56, casos CP-26 a CP-37)
+# Requiere la extensión «REST Client» de Visual Studio Code (autor: Huachao Mao).
+# Ejecuta las pruebas EN ORDEN, de arriba hacia abajo: varias usan la respuesta de una anterior
+# (las que tienen «# @name»), así no hay que copiar ids.
+#
+# Antes (una vez):
+#   1. Cargar los datos de prueba (traen la autorización ver_identidad de la Asistente en EST-01):
+#        docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/dev/datos_prueba.sql
+#   2. Si tu base es anterior al 20/10, agregar los permisos nuevos (ADR-002, D12 y D13):
+#        docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/actualizaciones/act56_permisos_identidad.sql
+#   3. Sacar un token por usuario y pegarlo abajo (duran 8 horas):
+#        docker compose exec api node scripts/sesion-prueba.js test_investigador@uxlab.test
+#        (y test_asistente, test_director, test_estudiante)
+#
+# Las rutas /participaciones/{id}/contacto y /identidades/{ux_lab_id}/desenmascarar llegan el
+# miércoles 21 (Arias). Antes de eso responden 404. CP-30 usa la ruta de eventos de la Actividad 55.
+# Reglas que se prueban: ADR-002, D8 y D12 a D15, y la Matriz de seudonimización v3 (A1, A2, A9, A12).
+# La «persona canario» tiene datos ficticios únicos: si aparecen en una respuesta que no sea de
+# contacto o desenmascarar, es una fuga (CP-36).
+# =====================================================================
+
+@base = http://localhost:3000
+@tokenInvestigador = PEGA_AQUI_EL_TOKEN_DE_test_investigador@uxlab.test
+@tokenAsistente    = PEGA_AQUI_EL_TOKEN_DE_test_asistente@uxlab.test
+@tokenDirector     = PEGA_AQUI_EL_TOKEN_DE_test_director@uxlab.test
+@tokenEstudiante   = PEGA_AQUI_EL_TOKEN_DE_test_estudiante@uxlab.test
+
+# Estudios y documento fijos (ver el final de db/dev/datos_prueba.sql)
+@est01 = 82bbf931-bc9f-594d-8203-77dc4608f2cc
+@est02 = 5f74778f-0d12-5b6f-9adf-e18fabee11ee
+@docConsentimientoEst01v10 = a7d33f8a-00de-5eab-9c77-e43433f95084
+
+
+# ---------------------------------------------------------------------
+# Preparación: la persona canario, inscrita en EST-01
+# ---------------------------------------------------------------------
+
+### Preparación A. Registrar a la persona canario (Asistente) → 201 { ux_lab_id: "UXL-…" }
+# @name canario
+POST {{base}}/identidades
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{
+  "nombre": "Canario Prueba Seudonimo",
+  "rut": "11.111.111-1",
+  "correo": "canario.act56@correo.test",
+  "telefono": "+56 9 5656 5656",
+  "fecha_nacimiento": "1990-05-17"
+}
+
+### Preparación B. Inscribirla en EST-01 → 201 { id_participacion, codigo_seudonimo: "P-…" }
+# @name partCanario
+POST {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{ "ux_lab_id": "{{canario.response.body.$.ux_lab_id}}" }
+
+
+# ---------------------------------------------------------------------
+# Contacto del participante (D8 y D12)
+# ---------------------------------------------------------------------
+
+### CP-26. El Investigador responsable pide el contacto con motivo coordinar_sesion → 200
+#      SOLO codigo_seudonimo, nombre, correo y telefono. Sin rut, fecha_nacimiento ni ux_lab_id.
+#      Encabezado Cache-Control: no-store.
+POST {{base}}/participaciones/{{partCanario.response.body.$.id_participacion}}/contacto
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "motivo": "coordinar_sesion" }
+
+### CP-27. La Asistente pide el mismo contacto → 403 SIN_PERMISO
+POST {{base}}/participaciones/{{partCanario.response.body.$.id_participacion}}/contacto
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{ "motivo": "coordinar_sesion" }
+
+### CP-28. El Director pide el contacto con motivo reconsentimiento → 200 (mismos campos que CP-26)
+POST {{base}}/participaciones/{{partCanario.response.body.$.id_participacion}}/contacto
+Authorization: Bearer {{tokenDirector}}
+Content-Type: application/json
+
+{ "motivo": "reconsentimiento" }
+
+### CP-29. Motivo «otro» sin detalle → 400
+POST {{base}}/participaciones/{{partCanario.response.body.$.id_participacion}}/contacto
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "motivo": "otro" }
+
+
+# ---------------------------------------------------------------------
+# CP-30: contacto de una participación retirada (usa las rutas de la Actividad 55)
+# ---------------------------------------------------------------------
+
+### CP-30 (preparación 1). Registrar a una segunda persona → 201
+# @name retirada
+POST {{base}}/identidades
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{
+  "nombre": "Persona Retirada Ficticia",
+  "correo": "retirada.act56@correo.test",
+  "telefono": "+56 9 5757 5757",
+  "fecha_nacimiento": "1988-02-11"
+}
+
+### CP-30 (preparación 2). Inscribirla en EST-01 → 201
+# @name partRetirada
+POST {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{ "ux_lab_id": "{{retirada.response.body.$.ux_lab_id}}" }
+
+### CP-30 (preparación 3). Acepta el consentimiento v1.0 de EST-01 → 201
+#      (si en tu base ya subiste otra versión con consentimientos.http, recarga datos_prueba.sql antes)
+# @name consRetirada
+POST {{base}}/participaciones/{{partRetirada.response.body.$.id_participacion}}/consentimientos
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic56
+
+------plagesetic56
+Content-Disposition: form-data; name="tipo"
+
+consentimiento
+------plagesetic56
+Content-Disposition: form-data; name="id_documento"
+
+{{docConsentimientoEst01v10}}
+------plagesetic56
+Content-Disposition: form-data; name="tipo_evento"
+
+aceptar
+------plagesetic56
+Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
+Content-Type: application/pdf
+
+< ./archivos/evidencia_firmada.pdf
+------plagesetic56--
+
+### CP-30 (preparación 4). Se retira del estudio → 201; la participación queda «retirado»
+POST {{base}}/consentimientos/{{consRetirada.response.body.$.id_consentimiento}}/eventos
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic56
+
+------plagesetic56
+Content-Disposition: form-data; name="tipo_evento"
+
+retirar
+------plagesetic56
+Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
+Content-Type: application/pdf
+
+< ./archivos/evidencia_firmada.pdf
+------plagesetic56--
+
+### CP-30 (a). Contacto de la persona retirada con motivo coordinar_sesion → 409
+POST {{base}}/participaciones/{{partRetirada.response.body.$.id_participacion}}/contacto
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "motivo": "coordinar_sesion" }
+
+### CP-30 (b). Mismo contacto con motivo retiro → 200
+POST {{base}}/participaciones/{{partRetirada.response.body.$.id_participacion}}/contacto
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "motivo": "retiro", "detalle": "Confirmar la devolución de su copia del consentimiento" }
+
+
+# ---------------------------------------------------------------------
+# Desenmascarar (Matriz v3, A1; ADR-002, D12 y D13)
+# ---------------------------------------------------------------------
+
+### CP-32. El Director desenmascara a la persona canario en EST-01 → 200 con ux_lab_id, rut,
+#      nombre, correo, telefono y fecha_nacimiento. Encabezado Cache-Control: no-store.
+POST {{base}}/identidades/{{canario.response.body.$.ux_lab_id}}/desenmascarar
+Authorization: Bearer {{tokenDirector}}
+Content-Type: application/json
+
+{
+  "id_estudio": "{{est01}}",
+  "justificacion": "Auditoría ética solicitada por el CEC: verificar la firma del consentimiento"
+}
+
+### CP-33. Desenmascarar con una justificación de menos de 20 caracteres → 400
+POST {{base}}/identidades/{{canario.response.body.$.ux_lab_id}}/desenmascarar
+Authorization: Bearer {{tokenDirector}}
+Content-Type: application/json
+
+{ "id_estudio": "{{est01}}", "justificacion": "revisar" }
+
+### CP-34. El Investigador, sin autorización ver_identidad, intenta desenmascarar → 403
+POST {{base}}/identidades/{{canario.response.body.$.ux_lab_id}}/desenmascarar
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{
+  "id_estudio": "{{est01}}",
+  "justificacion": "Quiero confirmar los datos de la persona antes de la sesión"
+}
+
+### CP-35 (a). La Asistente, con su autorización ver_identidad de EST-01, desenmascara en EST-01 → 200
+POST {{base}}/identidades/{{canario.response.body.$.ux_lab_id}}/desenmascarar
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{
+  "id_estudio": "{{est01}}",
+  "justificacion": "Pedido del CEC: comparar el nombre con el documento firmado"
+}
+
+### CP-37 (preparación). El Investigador inscribe a la misma persona en EST-02 → 201 con OTRO código P-…
+# @name partCanarioEst02
+POST {{base}}/estudios/{{est02}}/participaciones
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "ux_lab_id": "{{canario.response.body.$.ux_lab_id}}" }
+
+### CP-35 (b). La Asistente intenta desenmascarar a la misma persona en EST-02 → 403
+#      (su autorización es solo de EST-01, aunque la persona también participe en EST-02)
+POST {{base}}/identidades/{{canario.response.body.$.ux_lab_id}}/desenmascarar
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{
+  "id_estudio": "{{est02}}",
+  "justificacion": "Pedido del CEC: comparar el nombre con el documento firmado"
+}
+
+### CP-31. Auditoría (Director) → 200 con una fila «desenmascarar» por cada consulta de arriba
+#      (éxitos y rechazos), con su justificación y el estudio, y SIN datos personales
+GET {{base}}/auditoria?accion=desenmascarar&limite=50
+Authorization: Bearer {{tokenDirector}}
+
+
+# ---------------------------------------------------------------------
+# Barrido y códigos (D14 y D15)
+# ---------------------------------------------------------------------
+
+### CP-36 (a). Estudios → 200. Revisa que NO aparezcan «Canario», «canario.act56», «11.111.111-1» ni «UXL-»
+GET {{base}}/estudios
+Authorization: Bearer {{tokenInvestigador}}
+
+### CP-36 (b). Participaciones de EST-01 → 200, solo con códigos P-…; sin nombre, RUT, correo, UX Lab ID ni id_participante
+GET {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenEstudiante}}
+
+### CP-36 (c). Consentimientos de la persona retirada → 200, solo el código seudónimo y los eventos
+GET {{base}}/participaciones/{{partRetirada.response.body.$.id_participacion}}/consentimientos
+Authorization: Bearer {{tokenInvestigador}}
+
+### CP-37. Participaciones de EST-02 → el código de la persona canario es DISTINTO al de EST-01
+#      (compáralo con la respuesta de la «Preparación B»). Formato P-XXXXXX, sin 0, O, 1, I ni L.
+GET {{base}}/estudios/{{est02}}/participaciones
+Authorization: Bearer {{tokenInvestigador}}
