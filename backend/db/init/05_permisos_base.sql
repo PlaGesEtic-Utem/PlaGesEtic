@@ -24,6 +24,7 @@ FROM (VALUES
   ('Director','participacion','leer','global'),          -- solo seudónimos
   ('Director','membresia','leer','global'),
   ('Director','identidad','leer','global'),              -- desenmascarar, siempre con justificación
+  ('Director','contacto_participante','leer','global'),   -- contacto de un participante, con motivo (D8, D12)
   ('Director','usuario','crear','global'),
   ('Director','usuario','leer','global'),
   ('Director','usuario','actualizar','global'),          -- bloquear y cambiar rol
@@ -51,6 +52,8 @@ FROM (VALUES
   ('Investigador','membresia','leer','estudio'),
   ('Investigador','membresia','actualizar','estudio'),
   ('Investigador','identidad','crear','global'),         -- registrar y buscar (devuelve solo el UX Lab ID)
+  ('Investigador','identidad','leer','estudio'),          -- desenmascarar SOLO con autorización ver_identidad (ADR-002, D13)
+  ('Investigador','contacto_participante','leer','estudio'), -- solo el responsable del estudio, con motivo (D8, D12)
   ('Investigador','representacion','crear','global'),
   ('Investigador','participacion','crear','estudio'),
   ('Investigador','participacion','leer','estudio'),
@@ -76,6 +79,7 @@ FROM (VALUES
   ('Asistente','protocolo','leer','estudio'),
   ('Asistente','documento_consentimiento','leer','estudio'),
   ('Asistente','identidad','crear','global'),
+  ('Asistente','identidad','leer','estudio'),            -- desenmascarar SOLO con autorización ver_identidad (ADR-002, D13)
   ('Asistente','representacion','crear','global'),
   ('Asistente','participacion','crear','estudio'),
   ('Asistente','participacion','leer','estudio'),

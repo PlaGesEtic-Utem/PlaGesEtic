@@ -112,7 +112,7 @@ Mientras no esté integrado el login de la Actividad 40, se prueba con una **ses
 
 1. Instala en Visual Studio Code la extensión **REST Client** (autor: Huachao Mao).
 2. Levanta todo: `docker compose up --build` (en otra terminal sigue con los pasos).
-3. Carga los datos de prueba (usuarios, estudios, protocolos, documentos de consentimiento y membresías de los datos sintéticos):
+3. Carga los datos de prueba (usuarios, estudios, protocolos, documentos de consentimiento, membresías y una autorización especial de los datos sintéticos):
    ```bash
    docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/dev/datos_prueba.sql
    ```
@@ -131,6 +131,13 @@ Mientras no esté integrado el login de la Actividad 40, se prueba con una **ses
 6. Consentimientos (Actividad 55): `pruebas/consentimientos.http` recorre los casos CP-14 a CP-25 **en orden**
    (también necesita el token de `test_director` para revisar la auditoría). Sube los PDF ficticios de
    `pruebas/archivos/` como formularios multipart; las reglas que prueba están en el ADR-002 (D9 a D11).
+7. Seudonimización (Actividad 56): `pruebas/seudonimizacion.http` recorre los casos CP-26 a CP-37 **en orden**
+   (contacto del participante, desenmascarar, auditoría y códigos). Usa los tokens de los cuatro usuarios y la
+   autorización `ver_identidad` de la Asistente que traen los datos de prueba. Las reglas están en el ADR-002 (D12 a D15).
+   Si tu base se creó antes del 20/10, ejecuta una vez la actualización de permisos:
+   ```bash
+   docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/actualizaciones/act56_permisos_identidad.sql
+   ```
 
 ### Ingresar al sistema con el login real (Actividad 46)
 
