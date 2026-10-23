@@ -1,89 +1,235 @@
+
 'use strict';
+
 /**
- * Se monta ANTES de los controladores, pero actúa sobre la SALIDA:
- * envuelve res.json() para limpiar la respuesta antes de enviarla.
+ * Filtro de privacidad de PlaGesEtic.
  *
- * ENTRADA: el objeto que el controlador pasa a res.json() y req.acceso.
- * HACE:    quita (también en objetos anidados y listas) los campos de CAMPOS_PROHIBIDOS,
- *          salvo cuando req.acceso.desenmascarar es true (acción 'desenmascarar', auditada).
- * SALIDA:  la misma respuesta sin esos campos (se devuelve una copia; el objeto original no se modifica).
- * FALLA CERRADO: si req.acceso no existe o no trae desenmascarar === true, siempre se filtra.
+ * ADR-002, decisión D15.
  *
- * ⚠ La lista oficial la entrega Felipe Cruz (07/10). Mientras tanto se cargó la lista PII de los
- *   Middlewares v3 y de la Matriz de Seudonimización v3. Reemplázala o amplíala con la suya.
+ * Se instala antes de los controladores y filtra
+ * las respuestas JSON antes de enviarlas al cliente.
+ *
+ * REGLAS:
+ * - Los campos protegidos se eliminan por defecto.
+ * - Se revisan objetos y arreglos anidados.
+ * - Los datos de una identidad no se entregan
+ *   por las rutas habituales.
+ * - Las excepciones se declaran en cada ruta,
+ *   mediante permitirEnRespuesta().
+ * - Ningún permiso general desactiva el filtro.
+ *
+ * El filtrado no modifica el objeto original.
  */
+
 const CAMPOS_PROHIBIDOS = [
-  // Identidad (identity_schema) y su cifrado
-  'rut', 'rut_cifrado', 'rut_hash',
-  'nombre_cifrado', 'correo_cifrado', 'correo_hash', 'telefono_cifrado',
+  'rut',
+  'rut_cifrado',
+  'rut_hash',
+  'nombre_cifrado',
+  'correo_cifrado',
+  'correo_hash',
+  'telefono_cifrado',
   'fecha_nacimiento',
-  'id_identidad', 'ux_lab_id',
-  // Enlace participante ↔ persona: se expone codigo_seudonimo, nunca id_participante
+  'id_identidad',
+  'ux_lab_id',
   'id_participante',
-  // Evidencia firmada (identifica a la persona por sí misma)
+  'id_vinculo',
   'evidencia_ruta',
+  'documento_ruta',
+  'ruta_archivo',
+  'hash_password',
+  'mfa_secret',
+  'codigo_hash',
+  'token_hash',
 ];
 
 /**
- * Nombres genéricos que SOLO son PII dentro de una identidad (nombre, correo y teléfono descifrados).
- * No se pueden prohibir en todo el árbol porque también existen en usuario.nombre, estudio.nombre, etc.
- * Se quitan únicamente de los objetos que traen alguno de MARCADORES_IDENTIDAD.
+ * Nombre, correo y telefono son datos personales
+ * cuando pertenecen a una identidad.
+ *
+ * No se eliminan indiscriminadamente porque otras
+ * entidades, como usuarios o estudios, pueden
+ * utilizar nombres de campos equivalentes.
  */
-const CAMPOS_PII_EN_IDENTIDAD = ['nombre', 'correo', 'telefono'];
-const MARCADORES_IDENTIDAD = ['ux_lab_id', 'id_identidad', 'rut', 'rut_cifrado', 'nombre_cifrado', 'fecha_nacimiento'];
+const CAMPOS_PII_EN_IDENTIDAD = [
+  'nombre',
+  'correo',
+  'telefono',
+];
 
-const PROHIBIDOS = new Set(CAMPOS_PROHIBIDOS.map((c) => c.toLowerCase()));
-const PII_EN_IDENTIDAD = new Set(CAMPOS_PII_EN_IDENTIDAD);
+/**
+ * Campos que permiten identificar un objeto como
+ * una identidad personal.
+ */
+const MARCADORES_IDENTIDAD = [
+  'ux_lab_id',
+  'id_identidad',
+  'rut',
+  'rut_cifrado',
+  'nombre_cifrado',
+  'fecha_nacimiento',
+];
 
-/** Devuelve una copia profunda de `valor` sin los campos personales. No modifica el original. */
-function limpiarPII(valor, vistos = new WeakSet()) {
-  if (valor === null || typeof valor !== 'object') return valor;
-  if (typeof valor.toJSON === 'function') valor = valor.toJSON(); // Date, Buffer, etc.
-  if (valor === null || typeof valor !== 'object') return valor;
+const PROHIBIDOS = new Set(
+  CAMPOS_PROHIBIDOS.map((campo) => campo.toLowerCase())
+);
 
-  if (vistos.has(valor)) return undefined; // referencia circular
+const PII_EN_IDENTIDAD = new Set(
+  CAMPOS_PII_EN_IDENTIDAD
+);
+
+/**
+ * Crea una copia filtrada de un valor.
+ *
+ * La lista de excepciones se aplica únicamente
+ * al primer nivel de la respuesta.
+ *
+ * Los campos anidados permanecen protegidos,
+ * aunque tengan el mismo nombre.
+ */
+function limpiarPII(
+  valor,
+  vistos = new WeakSet(),
+  permitidos = new Set(),
+  profundidad = 0
+) {
+  if (valor === null || typeof valor !== 'object') {
+    return valor;
+  }
+
+  if (typeof valor.toJSON === 'function') {
+    valor = valor.toJSON();
+  }
+
+  if (valor === null || typeof valor !== 'object') {
+    return valor;
+  }
+
+  if (vistos.has(valor)) {
+    return undefined;
+  }
+
   vistos.add(valor);
-  try {
-    if (Array.isArray(valor)) return valor.map((v) => limpiarPII(v, vistos));
 
-    const esIdentidad = MARCADORES_IDENTIDAD.some((m) => Object.prototype.hasOwnProperty.call(valor, m));
-    const salida = {};
-    for (const [clave, v] of Object.entries(valor)) {
-      const k = clave.toLowerCase();
-      if (PROHIBIDOS.has(k)) continue;
-      if (esIdentidad && PII_EN_IDENTIDAD.has(k)) continue;
-      salida[clave] = limpiarPII(v, vistos);
+  try {
+    if (Array.isArray(valor)) {
+      return valor.map((elemento) =>
+        limpiarPII(
+          elemento,
+          vistos,
+          new Set(),
+          profundidad + 1
+        )
+      );
     }
+
+    const esIdentidad =
+  MARCADORES_IDENTIDAD.some(
+    (campo) =>
+      Object.prototype.hasOwnProperty.call(valor, campo)
+  ) ||
+  (
+    Object.prototype.hasOwnProperty.call(valor, 'nombre') &&
+    Object.prototype.hasOwnProperty.call(valor, 'correo') &&
+    Object.prototype.hasOwnProperty.call(valor, 'telefono')
+  );
+
+    const salida = {};
+
+    for (const [clave, contenido] of Object.entries(valor)) {
+      const nombreCampo = clave.toLowerCase();
+
+      const permitido =
+        profundidad === 0 &&
+        permitidos.has(clave);
+
+      if (
+        PROHIBIDOS.has(nombreCampo) &&
+        !permitido
+      ) {
+        continue;
+      }
+
+      if (
+        esIdentidad &&
+        PII_EN_IDENTIDAD.has(nombreCampo) &&
+        !permitido
+      ) {
+        continue;
+      }
+
+      salida[clave] = limpiarPII(
+        contenido,
+        vistos,
+        new Set(),
+        profundidad + 1
+      );
+    }
+
     return salida;
   } finally {
-    vistos.delete(valor); // el mismo objeto puede aparecer dos veces sin ser circular
+    vistos.delete(valor);
   }
 }
 
+/**
+ * Intercepta res.json() y filtra la respuesta.
+ *
+ * La autorización no desactiva el filtro.
+ * Solo se respetan excepciones declaradas
+ * explícitamente por la ruta.
+ */
 function filtroPrivacidad(req, res, next) {
   const jsonOriginal = res.json.bind(res);
+
   res.json = (cuerpo) => {
-    const puedeVerPII = !!(req.acceso && req.acceso.desenmascarar === true);
-    if (puedeVerPII) return jsonOriginal(cuerpo);
-    // Excepción explícita y mínima por ruta (ver permitirEnRespuesta): solo esos campos, solo en el primer nivel.
-    const permitidos = req.camposPermitidos || [];
-    if (permitidos.length && cuerpo && typeof cuerpo === 'object' && !Array.isArray(cuerpo)) {
-      const limpio = limpiarPII(cuerpo);
-      for (const k of permitidos) if (Object.prototype.hasOwnProperty.call(cuerpo, k)) limpio[k] = cuerpo[k];
-      return jsonOriginal(limpio);
-    }
-    return jsonOriginal(limpiarPII(cuerpo));
+    const camposPermitidos = Array.isArray(
+      req.camposPermitidos
+    )
+      ? req.camposPermitidos
+      : [];
+
+    const permitidos = new Set(camposPermitidos);
+
+    const respuestaLimpia = limpiarPII(
+      cuerpo,
+      new WeakSet(),
+      permitidos
+    );
+
+    return jsonOriginal(respuestaLimpia);
   };
+
   next();
 }
 
 /**
- * Excepción declarada en la ruta: deja salir campos puntuales que el catálogo v3 exige devolver.
- * Hoy solo la usan POST /identidades y /identidades/buscar, que responden únicamente con el UX Lab ID.
- * Uso: router.post('/', ..., permitirEnRespuesta('ux_lab_id'), controlador)
+ * Declara excepciones puntuales por ruta.
+ *
+ * Ejemplos:
+ *
+ * permitirEnRespuesta('ux_lab_id')
+ *
+ * permitirEnRespuesta(
+ *   'codigo_seudonimo',
+ *   'nombre',
+ *   'correo',
+ *   'telefono'
+ * )
+ *
+ * Las excepciones solo afectan campos
+ * del primer nivel de la respuesta.
  */
 function permitirEnRespuesta(...campos) {
-  return (req, res, next) => { req.camposPermitidos = campos; next(); };
+  return (req, res, next) => {
+    req.camposPermitidos = campos;
+    next();
+  };
 }
 
-module.exports = { filtroPrivacidad, permitirEnRespuesta, limpiarPII, CAMPOS_PROHIBIDOS };
+module.exports = {
+  filtroPrivacidad,
+  permitirEnRespuesta,
+  limpiarPII,
+  CAMPOS_PROHIBIDOS,
+};
