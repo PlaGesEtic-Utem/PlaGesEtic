@@ -1,0 +1,2 @@
+{"error":{"codigo":"TRANSICION_INVALIDA","mensaje":"No se puede registrar «reconsentir» cuando el consentimiento está otorgado."}}
+HTTP: 409
