@@ -1,13 +1,14 @@
 ID,Caso,Precondicion,Entrada,Resultado esperado,Resultado obtenido,Estado
-CP-14,Investigador sube consentimiento v1.1 de EST-01,Usuario Investigador autenticado (test_investigador),"POST /estudios/{id}/documentos-consentimiento (PDF + hash)","201; la v1.0 queda ""vigente: false""",,
-CP-15,Asistente intenta subir un documento,Usuario Asistente autenticado,"POST /estudios/{id}/documentos-consentimiento",403,,
-CP-16,Registrar aceptar con evidencia,Participación de EST-01 existente,"POST /participaciones/{id}/consentimientos {tipo_evento:""aceptar""}","201; estado otorgado; hash de 64 caracteres",,
-CP-17,Registrar segundo consentimiento del mismo tipo,Misma participación ya tiene consentimiento,"POST /participaciones/{id}/consentimientos",409,,
-CP-18,Registrar con documento de otro estudio,Documento pertenece a EST-02,"POST /participaciones/{id}/consentimientos",409,,
-CP-19,Registrar sin evidencia,Intento de aceptar sin archivo,"POST /participaciones/{id}/consentimientos sin payload de archivo",400,,
-CP-20,Consultar estado tras subir nueva versión,Documento v1.1 subido tras aceptar la v1.0,"GET /participaciones/{id}/consentimientos","200; estado pendiente de reconsentir",,
-CP-21,Reconsentir con la versión vigente,Estado pendiente de reconsentir,"POST /consentimientos/{id}/eventos {tipo_evento:""reconsentir""}","201; estado otorgado",,
-CP-22,Retirar consentimiento,Estado otorgado,"POST /consentimientos/{id}/eventos {tipo_evento:""retirar""}","201; participación ""retirado""",,
-CP-23,Evento después de retirar,Consentimiento ya retirado,"POST /consentimientos/{id}/eventos",409,,
-CP-24,Menor con consentimiento pero sin asentimiento,Participante es_menor_al_enrolar: true,"GET /participaciones/{id}/consentimientos",estado general incompleto,,
-CP-25,Estudiante consulta consentimientos,Usuario Estudiante autenticado,"GET /participaciones/{id}/consentimientos y POST /consentimientos/{id}/eventos","403; y cada acción queda en auditoría",,
+CP-14,Investigador sube consentimiento v1.0 de EST-01,Usuario Investigador autenticado (test_investigador),POST /estudios/{id}/documentos-consentimiento multipart (tipo,version,archivo),201 y v1.0 vigente,201 con id_documento 86819b3a-6a3e-47de-961f-6e8704ed60bc y hash de 64 caracteres,OK
+CP-15,Asistente intenta subir un documento,Usuario Asistente autenticado,POST /estudios/{id}/documentos-consentimiento multipart,403,403 SIN_PERMISO,OK
+CP-16,Registrar aceptar con evidencia,Participacion de EST-01 existente,POST /participaciones/{id}/consentimientos multipart (tipo,version,tipo_evento,evidencia),201 estado otorgado y hash de 64 caracteres,201 con id_consentimiento 9c6668c4-94e9-4c34-bb74-ed2f1e453a66 estado otorgado,OK
+CP-17,Registrar segundo consentimiento del mismo tipo,Misma participacion ya tiene consentimiento,POST /participaciones/{id}/consentimientos,409,409 SIN_CAMBIOS,OK
+CP-18,Registrar con documento de otro estudio,Documento pertenece a EST-02 y participacion ya retirada,POST /participaciones/{id}/consentimientos con id_documento de otro estudio,409,409 PARTICIPACION_RETIRADA (no se puede distinguir del motivo real porque ya estaba retirada),OK con observacion
+CP-19,Registrar sin evidencia,Intento de aceptar sin archivo,POST /participaciones/{id}/consentimientos sin evidencia,400,400 SOLICITUD_INVALIDA,OK
+CP-20,Consultar estado tras aceptar,Participacion con aceptar registrado,GET /participaciones/{id}/consentimientos,200 estado otorgado,200 estado otorgado completo true,OK
+CP-20b,Estado debe cambiar a pendiente_reconsentir al subir v1.1,Consentimiento v1.0 otorgado y documento v1.1 subido,GET /participaciones/{id}/consentimientos,estado pendiente_reconsentir,estado otorgado con documento_vigente false,HALLAZGO H-14
+CP-21,Reconsentir con la version vigente,Estado pendiente_reconsentir,POST /consentimientos/{id}/eventos tipo_evento reconsentir,201,409 TRANSICION_INVALIDA,HALLAZGO H-14 (consecuencia)
+CP-22,Retirar consentimiento,Estado otorgado,POST /consentimientos/{id}/eventos tipo_evento retirar,201 y participacion retirado,201 con estado_vigente revocado y participacion_estado retirado,OK
+CP-23,Cualquier evento despues de retirar,Consentimiento ya retirado,POST /consentimientos/{id}/eventos,409,201 estado vuelve a otorgado,HALLAZGO H-15
+CP-24,Menor con consentimiento pero sin asentimiento,Participante es_menor_al_enrolar true,GET /participaciones/{id}/consentimientos,estado general incompleto,completo false con consentimiento y asentimiento en sin_registro (correcto); y POST sin id_representacion devuelve 400,OK
+CP-25,Estudiante consulta consentimientos,Usuario Estudiante autenticado,GET /participaciones/{id}/consentimientos,403,403 SIN_PERMISO,OK
