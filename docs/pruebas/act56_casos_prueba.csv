@@ -1,0 +1,13 @@
+ID,Caso,Precondicion,Entrada,Resultado esperado,Resultado obtenido,Estado
+CP-26,Investigador pide contacto,Investigador responsable de EST-01,POST /participaciones/{id}/contacto {motivo:"coordinar_sesion"},"200 con seudonimo, nombre, correo, telefono; sin RUT ni fecha_nacimiento",,
+CP-27,Asistente pide contacto,Asistente autenticada,POST /participaciones/{id}/contacto {motivo:"coordinar_sesion"},403,,
+CP-28,Director pide contacto,Director autenticado,POST /participaciones/{id}/contacto {motivo:"coordinar_sesion"},200,,
+CP-29,Contacto motivo otro sin detalle,Investigador autenticado,POST /participaciones/{id}/contacto {motivo:"otro"},400,,
+CP-30,Contacto participacion retirada,Participacion en estado retirado,POST /participaciones/{id}/contacto {motivo:"coordinar_sesion"} luego {motivo:"retiro"},409 luego 200,,
+CP-31,Director revisa auditoria,Director autenticado,GET /auditoria?accion=desenmascarar,200 con una fila por consulta y sin datos personales,,
+CP-32,Director desenmascara,Director autenticado,POST /identidades/{ux_lab_id}/desenmascarar {justificacion:"auditoria etica", id_estudio:"{EST01}"},200 con identidad completa,,
+CP-33,Desenmascarar sin justificacion,Director autenticado,POST /identidades/{ux_lab_id}/desenmascarar {justificacion:"corta"},400,,
+CP-34,Investigador intenta desenmascarar sin autorizacion,Investigador sin permiso ver_identidad,POST /identidades/{ux_lab_id}/desenmascarar,403,,
+CP-35,Asistente desenmascara con autorizacion,Asistente con autorizacion ver_identidad en EST-01,POST /identidades/{ux_lab_id}/desenmascarar en EST-01 y luego en EST-02,200 luego 403,,
+CP-36,Listar sin PII con persona canario,Persona canario registrada,GET /estudios /participaciones /consentimientos,Ninguna respuesta trae nombre/RUT/correo/ux_lab_id/id_participante,,
+CP-37,Misma persona en dos estudios,Inscrita en EST-01 y EST-02,GET /estudios/{id}/participaciones,Dos seudonimos distintos P-XXXXXX sin 0,O,1,I,L,,

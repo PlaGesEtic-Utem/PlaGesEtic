@@ -3,7 +3,9 @@
  * Pool de conexiones a PostgreSQL con el usuario de la aplicación.
  * Los repositorios (src/repositories) son los únicos que lo usan directamente.
  */
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
+// DATE (OID 1082) se entrega como texto AAAA-MM-DD, sin convertir a Date ni depender de la zona horaria del servidor (H-12)
+types.setTypeParser(1082, (valor) => valor);
 
 let pool = null;
 

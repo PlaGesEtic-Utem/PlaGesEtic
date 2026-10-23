@@ -2,7 +2,14 @@
 
 Anexo de la especificación documental v1.0. Transcripción estructurada del catálogo v3: 60 rutas en 11 grupos. Conserva roles, flags, entradas y salidas; los pendientes de coherencia están en la especificación.
 
-[Fuente del catálogo v3](https://drive.google.com/file/d/1E6hF6FkxxDuMAv8JcfXlSu_fw2IyEpau/view)
+[Fuente: catálogo v3.1](https://drive.google.com/file/d/172V5EtjaF20uoevILh5StJMz4zkU-C_g/view)
+
+> **Notas de coherencia con el código (10/10/2026, ver [ADR-002](../decisiones/ADR-002-decisiones-prototipo-alfa.md)):**
+> - Las rutas se publican **sin prefijo** `/api/v1` (D2, propuesta).
+> - En `POST /identidades`, **correo y teléfono son obligatorios** (D1, aceptada).
+> - «Investigador (responsable)» significa membresía vigente con el permiso indicado en la columna «Permiso en estudio»; el responsable puede otorgarlo a otro investigador (D5, propuesta).
+> - Contactar a un participante: solo el Investigador responsable y el Director, con motivo registrado (`POST /participaciones/{id}/contacto`, D8, aceptada).
+> - Implementadas en `feature/backend-base` al 10/10: estudios (5 rutas), identidades (2) y participaciones (2). El ingreso (`/auth/*`) se implementa el 11/10 (D3).
 
 ## Autenticación y MFA
 
@@ -57,7 +64,7 @@ Anexo de la especificación documental v1.0. Transcripción estructurada del cat
 
 | Recurso | Rol autorizado | Permiso en estudio | Entrada | Salida |
 | --- | --- | --- | --- | --- |
-| POST /identidades | Investigador, Asistente | — (sin estudio) | rut (opcional), nombre, correo (opcional), telefono (opcional), fecha_nacimiento, tipo | Solo el ux_lab_id generado. El servidor cifra nombre, correo, teléfono y RUT y calcula sus hashes; el cliente nunca envía ni recibe datos cifrados. |
+| POST /identidades | Investigador, Asistente | — (sin estudio) | rut (opcional), nombre, correo, telefono, fecha_nacimiento, tipo | Solo el ux_lab_id generado. El servidor cifra nombre, correo, teléfono y RUT y calcula sus hashes; el cliente nunca envía ni recibe datos cifrados. |
 | POST /identidades/buscar | Investigador, Asistente | — (sin estudio) | rut o correo | Solo el ux_lab_id si la persona ya existe (para no duplicarla), sin ningún dato personal. |
 | POST /representaciones | Investigador, Asistente | — (sin estudio) | ux_lab_id_representante, ux_lab_id_representado, relacion, fecha_inicio | id_representacion. |
 | POST /identidades/{ux_lab_id}/desenmascarar | Director; o quien tenga una autorización ver_identidad aprobada y vigente | — (global) | justificacion (obligatoria), id_estudio | Datos personales descifrados. Queda en auditoria con accion: desenmascarar y la justificación. |
@@ -70,6 +77,7 @@ Anexo de la especificación documental v1.0. Transcripción estructurada del cat
 | POST /estudios/{id}/participaciones | Investigador, Asistente | puede_cargar | ux_lab_id | id_participacion y codigo_seudonimo aleatorio (ej. P-7K3QX9). Si la persona aún no es participante, crea participante y vinculo_identidad. Calcula es_menor_al_enrolar. |
 | GET /estudios/{id}/participaciones | Investigador, Asistente, Estudiante | puede_consultar | filtro: estado | Participaciones con seudónimo, estado y si era menor al enrolar. |
 | PATCH /participaciones/{id}/estado | Investigador, Asistente | puede_modificar | estado (activo / retirado) | Participación actualizada; no afecta participante.estado. |
+| POST /participaciones/{id}/contacto | Investigador responsable del estudio, Director | — (responsable del estudio o alcance global) | motivo (coordinar_sesion / reconsentimiento / incidente / retiro / otro), detalle (obligatorio si motivo = otro) | Solo nombre, correo y teléfono de la persona, para contactarla; nunca RUT ni fecha de nacimiento. Exige motivo; queda en auditoría como desenmascarar, con la justificación. Si la participación está retirada, solo se acepta el motivo retiro. Ver ADR-002, D8. |
 | GET /participaciones/{id}/sesiones | Investigador, Asistente, Estudiante | puede_consultar | — | Sesiones de investigación de la participación. |
 | POST /participaciones/{id}/sesiones | Investigador, Asistente | puede_modificar | fecha_programada, tecnicas, id_responsable | sesion_investigacion en estado programada. Rechaza con 409 si no hay consentimiento vigente. |
 | PATCH /sesiones-investigacion/{id} | Investigador, Asistente | puede_modificar | estado, fecha_realizada, observaciones | Sesión actualizada. |

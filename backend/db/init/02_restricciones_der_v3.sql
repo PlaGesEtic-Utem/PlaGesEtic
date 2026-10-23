@@ -12,6 +12,8 @@ BEGIN;
 
 -- 1) NOT NULL (según columna «Restricciones» del diccionario v3)
 ALTER TABLE identity_schema.identidad ALTER COLUMN ux_lab_id SET NOT NULL, ALTER COLUMN nombre_cifrado SET NOT NULL, ALTER COLUMN tipo SET NOT NULL, ALTER COLUMN fecha_nacimiento SET NOT NULL, ALTER COLUMN fecha_registro SET NOT NULL;
+-- v3.1 (10/10): correo y teléfono obligatorios para poder contactar a la persona (ADR-002, D1). Si es menor, se registran los de su representante.
+ALTER TABLE identity_schema.identidad ALTER COLUMN correo_cifrado SET NOT NULL, ALTER COLUMN correo_hash SET NOT NULL, ALTER COLUMN telefono_cifrado SET NOT NULL;
 ALTER TABLE identity_schema.vinculo_identidad ALTER COLUMN id_identidad SET NOT NULL, ALTER COLUMN id_participante SET NOT NULL;
 ALTER TABLE identity_schema.representante_legal ALTER COLUMN id_identidad_representante SET NOT NULL, ALTER COLUMN id_identidad_representado SET NOT NULL, ALTER COLUMN relacion SET NOT NULL, ALTER COLUMN fecha_inicio SET NOT NULL;
 ALTER TABLE ethics_schema.protocolo_version ALTER COLUMN id_estudio SET NOT NULL, ALTER COLUMN version SET NOT NULL, ALTER COLUMN documento_ruta SET NOT NULL, ALTER COLUMN documento_hash SET NOT NULL, ALTER COLUMN estado_cec SET NOT NULL, ALTER COLUMN id_usuario_registro SET NOT NULL, ALTER COLUMN fecha_registro SET NOT NULL;

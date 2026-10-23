@@ -69,5 +69,25 @@ async function listarPorEstudio(idEstudio, estado) {
 
 module.exports = {
   estadoEstudio, identidadPorUxLabId, participanteDeIdentidad, crearParticipanteConVinculo,
-  crearParticipacion, existeEstudio, listarPorEstudio,
+  crearParticipacion, existeEstudio, listarPorEstudio, representacionVigente,
 };
+
+
+/**
+ * ¿Esa representación está vigente y representa a la persona de ESTA participación?
+ * Cruza el puente de privacidad (identidad ↔ participante) y devuelve solo verdadero o falso:
+ * nunca ids de identidad ni datos personales.
+ */
+async function representacionVigente(cliente, idRepresentacion, idParticipacion) {
+  const { rows } = await cliente.query(
+    `SELECT 1
+       FROM identity_schema.representante_legal rl
+       JOIN identity_schema.identidad rep ON rep.id_identidad = rl.id_identidad_representante
+       JOIN identity_schema.vinculo_identidad v ON v.id_identidad = rl.id_identidad_representado
+       JOIN research_schema.participacion p ON p.id_participante = v.id_participante
+      WHERE rl.id_representacion = $1 AND p.id_participacion = $2
+        AND rl.fecha_inicio <= CURRENT_DATE AND (rl.fecha_fin IS NULL OR rl.fecha_fin >= CURRENT_DATE)
+        AND rep.fecha_revocacion IS NULL AND rep.fecha_eliminacion IS NULL`,
+    [idRepresentacion, idParticipacion]);
+  return rows.length > 0;
+}

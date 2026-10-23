@@ -4,6 +4,8 @@ Documentación de alcance ingreso recuperación y permisos
 
 Proyecto plaGesEtic · Observatorio UX / UXLab UTEM · Documentación Catalina Araniz
 
+> **Estado de la implementación (10/10/2026):** este documento describe el **diseño** aprobado. Están implementados los seis roles y sus permisos en la base (`04_roles_base.sql`, `05_permisos_base.sql`) y la validación de sesión en la API. El ingreso con contraseña y TOTP se implementa en el prototipo Alfa (11/10); el panel por rol, con el frontend (Actividad 58); y las pruebas CA-01 a CA-16, en la Actividad 48. Ver [ADR-002](../decisiones/ADR-002-decisiones-prototipo-alfa.md).
+
 ## 1 Alcance de la implementación
 
 La actividad 40 establece ingreso con correo, contraseña y MFA, control de sesiones, seis roles, panel por rol y trazabilidad de accesos y denegaciones. La documentación reúne los entregables del jueves 1, viernes 2 y sábado 3 de octubre; el cierre del domingo 4 se completa con los resultados de aceptación.
@@ -108,8 +110,8 @@ Datos de prueba: ocho cuentas sintéticas, una por rol más Soporte y Estudiante
 
 [Criterios de aceptación del líder](https://drive.google.com/file/d/1K8cMjb4yym7bkhdDM-FssplNwwSDairc/view)
 
-[Diccionario de datos v3](https://drive.google.com/file/d/1lHu6YkbNk8AL_j4kFryUXEL66SSHzw-S/view)
+[Diccionario de datos v3.1](https://drive.google.com/file/d/1e1g9YL--Hef9Zritw5-cFVUmXs24-FTd/view)
 
-[Catálogo de endpoints v3](https://drive.google.com/file/d/1E6hF6FkxxDuMAv8JcfXlSu_fw2IyEpau/view)
+[Catálogo de endpoints v3.1](https://drive.google.com/file/d/172V5EtjaF20uoevILh5StJMz4zkU-C_g/view)
 
 [Middlewares de seguridad v3](https://drive.google.com/file/d/1mJSEWUPjqA2g7kzBd127ka7tVsNWvenG/view)

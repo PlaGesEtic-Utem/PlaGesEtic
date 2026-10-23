@@ -7,6 +7,7 @@ COPY package*.json ./
 RUN npm install --omit=dev && npm cache clean --force
 COPY src ./src
 COPY scripts ./scripts
+RUN mkdir -p /app/almacenamiento && chown -R node:node /app/almacenamiento
 USER node
 EXPOSE 3000
 CMD ["node", "src/server.js"]
