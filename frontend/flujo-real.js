@@ -67,15 +67,37 @@
   function toast(msg, tipo) { toastEl.textContent = msg; toastEl.className = tipo || ''; toastEl.style.display = 'block'; clearTimeout(tt); tt = setTimeout(() => (toastEl.style.display = 'none'), 4200); }
 
   // ---------- llamadas a la API ----------
+  // Mensajes de error comunes para todas las pantallas (ADR-002, D22).
+  const MENSAJES_ERROR = {
+    401: 'Tu sesión terminó. Vuelve a iniciar sesión.',
+    403: 'No tienes permiso para esta acción.',
+    404: 'No se encontró lo que buscas. Puede que ya no exista.',
+    413: 'El archivo es demasiado grande.',
+    500: 'Ocurrió un error en el servidor. Intenta de nuevo en un momento.',
+    503: 'El servicio no está disponible. Intenta de nuevo en un momento.',
+  };
+  function mensajeDeError(status, error) {
+    // 401, 403 y errores del servidor: mensaje fijo, sin detalles del recurso.
+    if (status === 401 || status === 403 || status >= 500) return MENSAJES_ERROR[status] || MENSAJES_ERROR[500];
+    // 400, 404, 409, 415, 429: la API ya explica qué pasó.
+    return (error && error.mensaje) || MENSAJES_ERROR[status] || 'No se pudo completar la acción.';
+  }
   async function api(metodo, ruta, cuerpo, conToken = true) {
-    const cab = { 'Content-Type': 'application/json' };
+    const esArchivo = cuerpo instanceof FormData; // evidencias y documentos se envían como archivo
+    const cab = esArchivo ? {} : { 'Content-Type': 'application/json' };
     if (conToken && R2.token) cab.Authorization = 'Bearer ' + R2.token;
     let r, j = {};
-    try { r = await fetch(API + ruta, { method: metodo, headers: cab, body: cuerpo ? JSON.stringify(cuerpo) : undefined }); }
+    try { r = await fetch(API + ruta, { method: metodo, headers: cab, body: esArchivo ? cuerpo : (cuerpo ? JSON.stringify(cuerpo) : undefined) }); }
     catch (e) { throw { codigo: 'SIN_RED', mensaje: 'No se pudo contactar el servidor de la demo.' }; }
     try { j = await r.json(); } catch (e) { /* sin cuerpo */ }
-    if (!r.ok) throw Object.assign({ status: r.status }, j.error || { codigo: 'ERROR', mensaje: 'Error ' + r.status });
-    return j;
+    if (r.ok) return j;
+    const error = j.error || {};
+    // Token vencido o cerrado: se borra de memoria y se vuelve al ingreso (D21 y D22).
+    if (r.status === 401 && conToken && R2.token) {
+      R2.token = null; R2.tmp = null;
+      setTimeout(() => goProto('a1'), 0);
+    }
+    throw { status: r.status, codigo: error.codigo || 'ERROR', mensaje: mensajeDeError(r.status, error) };
   }
   api('GET', '/salud', null, false).then(() => badge.classList.remove('off')).catch(() => { badge.classList.add('off'); badge.innerHTML = '<i></i>API apagada: ejecuta «docker compose up -d»'; });
 
