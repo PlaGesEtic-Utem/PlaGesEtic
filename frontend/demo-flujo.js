@@ -1,7 +1,7 @@
 'use strict';
 /**
-    * plaGesEtic · Servidor de desarrollo de la interfaz: muestra el prototipo conectado a la API real. SOLO DESARROLLO. *
- * Abre el prototipo navegable v3.1 en http://localhost:8080, pero el ingreso, los estudios, los participantes
+    * plaGesEtic · Servidor de desarrollo de la interfaz: muestra el prototipo conectado a la API real. SOLO DESARROLLO.
+    * * Abre el prototipo navegable v3.1 en http://localhost:8080, pero el ingreso, los estudios, los participantes
  * y el alta de participantes usan la API real (la de Docker, en http://localhost:3000).
  *   - Las llamadas /api/... se reenvían a la API tal cual (así el navegador no las bloquea).
  *   - /codigo?correo=... hace de «celular»: calcula el código de 6 dígitos de un usuario de prueba
