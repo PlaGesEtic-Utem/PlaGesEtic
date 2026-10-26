@@ -5,17 +5,14 @@
  * Rutas de identidades.
  *
  * POST /identidades/buscar
- *   Busca una identidad sin exponer datos personales.
+ *   Busca identidades sin exponer datos personales.
  *
  * POST /identidades
  *   Registra una identidad y devuelve su UX Lab ID.
  *
  * POST /identidades/:ux_lab_id/desenmascarar
- *   Permite consultar datos personales únicamente
- *   con los permisos correspondientes.
- *
- * Las operaciones de desenmascaramiento requieren
- * una justificación y quedan registradas en auditoría.
+ *   Entrega datos personales únicamente a usuarios
+ *   autorizados y con auditoría previa obligatoria.
  */
 
 const { Router } = require('express');
@@ -39,32 +36,34 @@ const c = require('../controllers/identidadesController');
 module.exports = () => {
   const r = Router();
 
-  /**
-   * Permiso existente para registrar identidades.
-   */
+
   const puedeRegistrar = requierePermiso({
     recurso: 'identidad',
     accion: 'crear',
   });
 
   /**
-   * Búsqueda de identidad.
+   * POST /identidades/buscar
    *
-   * Solo permite devolver los identificadores
-   * necesarios para el proceso de inscripción.
+   * Permite devolver exclusivamente
+   * los identificadores necesarios.
    */
   r.post(
     '/buscar',
     marcarAuditoria('identidad', 'leer'),
     puedeRegistrar,
-    permitirEnRespuesta('ux_lab_id', 'ux_lab_ids'),
+    permitirEnRespuesta(
+      'ux_lab_id',
+      'ux_lab_ids'
+    ),
     c.buscar
   );
 
   /**
-   * Registro de identidad.
+   * POST /identidades
    *
-   * La respuesta solo incluye el UX Lab ID.
+   * Registra la identidad y devuelve
+   * únicamente su UX Lab ID.
    */
   r.post(
     '/',
@@ -75,24 +74,44 @@ module.exports = () => {
   );
 
   /**
-   * Desenmascaramiento de identidad.
+   * ACTIVIDAD 56 + D17
    *
-   * Requiere:
+   * POST /identidades/:ux_lab_id/desenmascarar
+   *
+   * Requisitos:
    * - Usuario autenticado.
-   * - id_estudio válido.
-   * - Identidad vinculada a ese estudio.
-   * - Director con permiso global de lectura,
-   *   o autorización especial ver_identidad.
+   * - Estudio válido.
+   * - Identidad vinculada al estudio.
+   * - Director autorizado o autorización
+   *   especial ver_identidad.
    * - Justificación obligatoria.
+   * - Cache-Control: no-store.
+   * - Auditoría registrada antes de entregar datos.
    *
-   * El middleware accesoDesenmascarar comprueba
-   * las condiciones antes de ejecutar el controlador.
+   * El controlador utiliza registrarAhora(req).
+   *
+   * Si falla la auditoría, responde HTTP 503
+   * sin revelar datos personales.
+   *
+   * La excepción de privacidad permite únicamente
+   * los seis campos del catálogo API.
    */
   r.post(
     '/:ux_lab_id/desenmascarar',
     noAlmacenar,
-    marcarAuditoria('identidad', 'desenmascarar'),
+    marcarAuditoria(
+      'identidad',
+      'desenmascarar'
+    ),
     accesoDesenmascarar,
+    permitirEnRespuesta(
+      'ux_lab_id',
+      'rut',
+      'nombre',
+      'correo',
+      'telefono',
+      'fecha_nacimiento'
+    ),
     c.desenmascarar
   );
 
