@@ -138,6 +138,13 @@ Mientras no esté integrado el login de la Actividad 40, se prueba con una **ses
    ```bash
    docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/actualizaciones/act56_permisos_identidad.sql
    ```
+8. Auditoría y trazabilidad (Actividad 57): `pruebas/auditoria.http` recorre los casos CP-38 a CP-49
+   (historial de un dato, quién puede consultar, ingreso, registro previo de acciones sensibles, cadena de huellas,
+   exportación y filtros). Algunos casos se revisan en la base: el comando va en el mismo archivo. Las reglas están
+   en el ADR-002 (D16 a D19). Si tu base se creó antes del 21/10, agrega la cadena de huellas una vez:
+   ```bash
+   docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/actualizaciones/act57_cadena_auditoria.sql
+   ```
 
 ### Ingresar al sistema con el login real (Actividad 46)
 
