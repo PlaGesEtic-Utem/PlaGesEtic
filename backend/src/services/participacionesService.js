@@ -351,14 +351,18 @@ async function consultarContacto(
   }
 
   /**
-   * La respuesta pública se limita
-   * estrictamente a estos tres campos.
-   */
-  return {
-    nombre: contacto.nombre,
-    correo: contacto.correo,
-    telefono: contacto.telefono,
-  };
+ * La respuesta pública contiene únicamente
+ * los cuatro campos definidos en D12.
+ *
+ * No se expone el estado de la participación
+ * ni identificadores internos.
+ */
+return {
+  codigo_seudonimo: contacto.codigo_seudonimo,
+  nombre: contacto.nombre,
+  correo: contacto.correo,
+  telefono: contacto.telefono,
+};
 }
 
 module.exports = {

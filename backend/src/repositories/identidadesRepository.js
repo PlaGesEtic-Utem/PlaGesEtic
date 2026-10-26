@@ -110,6 +110,9 @@ async function crear(f) {
  * Descifra los datos de una identidad.
  *
  * Función privada: no se exporta.
+ *
+ * Solo incluye los campos de la respuesta
+ * definidos para el desenmascaramiento.
  */
 function descifrarIdentidad(fila) {
   if (!fila) {
@@ -118,12 +121,12 @@ function descifrarIdentidad(fila) {
 
   return {
     id_identidad: fila.id_identidad,
+    ux_lab_id: fila.ux_lab_id,
     nombre: descifrarOpcional(fila.nombre_cifrado),
     correo: descifrarOpcional(fila.correo_cifrado),
     telefono: descifrarOpcional(fila.telefono_cifrado),
     rut: descifrarOpcional(fila.rut_cifrado),
     fecha_nacimiento: fila.fecha_nacimiento,
-    tipo: fila.tipo,
   };
 }
 
@@ -139,12 +142,12 @@ async function obtenerDescifradaPorUxLabId(uxLabId) {
   const { rows } = await db.query(
     `SELECT
          id_identidad,
+         ux_lab_id,
          nombre_cifrado,
          correo_cifrado,
          telefono_cifrado,
          rut_cifrado,
-         fecha_nacimiento,
-         tipo
+         fecha_nacimiento
        FROM identity_schema.identidad
       WHERE ux_lab_id = $1
         AND fecha_revocacion IS NULL
@@ -166,7 +169,7 @@ async function obtenerDescifradaPorUxLabId(uxLabId) {
  * - Si la participación está retirada,
  *   únicamente se admite el motivo "retiro".
  * - La restricción se comprueba ANTES de descifrar.
- * - Solo devuelve nombre, correo y teléfono.
+ * - Incluye el código seudónimo de la participación.
  *
  * El servicio debe proporcionar el motivo
  * previamente validado.
@@ -177,6 +180,7 @@ async function obtenerContactoPorParticipacion(
 ) {
   const { rows } = await db.query(
     `SELECT
+         p.codigo_seudonimo,
          i.nombre_cifrado,
          i.correo_cifrado,
          i.telefono_cifrado,
@@ -223,6 +227,7 @@ async function obtenerContactoPorParticipacion(
    */
   return {
     estado: fila.estado,
+    codigo_seudonimo: fila.codigo_seudonimo,
     nombre: descifrarOpcional(fila.nombre_cifrado),
     correo: descifrarOpcional(fila.correo_cifrado),
     telefono: descifrarOpcional(fila.telefono_cifrado),

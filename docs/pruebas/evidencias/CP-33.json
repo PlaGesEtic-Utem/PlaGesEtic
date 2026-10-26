@@ -1,0 +1,2 @@
+{"error":{"codigo":"SOLICITUD_INVALIDA","mensaje":"La justificación debe tener al menos 20 caracteres."}}
+HTTP: 400

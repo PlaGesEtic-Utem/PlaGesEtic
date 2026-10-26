@@ -70,9 +70,7 @@ function edad(fechaNacimiento) {
   return e;
 }
 
-/**
- * Valida los datos para registrar una identidad.
- */
+
 function validarEntrada(c) {
   const nombre = texto(c.nombre, 'nombre', 150);
 
@@ -201,9 +199,7 @@ async function buscar(c = {}) {
   };
 }
 
-/**
- * Detecta colisiones del UX Lab ID generado.
- */
+
 const esColision = (err) =>
   err.code === '23505' &&
   /ux_lab_id/.test(err.constraint || '');
@@ -258,10 +254,11 @@ async function crear(c = {}) {
  * Valida la solicitud y obtiene los datos personales
  * descifrados desde el repositorio de identidades.
  *
- * IMPORTANTE:
- * Este servicio no concede permisos.
- * La ruta debe verificar la autorización y su
- * vinculación con el estudio antes de llamarlo.
+ * La justificación debe tener entre 20 y 2000
+ * caracteres después de eliminar espacios externos.
+ *
+ * La autorización y vinculación con el estudio
+ * deben verificarse previamente en los middlewares.
  */
 async function desenmascarar(uxLabId, cuerpo = {}) {
   if (
@@ -273,7 +270,17 @@ async function desenmascarar(uxLabId, cuerpo = {}) {
     );
   }
 
-  texto(cuerpo.justificacion, 'justificacion', 2000);
+  const justificacion = texto(
+    cuerpo.justificacion,
+    'justificacion',
+    2000
+  );
+
+  if (justificacion.length < 20) {
+    throw errores.solicitudInvalida(
+      'La justificación debe tener al menos 20 caracteres.'
+    );
+  }
 
   const identidad =
     await repo.obtenerDescifradaPorUxLabId(uxLabId);

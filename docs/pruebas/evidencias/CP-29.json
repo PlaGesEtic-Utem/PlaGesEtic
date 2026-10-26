@@ -1,0 +1,2 @@
+{"error":{"codigo":"SOLICITUD_INVALIDA","mensaje":"«detalle» es obligatorio cuando el motivo es otro."}}
+HTTP: 400
