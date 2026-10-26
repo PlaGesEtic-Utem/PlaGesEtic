@@ -1,4 +1,3 @@
-// Arma la aplicación Express y la conexión a la base de datos, y la inicia en el puerto configurado.
 'use strict';
 const express = require('express');
 const crearRutas = require('./routes');
