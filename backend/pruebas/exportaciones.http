@@ -1,0 +1,116 @@
+# =====================================================================
+# plaGesEtic · Pruebas de exportación desidentificada (Actividad 60, casos CP-62 a CP-71)
+# Ejecutar EN ORDEN. Antes: cargar db/dev/datos_prueba.sql y sacar los tokens con
+#   docker compose exec api node scripts/sesion-prueba.js <correo>
+# Reglas: ADR-002, D23 (qué trae el paquete), D24 (cómo se genera) y D25 (vencimiento).
+# =====================================================================
+
+@base = http://localhost:3000
+@tokenInvestigador = PEGA_AQUI_EL_TOKEN_DE_test_investigador@uxlab.test
+@tokenEstudiante   = PEGA_AQUI_EL_TOKEN_DE_test_estudiante@uxlab.test
+@tokenSinPermiso   = PEGA_AQUI_EL_TOKEN_DE_test_estudiante_aut@uxlab.test
+@tokenAsistente    = PEGA_AQUI_EL_TOKEN_DE_test_asistente@uxlab.test
+@tokenDirector     = PEGA_AQUI_EL_TOKEN_DE_test_director@uxlab.test
+
+@est01 = 82bbf931-bc9f-594d-8203-77dc4608f2cc
+
+### CP-62. El Investigador responsable pide una exportación → 201, estado «lista», codigo_exportacion X-XXXXXX
+# @name expInv
+POST {{base}}/estudios/{{est01}}/exportaciones
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "proposito": "analisis", "filtros": {} }
+
+### CP-63. El estudiante con puede_exportar pide una exportacion→ 201, estado «solicitada» 
+# @name expEst
+POST {{base}}/estudios/{{est01}}/exportaciones
+Authorization: Bearer {{tokenEstudiante}}
+Content-Type: application/json
+
+{ "proposito": "analisis", "filtros": {} }
+
+### CP-64. El Investigador aprueba la solicitud del Estudiante → 200, estado «lista»
+PATCH {{base}}/exportaciones/{{expEst.response.body.$.id_exportacion}}/aprobacion
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "decision": "aprobar", "motivo": "Análisis para el informe del Hito 3" }
+
+### CP-64 (segunda vez). Aprobar la misma de nuevo → 409: solo se decide una exportación «solicitada»
+PATCH {{base}}/exportaciones/{{expEst.response.body.$.id_exportacion}}/aprobacion
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "decision": "aprobar", "motivo": "Análisis para el informe del Hito 3" }
+
+### CP-65 (paso 1). El Estudiante pide otra → 201, «solicitada»
+# @name expEst2
+POST {{base}}/estudios/{{est01}}/exportaciones
+Authorization: Bearer {{tokenEstudiante}}
+Content-Type: application/json
+
+{ "proposito": "informe", "filtros": {} }
+
+### CP-65 (paso 2). El Investigador la rechaza → 200, «rechazada»
+PATCH {{base}}/exportaciones/{{expEst2.response.body.$.id_exportacion}}/aprobacion
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "decision": "rechazar", "motivo": "El propósito no está en el protocolo" }
+
+### CP-65 (paso 3). El Estudiante intenta descargarla → 409
+GET {{base}}/exportaciones/{{expEst2.response.body.$.id_exportacion}}/descarga
+Authorization: Bearer {{tokenEstudiante}}
+
+### CP-66. Propósito que no existe → 400
+POST {{base}}/estudios/{{est01}}/exportaciones
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "proposito": "vender", "filtros": {} }
+
+### CP-66 (b). Filtros que no están vacíos → 400 (D23: por ahora solo {})
+POST {{base}}/estudios/{{est01}}/exportaciones
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "proposito": "analisis", "filtros": { "edad": 30 } }
+
+### CP-67. La Asistente pide una exportación → 403
+POST {{base}}/estudios/{{est01}}/exportaciones
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{ "proposito": "analisis", "filtros": {} }
+
+### CP-67 (b). Un Estudiante sin puede_exportar → 403
+POST {{base}}/estudios/{{est01}}/exportaciones
+Authorization: Bearer {{tokenSinPermiso}}
+Content-Type: application/json
+
+{ "proposito": "analisis", "filtros": {} }
+
+### CP-68 (paso 1). Estado del paquete del CP-62 → 200, «lista», sin ruta del archivo
+GET {{base}}/exportaciones/{{expInv.response.body.$.id_exportacion}}
+Authorization: Bearer {{tokenInvestigador}}
+
+### CP-68 (paso 2). Descargar el paquete → 200, un .zip (guardarlo con el ícono «Save» de la respuesta y abrirlo)
+GET {{base}}/exportaciones/{{expInv.response.body.$.id_exportacion}}/descarga
+Authorization: Bearer {{tokenInvestigador}}
+
+### CP-69. Un segundo paquete del mismo estudio → 201. Descargar los dos y comparar: la misma persona tiene otro código E-
+# @name expInv2
+POST {{base}}/estudios/{{est01}}/exportaciones
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "proposito": "informe", "filtros": {} }
+
+### CP-70. Retirar a una persona del paquete del CP-62 (con consentimientos.http, caso CP-22) y volver a descargar → 409 EXPORTACION_DESACTUALIZADA
+GET {{base}}/exportaciones/{{expInv.response.body.$.id_exportacion}}/descarga
+Authorization: Bearer {{tokenInvestigador}}
+
+### CP-71. Auditoría de las exportaciones (Director) → 200: crear, aprobar, rechazar y una fila «exportar» por descarga
+GET {{base}}/auditoria?entidad=exportacion&limite=50
+Authorization: Bearer {{tokenDirector}}
