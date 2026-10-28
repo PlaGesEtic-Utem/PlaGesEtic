@@ -12,7 +12,8 @@
 (function () {
   'use strict';
   const API = '/api';
-  const R2 = { token: null, tmp: null, correo: null, usuario: null, estudios: [] };
+  const R2 = { token: null, tmp: null, correo: null, usuario: null, estudios: [],
+    participaciones: new Map(), documentos: null, altaProceso: null, confirmacion: null, ficha: null };
   const ROLES = ['Director', 'Soporte', 'Investigador', 'Asistente', 'Estudiante', 'Invitado'];
 
   // ---------- estilos de la capa ----------
@@ -67,38 +68,50 @@
   function toast(msg, tipo) { toastEl.textContent = msg; toastEl.className = tipo || ''; toastEl.style.display = 'block'; clearTimeout(tt); tt = setTimeout(() => (toastEl.style.display = 'none'), 4200); }
 
   // ---------- llamadas a la API ----------
-  // Mensajes de error comunes para todas las pantallas (ADR-002, D22).
-  const MENSAJES_ERROR = {
-    401: 'Tu sesión terminó. Vuelve a iniciar sesión.',
-    403: 'No tienes permiso para esta acción.',
-    404: 'No se encontró lo que buscas. Puede que ya no exista.',
-    413: 'El archivo es demasiado grande.',
-    500: 'Ocurrió un error en el servidor. Intenta de nuevo en un momento.',
-    503: 'El servicio no está disponible. Intenta de nuevo en un momento.',
-  };
-  function mensajeDeError(status, error) {
-    // 401, 403 y errores del servidor: mensaje fijo, sin detalles del recurso.
-    if (status === 401 || status === 403 || status >= 500) return MENSAJES_ERROR[status] || MENSAJES_ERROR[500];
-    // 400, 404, 409, 415, 429: la API ya explica qué pasó.
-    return (error && error.mensaje) || MENSAJES_ERROR[status] || 'No se pudo completar la acción.';
-  }
   async function api(metodo, ruta, cuerpo, conToken = true) {
-    const esArchivo = cuerpo instanceof FormData; // evidencias y documentos se envían como archivo
-    const cab = esArchivo ? {} : { 'Content-Type': 'application/json' };
+    const cab = { 'Content-Type': 'application/json' };
     if (conToken && R2.token) cab.Authorization = 'Bearer ' + R2.token;
     let r, j = {};
-    try { r = await fetch(API + ruta, { method: metodo, headers: cab, body: esArchivo ? cuerpo : (cuerpo ? JSON.stringify(cuerpo) : undefined) }); }
+    try { r = await fetch(API + ruta, { method: metodo, headers: cab, body: cuerpo ? JSON.stringify(cuerpo) : undefined }); }
     catch (e) { throw { codigo: 'SIN_RED', mensaje: 'No se pudo contactar el servidor de la demo.' }; }
     try { j = await r.json(); } catch (e) { /* sin cuerpo */ }
-    if (r.ok) return j;
-    const error = j.error || {};
-    // Token vencido o cerrado: se borra de memoria y se vuelve al ingreso (D21 y D22).
-    if (r.status === 401 && conToken && R2.token) {
-      R2.token = null; R2.tmp = null;
-      setTimeout(() => goProto('a1'), 0);
-    }
-    throw { status: r.status, codigo: error.codigo || 'ERROR', mensaje: mensajeDeError(r.status, error) };
+    if (!r.ok) throw Object.assign({ status: r.status }, j.error || { codigo: 'ERROR', mensaje: 'Error ' + r.status });
+    return j;
   }
+  // FormData: el navegador asigna el boundary; no enviar Content-Type manualmente.
+  async function apiArchivo(ruta, datos) {
+    let respuesta, cuerpo = {};
+    try {
+      respuesta = await fetch(API + ruta, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + R2.token },
+        body: datos,
+      });
+    } catch (_) {
+      throw { codigo: 'SIN_RED', mensaje: 'No se pudo contactar el servidor.' };
+    }
+    try { cuerpo = await respuesta.json(); } catch (_) { /* sin JSON */ }
+    if (!respuesta.ok) throw Object.assign({ status: respuesta.status },
+      cuerpo.error || { codigo: 'ERROR', mensaje: 'Error ' + respuesta.status });
+    return cuerpo;
+  }
+
+  const h = (v) => String(v == null ? '' : v).replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const lista = (respuesta) => Array.isArray(respuesta) ? respuesta : (respuesta.datos || []);
+  const VERSION_FALTA = 'Este estudio no tiene un documento de consentimiento vigente. Solicita que lo carguen antes de continuar.';
+  async function documentosVigentes() {
+    const estudio = uuidDe(S.study);
+    if (!estudio) throw new Error('Selecciona un estudio activo antes de registrar la decisión.');
+    const documentos = lista(await api('GET', '/estudios/' + estudio + '/documentos-consentimiento'));
+    const vigente = documentos.find((d) => d.tipo === 'consentimiento' && d.vigente === true);
+    if (!vigente || !vigente.version) throw new Error(VERSION_FALTA);
+    R2.documentos = { consentimiento: vigente };
+  }
+  // API del consentimiento: se usa un servicio reutilizable y comprobable por separado.
+  const flujoConsentimiento = window.PlaGesConsentimiento;
+  if (!flujoConsentimiento) throw new Error('No se cargó consentimiento-integracion.js');
+
   api('GET', '/salud', null, false).then(() => badge.classList.remove('off')).catch(() => { badge.classList.add('off'); badge.innerHTML = '<i></i>API apagada: ejecuta «docker compose up -d»'; });
 
   // ---------- celular simulado ----------
@@ -138,7 +151,13 @@
     const ps = await api('GET', '/estudios/' + id + '/participaciones');
     const filas = Array.isArray(ps) ? ps : ps.datos || [];
     if (!acumular) PARTS.length = 0;
-    filas.forEach((p) => PARTS.push([p.codigo_seudonimo, p.estado === 'activo' ? 'Activo' : 'Retirado', p.estado === 'activo' ? 'ok' : 'err', FECHA(p.fecha_inicio), p.es_menor_al_enrolar ? 'Sí' : 'No']));
+    filas.forEach((p) => {
+      if (p.id_participacion && p.codigo_seudonimo) {
+        R2.participaciones.set(p.codigo_seudonimo, p.id_participacion);
+      }
+      PARTS.push([p.codigo_seudonimo, p.estado === 'activo' ? 'Activo' : 'Retirado',
+        p.estado === 'activo' ? 'ok' : 'err', FECHA(p.fecha_inicio), p.es_menor_al_enrolar ? 'Sí' : 'No']);
+    });
   }
   function aplicarUsuario(u) {
     R2.usuario = u;
@@ -170,21 +189,6 @@
   shell = function (mc, inner) { return shellV(mc, inner).replace('· nombre ficticio', '· usuario de prueba'); };
   const a3V = R.a3;
   R.a3 = () => a3V().replace(/· PROTOTIPO/gi, '· plaGesEtic');
-  const c2V = R.c2;
-  R.c2 = () => c2V().replace(btn('Guardar', 'c1', 's'), '<button class="btn s" data-act="estGuardar">Guardar</button>');
-  
-  // Consentimiento vigente (B3) y decisión (B4): la versión real del documento
-  const b3V = R.b3;
-  R.b3 = () => {
-    const d = R2.docVigente;
-    const texto = d
-      ? `Versión vigente: <b>v${d.version}</b> · registrada el ${FECHA(d.fecha_registro)}`
-      : '<b>Este estudio no tiene un consentimiento vigente.</b> Súbelo antes de registrar a alguien';
-    return b3V().replace('Versión vigente: <b>v1.1</b> · aprobada por el Comité de Ética el 12/09/2026', texto);
-  };
-  const b4V = R.b4;
-  R.b4 = () => b4V().replace('v1.1 (automático)', (R2.docVigente ? 'v' + R2.docVigente.version : '—') + ' (automático)');
-  
   const c3V = R.c3;
   R.c3 = () => {
     const s = STUDIES.find((x) => x.id === S.ceId) || STUDIES[0] || { id: '—', n: '' };
@@ -193,6 +197,140 @@
       .replace(/Activo · Aprobado por el Comité de Ética hasta el 30\/06\/2027/g, `${s.e} · ${s.cec}`)
       .replace('<th>¿Aceptó?</th>', '<th>Estado</th>').replace('<th>Versión firmada</th>', '<th>Inscrito el</th>').replace('<th>Sesiones</th>', '<th>Menor al inscribir</th>');
   };
+
+  // B3: mostrar metadatos verdaderos de la versión vigente. El texto del prototipo
+  // NO sustituye al documento aprobado por el CEC, que se firma fuera de esta demo.
+  const b3V = R.b3;
+  R.b3 = () => {
+    let pagina = b3V();
+    if (S.recons || !R2.documentos) return pagina;
+    const d = R2.documentos.consentimiento;
+    const info = `<div class="msg info"><b>Documento vigente de consentimiento:</b>
+      versión ${h(d.version)} · huella SHA-256: <code>${h(d.documento_hash || '—')}</code>.</div>
+      <div class="msg warn">El texto que aparece a continuación es ilustrativo y no reemplaza
+      el PDF aprobado por el Comité de Ética. Presenta el documento original a la persona antes de registrar su decisión.</div>`;
+    return pagina.replace(/<div class="msg info">Versión vigente:[\s\S]*?<\/div>/, info);
+  };
+
+  // B4: conserva el diseño, pero utiliza la versión real y admite PDF, JPEG y PNG.
+  const b4V = R.b4;
+  R.b4 = () => {
+    let pagina = b4V();
+    if (S.recons || !R2.documentos) return pagina;
+    const version = R2.documentos.consentimiento.version;
+    pagina = pagina.replace(/<label>Versión leída<\/label><input class="auto" readonly value="[^"]*"/,
+      `<label>Versión vigente del consentimiento</label><input class="auto" readonly value="${h(version)}"`);
+    pagina = pagina.replace(/<label for="ev">Documento firmado \(PDF\)<\/label><input id="ev" type="file" accept=".pdf">/,
+      '<label for="ev">Evidencia firmada (obligatoria al aceptar)</label><input id="ev" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">');
+    pagina = pagina.replace('Se guarda aparte de los datos del estudio, en una zona protegida.',
+      'PDF, JPEG o PNG · máximo 10 MB. Si la persona niega, no debes adjuntar evidencia.');
+    if (S.menor) pagina = pagina.replace('<div class="acts">',
+      '<div class="msg warn">El alta de menores requiere vincular previamente al representante legal mediante una representación vigente. Esta demo todavía no incorpora ese vínculo: no completes un alta de menor desde aquí.</div><div class="acts">');
+    return pagina;
+  };
+
+  // B5: mostrar solo el resultado confirmado por la API, no una confirmación ficticia.
+  const b5V = R.b5;
+  R.b5 = () => {
+    if (S.recons || !R2.confirmacion) return b5V();
+    const c = R2.confirmacion;
+    return shell('b1', `<div class="card">${steps(SB,4)}<div class="check">✓</div>
+      <h2 class="t">Decisión registrada</h2><p class="sub">La inscripción y su consentimiento fueron confirmados por la API.</p>
+      <div class="tw"><table class="sumtbl" style="min-width:0">
+      <tr><td>Código seudónimo</td><td><b>${h(c.codigo)}</b></td></tr>
+      <tr><td>Estudio</td><td>${h(c.estudio)}</td></tr>
+      <tr><td>Decisión</td><td>${h(c.decision)}</td></tr>
+      <tr><td>Versión</td><td>${h(c.version)}</td></tr>
+      <tr><td>Estado vigente</td><td>${h(c.estado)}</td></tr></table></div>
+      ${c.decision === 'Niega' ? '<div class="msg warn">Consentimiento negado: no se deben realizar sesiones ni recolectar datos de investigación.</div>' : '<div class="msg ok">Consentimiento otorgado y evidencia registrada.</div>'}
+      <div class="acts"><button class="btn s" data-act="ficha" data-c="${h(c.codigo)}">Ver ficha</button>
+      ${btn('Registrar otra persona', 'b1', 's')}${btn('Volver al panel', 'a3')}</div></div>`);
+  };
+
+  // Ficha real: mostrar estado efectivo e historial de eventos, sin datos de identidad.
+  R.c6 = () => {
+    const c = S.ficha || '';
+    const datos = R2.ficha;
+    if (!datos || datos.codigo !== c) return shell('c1', `<div class="card wide">
+      <h2 class="t">Ficha de consentimiento · ${h(c)}</h2>
+      <div class="msg warn">No se pudo cargar la ficha desde la API.</div>
+      <div class="acts">${btn('Volver', 'c3', 's')}</div></div>`);
+    const f = datos.datos;
+    const estados = Array.isArray(f.estado_vigente) ? f.estado_vigente : [];
+    const historial = Array.isArray(f.historial) ? f.historial : [];
+    const nombreEstado = { otorgado: 'Otorgado', negado: 'Negado', revocado: 'Revocado',
+      pendiente_reconsentir: 'Pendiente de reconsentimiento', sin_registro: 'Sin registro' };
+    return shell('c1', `<div class="card wide"><h2 class="t">Ficha de consentimiento · ${h(c)}</h2>
+      <p class="sub">Información consultada en la API · sin nombre, RUT ni correo.</p>
+      <h3>Estado vigente</h3>
+      <div class="tw"><table><tr><th>Tipo</th><th>Estado</th><th>Versión</th><th>Fecha</th></tr>
+      ${estados.map(e => `<tr><td>${h(e.tipo)}</td><td>${h(nombreEstado[e.estado] || e.estado)}</td>
+      <td>${h(e.version || '—')}</td><td>${h(e.fecha ? new Date(e.fecha).toLocaleString('es-CL') : '—')}</td></tr>`).join('')}
+      </table></div><h3 style="margin-top:22px">Historial de decisiones</h3>
+      <div class="tw"><table><tr><th>Fecha</th><th>Decisión</th><th>Tipo</th><th>Versión</th><th>Huella de evidencia</th></tr>
+      ${historial.map(e => `<tr><td>${h(e.fecha ? new Date(e.fecha).toLocaleString('es-CL') : '—')}</td>
+      <td>${h(e.tipo_evento)}</td><td>${h(e.tipo)}</td><td>${h(e.version)}</td>
+      <td><code>${h(e.evidencia_hash || '—')}</code></td></tr>`).join('')}
+      </table></div>${!historial.length ? '<div class="msg info">Todavía no hay decisiones registradas.</div>' : ''}
+      <div class="acts">${btn('Volver a participantes', 'c3', 's')}</div></div>`);
+  };
+
+  async function cargarFicha(codigo) {
+    const id = R2.participaciones.get(codigo);
+    if (!id) throw new Error('No se encontró la participación. Vuelve a cargar la lista del estudio.');
+    const datos = await api('GET', '/participaciones/' + encodeURIComponent(id) + '/consentimientos');
+    R2.ficha = { codigo, datos };
+    S.ficha = codigo;
+  }
+
+  async function registrarAlta() {
+    if (S.menor) throw new Error('El registro de menores requiere una representación legal vigente. Esta demo aún no permite vincularla.');
+    const decision = S.dec.Consentimiento;
+    if (!['Acepta', 'Niega'].includes(decision)) throw new Error('Selecciona si la persona acepta o niega.');
+    if (!R2.documentos || !R2.documentos.consentimiento) throw new Error(VERSION_FALTA);
+    const archivo = document.getElementById('ev')?.files?.[0] || null;
+    flujoConsentimiento.validarEvidencia(decision, archivo);
+    const d = S.alta || {};
+    const estudio = uuidDe(S.study);
+    if (!estudio) throw new Error('No se encontró el estudio seleccionado.');
+    const nombre = ((d.nom || '') + ' ' + (d.ape || '')).trim();
+    const cuerpo = { nombre, correo: d.mail || '', telefono: (d.tel || '').replace(/\s/g, ''), fecha_nacimiento: d.fn || '' };
+    if (d.rut) cuerpo.rut = d.rut;
+    const clave = estudio; // No conservar RUT ni correo como clave del intento.
+    if (R2.altaProceso && R2.altaProceso.clave !== clave) R2.altaProceso = null;
+    if (!R2.altaProceso) R2.altaProceso = { clave };
+    const proceso = R2.altaProceso;
+    const resultado = await flujoConsentimiento.completarAlta({
+      estado: proceso,
+      obtenerIdentidad: async () => {
+        try { return (await api('POST', '/identidades', cuerpo)).ux_lab_id; }
+        catch (e) {
+          if (e.status !== 409) throw e;
+          const q = cuerpo.rut ? { rut: cuerpo.rut } : { correo: cuerpo.correo };
+          const b = await api('POST', '/identidades/buscar', q);
+          const id = (b.ux_lab_ids || [])[0] || b.ux_lab_id;
+          if (!id) throw new Error('La persona ya existe, pero no se encontró su identificador UX Lab.');
+          return id;
+        }
+      },
+      inscribir: (uxLabId) => api('POST', '/estudios/' + estudio + '/participaciones', { ux_lab_id: uxLabId }),
+      registrar: (idParticipacion) => {
+        const form = new FormData();
+        form.append('tipo', 'consentimiento');
+        form.append('tipo_evento', decision === 'Acepta' ? 'aceptar' : 'negar');
+        form.append('version', R2.documentos.consentimiento.version);
+        if (decision === 'Acepta') form.append('evidencia', archivo, archivo.name);
+        return apiArchivo('/participaciones/' + idParticipacion + '/consentimientos', form);
+      }
+    });
+    S.code = resultado.codigo;
+    R2.participaciones.set(resultado.codigo, resultado.idParticipacion);
+    R2.confirmacion = { codigo: resultado.codigo, estudio: S.study, decision,
+      version: R2.documentos.consentimiento.version,
+      estado: resultado.consentimiento.estado_vigente };
+    S.alta = null; // No retener nombres, RUT ni correo después de finalizar.
+    R2.altaProceso = null;
+  }
 
   // ---------- navegación: donde hay API, se llama antes de cambiar de pantalla ----------
   const goProto = go;
@@ -240,6 +378,8 @@
     // Cerrar sesión (menú lateral)
     if (id === 'a1' && R2.token) {
       const t = R2.token; R2.token = null; R2.tmp = null;
+      R2.participaciones.clear(); R2.documentos = null; R2.altaProceso = null;
+      R2.confirmacion = null; R2.ficha = null; S.alta = null;
       fetch(API + '/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + t } }).catch(() => {});
       toast('Sesión cerrada: el token ya no sirve.', 'ok');
       S.err = false; return goProto('a1');
@@ -249,47 +389,40 @@
     // Estudios y participantes
     if (id === 'c1') return conEspera(async () => { try { await cargarEstudios(); } catch (e) { toast(e.mensaje || 'No se pudieron cargar los estudios', 'err'); } goProto('c1'); });
     if (id === 'c3') return conEspera(async () => { try { await cargarParticipantes(S.ceId); } catch (e) { toast(e.mensaje || 'Sin permiso para ver participantes', 'err'); return; } goProto('c3'); });
-       // Consentimiento vigente (B3): versión real del estudio elegido
-    if (id === 'b3') {
+    if (id === 'b3' && !S.recons) {
       return conEspera(async () => {
-        R2.docVigente = null;
-        try {
-          const docs = await api('GET', '/estudios/' + uuidDe(S.study) + '/documentos-consentimiento');
-          const lista = Array.isArray(docs) ? docs : docs.datos || [];
-          R2.docVigente = lista.find((d) => d.tipo === 'consentimiento' && d.vigente) || null;
-        } catch (e) {
-          toast(e.mensaje, 'err');
-        }
-        goProto('b3');
+        try { await documentosVigentes(); goProto('b3'); }
+        catch (e) { toast(e.mensaje || e.message || 'No se pudo consultar el consentimiento vigente.', 'err'); }
       });
     }
-   
-    // Alta de participante: se inscribe recién al guardar la decisión del consentimiento (no antes)
+    if (id === 'c6') {
+      return conEspera(async () => {
+        try { await cargarFicha(S.ficha); goProto('c6'); }
+        catch (e) { toast(e.mensaje || e.message || 'No se pudo abrir la ficha.', 'err'); }
+      });
+    }
+    // B4: inscribir y luego guardar la decisión con la evidencia requerida.
+    // Si falla el segundo POST se conserva el UUID en memoria: no se repite la inscripción.
     if (cur === 'b4' && id === 'b5' && !S.recons) {
       return conEspera(async () => {
-        const d = S.alta || {};
-        const nombre = ((d.nom || '') + ' ' + (d.ape || '')).trim();
-        const cuerpo = { nombre, correo: d.mail || '', telefono: (d.tel || '').replace(/\s/g, ''), fecha_nacimiento: d.fn || '' };
-        if (d.rut) cuerpo.rut = d.rut;
-        let uxLabId;
-        try { uxLabId = (await api('POST', '/identidades', cuerpo)).ux_lab_id; }
-        catch (e) {
-          if (e.status === 409) {
-            const b = await api('POST', '/identidades/buscar', cuerpo.rut ? { rut: cuerpo.rut } : { correo: cuerpo.correo });
-            uxLabId = (b.ux_lab_ids || [])[0] || b.ux_lab_id;
-            if (!uxLabId) { toast('La persona ya existe, pero no se encontró su UX Lab ID.', 'err'); return; }
-          } else { toast(e.mensaje || 'No se pudo registrar la identidad', 'err'); return; }
-        }
         try {
-          const p = await api('POST', '/estudios/' + uuidDe(S.study) + '/participaciones', { ux_lab_id: uxLabId });
-          S.code = p.codigo_seudonimo;
-          toast('Inscrita en ' + S.study + ' con el código ' + p.codigo_seudonimo + ' (sus datos quedaron cifrados).', 'ok');
+          await registrarAlta();
+          toast('Participación y consentimiento registrados correctamente.', 'ok');
           goProto('b5');
-        } catch (e) { toast(e.status === 409 ? 'Esta persona ya está inscrita en este estudio.' : (e.mensaje || 'No se pudo inscribir'), 'err'); }
+        } catch (e) {
+          const detalle = e.mensaje || e.message || 'No se pudo registrar el consentimiento.';
+          toast(e.codigo === 'YA_PARTICIPA' ? 'La persona ya está inscrita. Revisa su ficha antes de intentar otra alta.' : detalle, 'err');
+        }
       });
     }
     return goProto(id);
   };
+
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-act="b0ok"]')) {
+      R2.altaProceso = null; R2.confirmacion = null; R2.documentos = null;
+    }
+  }, true);
 
   document.addEventListener('click', (e) => { if (e.target.closest('[data-act="verqr"]')) { e.preventDefault(); e.stopImmediatePropagation(); mostrarQR(); } }, true);
 
@@ -315,35 +448,6 @@
     } catch (err) { out.textContent = err.mensaje || 'No se pudo buscar.'; }
   }, true);
 
-    // Guardar estudio (C2): si el código ya existe, lo edita; si no, lo crea
-  document.addEventListener('click', async (e) => {
-    const b = e.target.closest('[data-act="estGuardar"]'); if (!b) return;
-    e.preventDefault(); e.stopImmediatePropagation();
-
-    // Solo se envían los campos que tienen algo escrito
-    const datos = {};
-    if (val('cn')) datos.nombre = val('cn');
-    if (val('cd')) datos.descripcion = val('cd');
-    if (val('fi')) datos.fecha_inicio = val('fi');
-    if (val('rh')) datos.retencion_hasta = val('rh');
-
-    const idExistente = uuidDe(val('cc'));
-    await conEspera(async () => {
-      try {
-        if (idExistente) {
-          await api('PATCH', '/estudios/' + idExistente, datos);
-        } else {
-          await api('POST', '/estudios', { codigo_estudio: val('cc'), ...datos });
-        }
-        toast('Estudio guardado.', 'ok');
-        await cargarEstudios();
-        goProto('c1');
-      } catch (err) {
-        toast(err.mensaje, 'err');
-      }
-    });
-  }, true);
-  
   // Arranque: siempre desde el ingreso
   S.err = false; goProto('a1');
 })();

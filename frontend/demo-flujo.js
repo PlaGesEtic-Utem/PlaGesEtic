@@ -22,6 +22,7 @@ const PUERTO = Number(process.env.PUERTO_DEMO || 8080);
 const API = process.env.API || 'http://localhost:3000';
 const PAGINA = path.join(__dirname, 'prototipo.html');
 const INTEGRACION = path.join(__dirname, 'flujo-real.js');
+const CONSENTIMIENTO = path.join(__dirname, 'consentimiento-integracion.js');
 
 // ---- «Celular simulado»: mismo cálculo que src/utils/totp.js y el secreto fijo de scripts/usuarios-prueba.js
 const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -56,7 +57,7 @@ http.createServer(async (req, res) => {
 
     if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
       // El prototipo navegable v3.1 tal cual, más la capa que lo conecta a la API real.
-      const html = fs.readFileSync(PAGINA, 'utf8').replace('</body>', '<script src="/qrcode.js"></script><script src="/flujo-real.js"></script></body>');
+      const html = fs.readFileSync(PAGINA, 'utf8').replace('</body>', '<script src="/qrcode.js"></script><script src="/consentimiento-integracion.js"></script><script src="/flujo-real.js"></script></body>');
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
       return res.end(html);
     }
@@ -71,6 +72,10 @@ http.createServer(async (req, res) => {
       if (!/^[a-z0-9._-]+@uxlab\.test$/.test(correo)) return json(res, 400, { error: 'Solo usuarios de prueba (@uxlab.test).' });
       const uri = `otpauth://totp/plaGesEtic:${encodeURIComponent(correo)}?secret=${secretoDePrueba(correo)}&issuer=plaGesEtic&algorithm=SHA1&digits=6&period=30`;
       return json(res, 200, { uri });
+    }
+    if (req.method === 'GET' && url.pathname === '/consentimiento-integracion.js') {
+      res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
+      return fs.createReadStream(CONSENTIMIENTO).pipe(res);
     }
     if (req.method === 'GET' && url.pathname === '/flujo-real.js') {
       res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store' });

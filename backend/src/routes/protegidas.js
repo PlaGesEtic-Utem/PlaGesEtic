@@ -19,6 +19,9 @@ const auditoriaRoutes = require('./auditoriaRoutes');
 const { marcarAuditoria } =
   require('../middlewares/auditoria');
 
+const { permitirEnRespuesta } =
+  require('../middlewares/filtroPrivacidad');
+
 const {
   resolverEstudioDeParticipacion,
 } = require('../middlewares/estudioDeParticipacion');
@@ -91,6 +94,12 @@ module.exports = (pool) => {
   marcarAuditoria('contacto_participante', 'desenmascarar'),
   resolverEstudioDeParticipacion,
   accesoContacto,
+  permitirEnRespuesta(
+    'codigo_seudonimo',
+    'nombre',
+    'correo',
+    'telefono'
+  ),
   participacionesController.contacto
 );
 

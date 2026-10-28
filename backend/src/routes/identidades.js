@@ -93,6 +93,14 @@ module.exports = () => {
     noAlmacenar,
     marcarAuditoria('identidad', 'desenmascarar'),
     accesoDesenmascarar,
+    permitirEnRespuesta(
+      'ux_lab_id',
+      'rut',
+      'nombre',
+      'correo',
+      'telefono',
+      'fecha_nacimiento'
+    ),
     c.desenmascarar
   );
 
