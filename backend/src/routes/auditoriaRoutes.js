@@ -1,19 +1,23 @@
 'use strict';
-/**
- * Rutas de auditoría. Solo lectura: no existe PUT, PATCH, POST ni DELETE sobre la bitácora.
- *
- * Cadena completa (auditoria y autenticacion se montan antes, a nivel de app):
- *   auditoria → autenticacion → marcarAuditoria → requierePermiso (Director) → controlador → filtroPrivacidad
- * El permiso 'auditoria' + 'leer' con alcance 'global' solo debe existir para el rol Director
- * (ver db/auditoria_permiso_e_indices.sql).
- */
+/** Rutas de auditoría: consulta y exportación; nunca modificación de la bitácora. */
+
 const { Router } = require('express');
 const { marcarAuditoria } = require('../middlewares/auditoria');
 const { requierePermiso } = require('../middlewares/controlAcceso');
 const { ErrorApi } = require('../utils/errores');
 const controlador = require('../controllers/auditoriaController');
+const controladorExportar = require('../controllers/auditoriaExportarController');
 
 const router = Router();
+
+// Act. 57: misma autorización global de lectura que GET /auditoria.
+// D17: el controlador registra la auditoría 'exportar' antes de enviar el CSV.
+router.get(
+  '/auditoria/exportar',
+  marcarAuditoria('auditoria', 'exportar'),
+  requierePermiso({ recurso: 'auditoria', accion: 'leer' }),
+  controladorExportar.exportar
+);
 
 router.get(
   '/auditoria',
@@ -22,9 +26,9 @@ router.get(
   controlador.listar
 );
 
-// Cualquier método de escritura sobre la bitácora responde 405 (y queda auditado como error).
+// Toda escritura sobre la bitácora está prohibida, incluida /auditoria/exportar.
 router.all(['/auditoria', '/auditoria/:id'], (req, res, next) => {
-  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next(); // GET /auditoria/:id → 404 normal
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
   res.set('Allow', 'GET');
   return next(new ErrorApi(405, 'METODO_NO_PERMITIDO', 'La bitácora de auditoría es de solo lectura.'));
 });
