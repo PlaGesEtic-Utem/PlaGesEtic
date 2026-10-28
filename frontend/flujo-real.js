@@ -173,6 +173,18 @@
   const c2V = R.c2;
   R.c2 = () => c2V().replace(btn('Guardar', 'c1', 's'), '<button class="btn s" data-act="estGuardar">Guardar</button>');
   
+  // Consentimiento vigente (B3) y decisión (B4): la versión real del documento
+  const b3V = R.b3;
+  R.b3 = () => {
+    const d = R2.docVigente;
+    const texto = d
+      ? `Versión vigente: <b>v${d.version}</b> · registrada el ${FECHA(d.fecha_registro)}`
+      : '<b>Este estudio no tiene un consentimiento vigente.</b> Súbelo antes de registrar a alguien';
+    return b3V().replace('Versión vigente: <b>v1.1</b> · aprobada por el Comité de Ética el 12/09/2026', texto);
+  };
+  const b4V = R.b4;
+  R.b4 = () => b4V().replace('v1.1 (automático)', (R2.docVigente ? 'v' + R2.docVigente.version : '—') + ' (automático)');
+  
   const c3V = R.c3;
   R.c3 = () => {
     const s = STUDIES.find((x) => x.id === S.ceId) || STUDIES[0] || { id: '—', n: '' };
@@ -237,6 +249,21 @@
     // Estudios y participantes
     if (id === 'c1') return conEspera(async () => { try { await cargarEstudios(); } catch (e) { toast(e.mensaje || 'No se pudieron cargar los estudios', 'err'); } goProto('c1'); });
     if (id === 'c3') return conEspera(async () => { try { await cargarParticipantes(S.ceId); } catch (e) { toast(e.mensaje || 'Sin permiso para ver participantes', 'err'); return; } goProto('c3'); });
+       // Consentimiento vigente (B3): versión real del estudio elegido
+    if (id === 'b3') {
+      return conEspera(async () => {
+        R2.docVigente = null;
+        try {
+          const docs = await api('GET', '/estudios/' + uuidDe(S.study) + '/documentos-consentimiento');
+          const lista = Array.isArray(docs) ? docs : docs.datos || [];
+          R2.docVigente = lista.find((d) => d.tipo === 'consentimiento' && d.vigente) || null;
+        } catch (e) {
+          toast(e.mensaje, 'err');
+        }
+        goProto('b3');
+      });
+    }
+   
     // Alta de participante: se inscribe recién al guardar la decisión del consentimiento (no antes)
     if (cur === 'b4' && id === 'b5' && !S.recons) {
       return conEspera(async () => {
