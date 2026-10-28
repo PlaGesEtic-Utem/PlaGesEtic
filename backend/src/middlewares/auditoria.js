@@ -64,6 +64,11 @@ function auditoria(req, res, next) {
 function completarAuditoria(req) {
   const a = req.auditoria;
   if (!a) throw new Error('Auditoría no inicializada');
+
+  // Evita registros sin entidad cuando la solicitud falla antes de llegar a su ruta.
+  if (typeof a.entidad !== 'string' || !a.entidad.trim()) {
+    a.entidad = 'sistema';
+  }
   // Datos que dejaron los middlewares anteriores, si nadie los copió antes.
   if (req.usuario) {
     a.id_usuario = a.id_usuario || req.usuario.id_usuario || null;
