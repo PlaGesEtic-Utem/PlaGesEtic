@@ -1,1 +1,13 @@
+ID,Caso,Precondicion,Entrada,Resultado esperado,Resultado obtenido,Estado
+CP-38,Rastrear historial,Director autenticado,GET /auditoria?entidad=participacion&id_registro_afectado=...,200 con historial,200 con historial,OK
+CP-39,Permisos de lectura,Investigador/Asistente/Estudiante,GET /auditoria,403 para los tres,403 para los tres,OK
+CP-40,Intentar modificar,Director autenticado,PUT /auditoria,405,405 METODO_NO_PERMITIDO,OK
+CP-41,Eventos de login,Usuario real,Login fallido + Logout,Genera login_fallido y cierre_sesion,Generado,OK
+CP-42,Contacto y desenmascarar,Director autenticado,Contacto + Desenmascarar,Genera filas de auditoria,Generado,OK
 CP-43,Caida de auditoria,Se quita permiso INSERT,Desenmascarar,503 sin datos,500 ERROR_INTERNO,HALLAZGO H-23
+CP-44,Integridad,Script verificar-auditoria,node scripts/verificar-auditoria.js,Cadena integra,ERROR 42703 (Falta migracion SQL),HALLAZGO H-24
+CP-45,Exportar CSV,Director autenticado,GET /auditoria/exportar?estudio_id=...,CSV generado,200 CSV generado,OK
+CP-46,Filtros invalidos,Director autenticado,GET /auditoria?limite=500 y fechas invertidas,400,400 en ambos,OK
+CP-47,Buscar PII,Query SQL,Buscar Canario y RUT en justificacion,0 filas,0 filas,OK
+CP-48,Filas sin entidad,Query SQL,Entidad IS NULL,0 filas (salvo login),10 filas recientes encontradas,HALLAZGO H-22
+CP-49,Error de permiso auditado,Investigador sin autorizacion,Desenmascarar,403 + fila error,403 y fila de error,OK
