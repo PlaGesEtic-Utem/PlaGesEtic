@@ -1,0 +1,76 @@
+# =====================================================================
+# plaGesEtic · Pruebas visuales de identidades (Actividad 45 · viernes 9)
+# Igual que estudios.http: pega los tokens y haz clic en «Send Request».
+# Tokens:  node scripts/sesion-prueba.js test_investigador@uxlab.test   (y test_estudiante)
+# =====================================================================
+
+@base = http://localhost:3000
+@tokenInvestigador = PEGA_AQUI_EL_TOKEN_DE_test_investigador@uxlab.test
+@tokenEstudiante   = PEGA_AQUI_EL_TOKEN_DE_test_estudiante@uxlab.test
+
+### 1. Registrar una persona → 201 y SOLO el UX Lab ID (ej. UXL-D4EDR9G4)
+POST {{base}}/identidades
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{
+  "nombre": "Ana Pérez",
+  "rut": "12.345.678-5",
+  "correo": "ana.perez@correo.test",
+  "telefono": "+56 9 1234 5678",
+  "fecha_nacimiento": "1992-04-10",
+  "tipo": "participante"
+}
+
+### 2. Buscarla por RUT (antes de registrar a alguien, siempre se busca) → existe: true
+POST {{base}}/identidades/buscar
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "rut": "12345678-5" }
+
+### 3. Buscarla por correo (aunque venga en mayúsculas) → existe: true
+POST {{base}}/identidades/buscar
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "correo": "ANA.PEREZ@correo.test" }
+
+### 4. Registrarla otra vez con el mismo RUT → 409 PERSONA_YA_REGISTRADA
+POST {{base}}/identidades
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "nombre": "Ana Pérez", "rut": "12345678-5", "correo": "otro@correo.test", "telefono": "+56911112222", "fecha_nacimiento": "1992-04-10" }
+
+### 5. Persona sin RUT (ej. extranjera) → 201
+POST {{base}}/identidades
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "nombre": "Sofía Reyes", "correo": "sofia.reyes@correo.test", "telefono": "+56955555555", "fecha_nacimiento": "1995-03-02" }
+
+### 6. RUT con dígito verificador incorrecto → 400
+POST {{base}}/identidades
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "nombre": "X", "rut": "12.345.678-9", "correo": "x@correo.test", "telefono": "+56911112222", "fecha_nacimiento": "1990-01-01" }
+
+### 7. Sin teléfono → 400 (correo y teléfono son obligatorios)
+POST {{base}}/identidades
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "nombre": "X", "correo": "x@correo.test", "fecha_nacimiento": "1990-01-01" }
+
+### 8. Estudiante intenta registrar → 403
+POST {{base}}/identidades
+Authorization: Bearer {{tokenEstudiante}}
+Content-Type: application/json
+
+{ "nombre": "X", "correo": "x@correo.test", "telefono": "+56911112222", "fecha_nacimiento": "1990-01-01" }
+
+### 9. Comprobar que en la base todo quedó cifrado (pgAdmin):
+#   SELECT ux_lab_id, nombre_cifrado, rut_hash, correo_cifrado FROM identity_schema.identidad;
+#   → verás textos que empiezan con «v1:» y huellas de 64 caracteres, nunca el nombre ni el RUT.

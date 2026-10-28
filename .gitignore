@@ -12,3 +12,5 @@ __pycache__/
 storage/
 uploads/
 .DS_Store
+backend/setup_mfa_tests.js
+backend/datos_para_act45.sql

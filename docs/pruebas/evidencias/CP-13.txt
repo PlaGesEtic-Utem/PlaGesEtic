@@ -1,0 +1,19 @@
+    entidad    |   accion   | resultado |       fecha_hora        
+---------------+------------+-----------+-------------------------
+ estudio       | crear      | error     | 2026-10-14 00:54:22.653
+ identidad     | crear      | error     | 2026-10-14 00:54:21.704
+ participacion | leer       | exito     | 2026-10-14 00:53:34.439
+ participacion | crear      | error     | 2026-10-14 00:53:33.666
+ participacion | crear      | error     | 2026-10-14 00:53:32.916
+ participacion | crear      | exito     | 2026-10-14 00:53:32.158
+ participacion | crear      | exito     | 2026-10-14 00:53:31.574
+ identidad     | leer       | exito     | 2026-10-14 00:53:30.837
+ identidad     | crear      | error     | 2026-10-14 00:53:30.084
+ identidad     | crear      | exito     | 2026-10-14 00:53:28.703
+ estudio       | actualizar | error     | 2026-10-14 00:53:27.959
+ estudio       | actualizar | error     | 2026-10-14 00:53:27.199
+ estudio       | crear      | exito     | 2026-10-14 00:53:26.44
+ estudio       | leer       | exito     | 2026-10-14 00:52:26.283
+ estudio       | leer       | exito     | 2026-10-12 21:40:23.576
+(15 rows)
+
