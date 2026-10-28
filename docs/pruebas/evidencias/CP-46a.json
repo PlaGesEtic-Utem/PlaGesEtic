@@ -1,0 +1,2 @@
+{"error":{"codigo":"SOLICITUD_INVALIDA","mensaje":"El parámetro limite debe ser un entero entre 1 y 200."}}
+HTTP: 400

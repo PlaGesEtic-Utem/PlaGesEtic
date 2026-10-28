@@ -1,0 +1,5 @@
+    accion     | resultado |              id_estudio              
+---------------+-----------+--------------------------------------
+ desenmascarar | error     | 82bbf931-bc9f-594d-8203-77dc4608f2cc
+(1 row)
+
