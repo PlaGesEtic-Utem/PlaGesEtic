@@ -52,6 +52,18 @@ module.exports = (pool) => {
     require('./documentosConsentimiento')(pool)
   );
 
+    /**
+   * Exportación desidentificada (Actividad 60).
+   */
+  router.use(
+    '/estudios/:idEstudio/exportaciones',
+    require('./exportaciones').porEstudio()
+  );
+  router.use(
+    '/exportaciones',
+    require('./exportaciones').porExportacion()
+  );
+  
   /**
    * Administración y consulta de estudios.
    */
