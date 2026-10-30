@@ -13,7 +13,9 @@
   'use strict';
   const API = '/api';
   const R2 = { token: null, tmp: null, correo: null, usuario: null, estudios: [],
-    participaciones: new Map(), documentos: null, altaProceso: null, confirmacion: null, ficha: null };
+    participaciones: new Map(), estudioParticipacion: new Map(), idsConsentimiento: new Map(),
+    documentos: null, altaProceso: null, confirmacion: null, ficha: null,
+    eventoTipo: null, sensible: null, contactoMotivo: null, pantallaAnterior: null };
   const ROLES = ['Director', 'Soporte', 'Investigador', 'Asistente', 'Estudiante', 'Invitado'];
 
   // ---------- estilos de la capa ----------
@@ -72,7 +74,7 @@
     const cab = { 'Content-Type': 'application/json' };
     if (conToken && R2.token) cab.Authorization = 'Bearer ' + R2.token;
     let r, j = {};
-    try { r = await fetch(API + ruta, { method: metodo, headers: cab, body: cuerpo ? JSON.stringify(cuerpo) : undefined }); }
+    try { r = await fetch(API + ruta, { method: metodo, headers: cab, cache: 'no-store', body: cuerpo ? JSON.stringify(cuerpo) : undefined }); }
     catch (e) { throw { codigo: 'SIN_RED', mensaje: 'No se pudo contactar el servidor de la demo.' }; }
     try { j = await r.json(); } catch (e) { /* sin cuerpo */ }
     if (!r.ok) throw Object.assign({ status: r.status }, j.error || { codigo: 'ERROR', mensaje: 'Error ' + r.status });
@@ -84,6 +86,7 @@
     try {
       respuesta = await fetch(API + ruta, {
         method: 'POST',
+        cache: 'no-store',
         headers: { Authorization: 'Bearer ' + R2.token },
         body: datos,
       });
@@ -109,6 +112,8 @@
     R2.documentos = { consentimiento: vigente };
   }
   // API del consentimiento: se usa un servicio reutilizable y comprobable por separado.
+  const act58 = window.PlaGesActividad58;
+  if (!act58) throw new Error('No se cargó actividad58-eventos.js');
   const flujoConsentimiento = window.PlaGesConsentimiento;
   if (!flujoConsentimiento) throw new Error('No se cargó consentimiento-integracion.js');
 
@@ -154,6 +159,7 @@
     filas.forEach((p) => {
       if (p.id_participacion && p.codigo_seudonimo) {
         R2.participaciones.set(p.codigo_seudonimo, p.id_participacion);
+        R2.estudioParticipacion.set(p.codigo_seudonimo, codigo);
       }
       PARTS.push([p.codigo_seudonimo, p.estado === 'activo' ? 'Activo' : 'Retirado',
         p.estado === 'activo' ? 'ok' : 'err', FECHA(p.fecha_inicio), p.es_menor_al_enrolar ? 'Sí' : 'No']);
@@ -272,7 +278,15 @@
       <td>${h(e.tipo_evento)}</td><td>${h(e.tipo)}</td><td>${h(e.version)}</td>
       <td><code>${h(e.evidencia_hash || '—')}</code></td></tr>`).join('')}
       </table></div>${!historial.length ? '<div class="msg info">Todavía no hay decisiones registradas.</div>' : ''}
-      <div class="acts">${btn('Volver a participantes', 'c3', 's')}</div></div>`);
+      <div class="acts" style="flex-wrap:wrap">${btn('Volver a participantes', 'c3', 's')}
+      ${['otorgado', 'pendiente_reconsentir'].includes((estados.find(x => x.tipo === 'consentimiento') || {}).estado)
+        ? `<button class="btn s" data-act="act58RetiroForm">Registrar retiro</button>` : ''}
+      ${(estados.find(x => x.tipo === 'consentimiento') || {}).estado !== 'revocado'
+        ? `<button class="btn s" data-act="act58ReconsForm">Reconsentir (nueva versión)</button>` : ''}
+      ${['Investigador','Director'].includes(S.role)
+        ? `<button class="btn s" data-act="act58ContactForm">Datos de contacto</button>` : ''}
+      <button class="btn s" data-act="act58IdentityForm">Desenmascarar (acceso excepcional)</button>
+      </div></div>`);
   };
 
   async function cargarFicha(codigo) {
@@ -325,12 +339,190 @@
     });
     S.code = resultado.codigo;
     R2.participaciones.set(resultado.codigo, resultado.idParticipacion);
+    R2.estudioParticipacion.set(resultado.codigo, S.study);
+    if (resultado.consentimiento.id_consentimiento)
+      R2.idsConsentimiento.set(resultado.idParticipacion, resultado.consentimiento.id_consentimiento);
     R2.confirmacion = { codigo: resultado.codigo, estudio: S.study, decision,
       version: R2.documentos.consentimiento.version,
       estado: resultado.consentimiento.estado_vigente };
     S.alta = null; // No retener nombres, RUT ni correo después de finalizar.
     R2.altaProceso = null;
   }
+
+  // ---------- Actividad 58 (jueves): eventos, contacto e identidad ----------
+  const tipoActual = () => (R2.ficha?.datos?.estado_vigente || []).find(e => e.tipo === 'consentimiento') || null;
+  const fichaActual = () => R2.ficha && R2.ficha.codigo === S.ficha ? R2.ficha : null;
+  const idParticipacionActual = () => R2.participaciones.get(S.ficha);
+  const avisoD21 = '<div class="msg warn"><b>Privacidad D21:</b> no escribas nombres, RUT, correos ni otros datos identificatorios en el motivo, la observación o la justificación.</div>';
+  function borrarSensibles() {
+    // Los datos solo viven durante la pantalla que los muestra, nunca en storage/logs.
+    R2.sensible = null;
+    R2.contactoMotivo = null;
+  }
+  async function idConsentimientoActual() {
+    const id = idParticipacionActual();
+    if (!id) throw new Error('No se encontró la participación. Vuelve a cargar sus participantes.');
+    const datos = fichaActual()?.datos || {};
+    const tipo = tipoActual();
+    const encontrado = tipo?.id_consentimiento || datos.id_consentimiento ||
+      R2.idsConsentimiento.get(id) || (datos.historial || []).find(e => e.tipo === 'consentimiento')?.id_consentimiento;
+    if (encontrado) return encontrado;
+    // Solo entrega un UUID opaco; aplica los mismos controles de acceso que la ficha.
+    const r = await api('GET', '/participaciones/' + encodeURIComponent(id) + '/consentimientos/identificador');
+    if (!r.id_consentimiento) throw new Error('La API no devolvió el identificador del consentimiento.');
+    R2.idsConsentimiento.set(id, r.id_consentimiento);
+    return r.id_consentimiento;
+  }
+  async function abrirEvento(tipo) {
+    if (!fichaActual()) await cargarFicha(S.ficha);
+    if (!tipoActual()) throw new Error('No existe un consentimiento registrado para esta participación.');
+    if (tipoActual().estado === 'revocado') throw new Error('El consentimiento está retirado: no admite más eventos.');
+    if (tipo === 'retirar' && !['otorgado','pendiente_reconsentir'].includes(tipoActual().estado))
+      throw new Error('Solo se puede retirar un consentimiento otorgado o pendiente de nueva versión.');
+    R2.eventoTipo = tipo;
+    if (tipo === 'reconsentir') {
+      const codEstudio = R2.estudioParticipacion.get(S.ficha) || S.ceId;
+      const uuid = uuidDe(codEstudio);
+      if (!uuid) throw new Error('No se identificó el estudio de la participación.');
+      const docs = lista(await api('GET', '/estudios/' + uuid + '/documentos-consentimiento'));
+      const actual = docs.find(d => d.tipo === 'consentimiento' && d.vigente === true);
+      if (!actual) throw new Error(VERSION_FALTA);
+      if (tipoActual().version === actual.version && tipoActual().estado !== 'pendiente_reconsentir')
+        throw new Error('Esta persona ya tiene registrada la versión vigente. Primero debe existir una nueva versión aprobada.');
+      R2.documentoReconsentimiento = actual;
+    }
+    goProto('act58evento');
+  }
+  R.act58evento = () => {
+    const retiro = R2.eventoTipo === 'retirar';
+    const actual = tipoActual() || {};
+    if (!R2.eventoTipo || !fichaActual()) return shell('c1', `<div class="card">No se encontró una ficha válida.${btn('Volver','c6','s')}</div>`);
+    const version = retiro ? actual.version : R2.documentoReconsentimiento?.version;
+    return shell('c1', `<div class="card"><h2 class="t">${retiro ? 'Registrar retiro' : 'Registrar reconsentimiento'} · ${h(S.ficha)}</h2>
+      <p class="sub">${retiro ? 'La persona deja de participar. No es obligatorio que explique por qué.' : 'La persona debe conocer y firmar la nueva versión aprobada antes de continuar.'}</p>
+      ${avisoD21}
+      <div class="msg info">Evento: <b>${retiro?'retirar':'reconsentir'}</b> · Versión: <b>${h(version || '—')}</b>.</div>
+      ${!retiro ? `<div class="msg warn">Este texto no sustituye al documento aprobado por el Comité de Ética. Entrega y explica el documento vigente antes de obtener la firma.</div>` : ''}
+      <div class="fld"><label for="act58Archivo">${retiro ? 'Evidencia del retiro (opcional)' : 'Evidencia firmada de la nueva versión (obligatoria)'}</label>
+      <input type="file" id="act58Archivo" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
+      <div class="hint">PDF, JPEG o PNG · máximo 10 MB.</div></div>
+      <div class="acts">${btn('Cancelar','c6','s')}
+        <button type="button" class="btn p" data-act="act58GuardarEvento">${retiro?'Confirmar retiro':'Guardar reconsentimiento'}</button></div></div>`);
+  };
+  async function guardarEvento() {
+    if (!R2.eventoTipo) throw new Error('Selecciona un evento.');
+    const tipo = R2.eventoTipo;
+    const archivo = document.getElementById('act58Archivo')?.files?.[0] || null;
+    act58.validarEvidenciaEvento(tipo, archivo, flujoConsentimiento.validarEvidencia);
+    const version = tipo === 'retirar' ? tipoActual()?.version : R2.documentoReconsentimiento?.version;
+    if (!version) throw new Error('No se pudo determinar la versión del documento.');
+    const id = await idConsentimientoActual();
+    const form = new FormData();
+    form.append('tipo_evento', tipo);
+    form.append('tipo', 'consentimiento');
+    form.append('version', version);
+    if (archivo) form.append('evidencia', archivo, archivo.name);
+    await apiArchivo('/consentimientos/' + encodeURIComponent(id) + '/eventos', form);
+    await cargarFicha(S.ficha);
+    const codigoEstudio = R2.estudioParticipacion.get(S.ficha) || S.ceId;
+    // La participación retirada aparece como retirada en C3; otras se recargan igualmente.
+    try { await cargarParticipantes(codigoEstudio); } catch (_) { /* la ficha igual se actualizó */ }
+    R2.eventoTipo = null;
+    R2.documentoReconsentimiento = null;
+    toast(tipo === 'retirar' ? 'Retiro registrado en la API.' : 'Reconsentimiento registrado en la API.', 'ok');
+    goProto('c6');
+  }
+  R.act58contact = () => shell('c1', `<div class="card"><h2 class="t">Datos de contacto · ${h(S.ficha || '—')}</h2>
+    <p class="sub">Acceso excepcional para el Investigador responsable o el Director. La consulta queda auditada.</p>
+    ${avisoD21}
+    <div class="fld"><label for="act58Motivo">Motivo del contacto *</label>
+    <select id="act58Motivo"><option value="">Selecciona un motivo</option>
+    <option value="coordinar_sesion">Coordinar o reprogramar una sesión</option>
+    <option value="retiro">Gestión de retiro</option><option value="otro">Otro (requiere detalle)</option></select></div>
+    <div class="fld"><label for="act58Detalle">Detalle para «Otro»</label>
+    <textarea id="act58Detalle" rows="3" placeholder="Explica el propósito sin datos identificatorios"></textarea></div>
+    <div class="acts">${btn('Cancelar','c6','s')}<button class="btn p" data-act="act58ConsultarContacto">Consultar contacto</button></div></div>`);
+  async function consultarContacto() {
+    const id = idParticipacionActual();
+    if (!id) throw new Error('No se encontró la participación.');
+    const motivo = val('act58Motivo'), detalle = val('act58Detalle');
+    const body = act58.validarMotivo(motivo, detalle);
+    const resultado = await api('POST', '/participaciones/' + encodeURIComponent(id) + '/contacto', body);
+    R2.sensible = { clase: 'contacto', datos: act58.soloContacto(resultado) };
+    R2.contactoMotivo = motivo;
+    goProto('act58resultado');
+  }
+  R.act58identity = () => {
+    const codigoEstudio = R2.estudioParticipacion.get(S.ficha) || S.ceId;
+    const estudios = STUDIES.map(s => `<option value="${h(s.id)}" ${s.id === codigoEstudio ? 'selected' : ''}>${h(s.id)} · ${h(s.n)}</option>`).join('');
+    return shell('c1', `<div class="card"><h2 class="t">Desenmascarar identidad (acceso excepcional)</h2>
+    <p class="sub">Solo Director o usuario con autorización especial vigente de «ver_identidad». Toda consulta queda auditada.</p>
+    ${avisoD21}
+    <div class="fld"><label for="act58UXL">UX Lab ID de la identidad *</label>
+      <input id="act58UXL" placeholder="UXL-XXXXXXXX" autocomplete="off" autocapitalize="characters"></div>
+    <div class="fld"><label for="act58Estudio">Estudio al que pertenece *</label><select id="act58Estudio">${estudios}</select></div>
+    <div class="fld"><label for="act58Justificacion">Justificación (mínimo 20 caracteres) *</label>
+      <textarea id="act58Justificacion" rows="4" placeholder="Indica el propósito autorizado, sin nombres ni RUT"></textarea></div>
+    <div class="acts">${btn('Cancelar', fichaActual() ? 'c6' : 'a3','s')}
+      <button class="btn p" data-act="act58Desenmascarar">Solicitar desenmascaramiento</button></div></div>`);
+  };
+  async function consultarIdentidad() {
+    const ux = val('act58UXL').toUpperCase();
+    const uuid = uuidDe(val('act58Estudio'));
+    if (!uuid) throw new Error('Selecciona un estudio válido.');
+    const justificacion = act58.validarJustificacion(val('act58Justificacion'));
+    if (!/^UXL-[A-HJ-NP-Z2-9]{8}$/.test(ux)) throw new Error('Ingresa un UX Lab ID con formato UXL-XXXXXXXX válido.');
+    const resultado = await api('POST', '/identidades/' + encodeURIComponent(ux) + '/desenmascarar',
+      { id_estudio: uuid, justificacion });
+    R2.sensible = { clase: 'identidad', datos: act58.soloIdentidad(resultado) };
+    goProto('act58resultado');
+  }
+  R.act58resultado = () => {
+    const datos = R2.sensible;
+    if (!datos) return shell('c1', `<div class="card"><h2 class="t">Datos no disponibles</h2>
+      <p class="sub">La información se eliminó al salir de la consulta.</p><div class="acts">${btn('Volver al panel','a3')}</div></div>`);
+    const campos = datos.clase === 'contacto' ?
+      [['codigo_seudonimo','Código seudónimo'],['nombre','Nombre'],['correo','Correo'],['telefono','Teléfono']] :
+      [['ux_lab_id','UX Lab ID'],['nombre','Nombre'],['rut','RUT'],['correo','Correo'],['telefono','Teléfono'],['fecha_nacimiento','Fecha de nacimiento']];
+    return shell('c1', `<div class="card"><h2 class="t">${datos.clase === 'contacto' ? 'Datos de contacto' : 'Identidad desenmascarada'}</h2>
+      <div class="msg warn">Datos sensibles: no copies, compartas ni guardes esta pantalla. Se eliminan al salir.</div>
+      <div class="tw"><table class="sumtbl" style="min-width:0">
+      ${campos.map(([key, titulo]) => `<tr><td>${titulo}</td><td>${h(datos.datos[key] ?? '—')}</td></tr>`).join('')}</table></div>
+      <div class="acts"><button type="button" class="btn p" data-act="act58CerrarSensibles">Cerrar y borrar datos</button></div></div>`);
+  };
+  // Captura de los botones heredados del prototipo ANTES de que puedan activar sus simulaciones.
+  // No se emiten datos personales a consola, storage ni a otros componentes.
+  const accionAct58 = async (accion) => {
+    try {
+      if (accion === 'act58RetiroForm') await abrirEvento('retirar');
+      else if (accion === 'act58ReconsForm') await abrirEvento('reconsentir');
+      else if (accion === 'act58ContactForm' || accion === 'contacto') { borrarSensibles(); go('act58contact'); }
+      else if (accion === 'act58IdentityForm') { borrarSensibles(); go('act58identity'); }
+      else if (accion === 'act58GuardarEvento') await guardarEvento();
+      else if (accion === 'act58ConsultarContacto' || accion === 'contactOk') await consultarContacto();
+      else if (accion === 'act58Desenmascarar') await consultarIdentidad();
+      else if (accion === 'act58CerrarSensibles') { borrarSensibles(); go('a3'); }
+    } catch (e) { toast(act58.mensajeError(e), 'err'); }
+  };
+  const accionesAct58 = new Set(['act58RetiroForm','act58ReconsForm','act58ContactForm','contacto',
+    'act58IdentityForm','act58GuardarEvento','act58ConsultarContacto','contactOk','act58Desenmascarar',
+    'act58CerrarSensibles','retirar']);
+  let enviandoAct58 = false;
+  window.addEventListener('click', e => {
+    const a = e.target.closest('[data-act]');
+    if (!a || !accionesAct58.has(a.dataset.act)) return;
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    const accion = a.dataset.act;
+    if (accion === 'contacto' && a.dataset.c) S.ficha = a.dataset.c;
+    if (accion === 'retirar') { accionAct58('act58RetiroForm'); return; }
+    if (enviandoAct58) return;
+    enviandoAct58 = true;
+    document.getElementById('app').classList.add('rl-busy');
+    Promise.resolve(accionAct58(accion)).finally(() => {
+      enviandoAct58 = false;
+      document.getElementById('app').classList.remove('rl-busy');
+    });
+  }, true);
 
   // ---------- navegación: donde hay API, se llama antes de cambiar de pantalla ----------
   const goProto = go;
@@ -342,6 +534,15 @@
   const val = (id) => ((document.getElementById(id) || {}).value || '').trim();
 
   go = function (id) {
+    if (cur === 'act58resultado' && id !== 'act58resultado') borrarSensibles();
+    if (id === 'bdir' || id === 'bid') { borrarSensibles(); return goProto('act58identity'); }
+    if (id === 'c8') { borrarSensibles(); return goProto('act58contact'); }
+    if (id === 'b6' || id === 'rec') {
+      return conEspera(async () => {
+        try { await abrirEvento(id === 'b6' ? 'retirar' : 'reconsentir'); }
+        catch (e) { toast(act58.mensajeError(e), 'err'); }
+      });
+    }
     // Paso 1: correo y contraseña
     if (cur === 'a1' && id === 'a2') {
       return conEspera(async () => {
@@ -378,7 +579,8 @@
     // Cerrar sesión (menú lateral)
     if (id === 'a1' && R2.token) {
       const t = R2.token; R2.token = null; R2.tmp = null;
-      R2.participaciones.clear(); R2.documentos = null; R2.altaProceso = null;
+      R2.participaciones.clear(); R2.estudioParticipacion.clear(); R2.idsConsentimiento.clear();
+      borrarSensibles(); R2.eventoTipo = null; R2.documentos = null; R2.altaProceso = null;
       R2.confirmacion = null; R2.ficha = null; S.alta = null;
       fetch(API + '/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + t } }).catch(() => {});
       toast('Sesión cerrada: el token ya no sirve.', 'ok');
@@ -448,6 +650,12 @@
     } catch (err) { out.textContent = err.mensaje || 'No se pudo buscar.'; }
   }, true);
 
+  window.addEventListener('hashchange', () => {
+    if (location.hash !== '#act58resultado' && R2.sensible) {
+      borrarSensibles();
+      if (cur === 'act58resultado') go('a3');
+    }
+  });
   // Arranque: siempre desde el ingreso
   S.err = false; goProto('a1');
 })();

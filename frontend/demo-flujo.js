@@ -23,6 +23,7 @@ const API = process.env.API || 'http://localhost:3000';
 const PAGINA = path.join(__dirname, 'prototipo.html');
 const INTEGRACION = path.join(__dirname, 'flujo-real.js');
 const CONSENTIMIENTO = path.join(__dirname, 'consentimiento-integracion.js');
+const EVENTOS = path.join(__dirname, 'actividad58-eventos.js');
 
 // ---- «Celular simulado»: mismo cálculo que src/utils/totp.js y el secreto fijo de scripts/usuarios-prueba.js
 const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -57,7 +58,7 @@ http.createServer(async (req, res) => {
 
     if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
       // El prototipo navegable v3.1 tal cual, más la capa que lo conecta a la API real.
-      const html = fs.readFileSync(PAGINA, 'utf8').replace('</body>', '<script src="/qrcode.js"></script><script src="/consentimiento-integracion.js"></script><script src="/flujo-real.js"></script></body>');
+      const html = fs.readFileSync(PAGINA, 'utf8').replace('</body>', '<script src="/qrcode.js"></script><script src="/consentimiento-integracion.js"></script><script src="/actividad58-eventos.js"></script><script src="/flujo-real.js"></script></body>');
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
       return res.end(html);
     }
@@ -76,6 +77,10 @@ http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/consentimiento-integracion.js') {
       res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
       return fs.createReadStream(CONSENTIMIENTO).pipe(res);
+    }
+    if (req.method === 'GET' && url.pathname === '/actividad58-eventos.js') {
+      res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
+      return fs.createReadStream(EVENTOS).pipe(res);
     }
     if (req.method === 'GET' && url.pathname === '/flujo-real.js') {
       res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -101,7 +106,7 @@ http.createServer(async (req, res) => {
       try { r = await fetch(destino, { method: req.method, headers: cab, body: cuerpo }); }
       catch (e) { return json(res, 502, { error: { codigo: 'API_APAGADA', mensaje: `No se pudo conectar con la API en ${API}. ¿Está corriendo «docker compose up -d»?` } }); }
       const texto = await r.text();
-      res.writeHead(r.status, { 'Content-Type': r.headers.get('content-type') || 'application/json' });
+      res.writeHead(r.status, { 'Content-Type': r.headers.get('content-type') || 'application/json', 'Cache-Control': 'no-store' });
       return res.end(texto);
     }
 

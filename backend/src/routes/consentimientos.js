@@ -12,9 +12,29 @@ const { marcarAuditoria } = require('../middlewares/auditoria');
 const { resolverEstudioDeParticipacion } = require('../middlewares/estudioDeParticipacion');
 const { subirEvidencia } = require('../middlewares/subidaArchivo');
 const c = require('../controllers/consentimientosController');
+const db = require('../config/db');
 
 module.exports = () => {
   const r = Router({ mergeParams: true });
+
+  // Identificador interno necesario para registrar eventos sobre un consentimiento existente.
+  // Misma autorización de lectura que la ficha; nunca devuelve datos personales.
+  r.get('/identificador', marcarAuditoria('consentimiento', 'leer'), resolverEstudioDeParticipacion,
+    requierePermiso({ recurso: 'consentimiento', accion: 'leer', permisoEstudio: 'puede_consultar' }),
+    async (req, res, next) => {
+      try {
+        const { rows } = await db.query(
+          `SELECT id_consentimiento FROM ethics_schema.consentimiento
+           WHERE id_participacion = $1 AND tipo = $2 LIMIT 1`,
+          [req.params.idParticipacion, 'consentimiento']
+        );
+        if (!rows.length) return res.status(404).json({ error: {
+          codigo: 'CONSENTIMIENTO_NO_EXISTE', mensaje: 'No existe un consentimiento para esta participación.'
+        } });
+        res.set('Cache-Control', 'no-store');
+        return res.json({ id_consentimiento: rows[0].id_consentimiento });
+      } catch (error) { return next(error); }
+    });
 
   r.get('/', marcarAuditoria('consentimiento', 'leer'), resolverEstudioDeParticipacion,
     requierePermiso({ recurso: 'consentimiento', accion: 'leer', permisoEstudio: 'puede_consultar' }), c.listar);
