@@ -157,4 +157,4 @@ async function prepararDescarga(exportacion, usuario) {
   };
 }
 
-module.exports = { solicitar, decidir, consultar, prepararDescarga };
+module.exports = { solicitar, decidir, consultar, prepararDescarga, armarZip };
