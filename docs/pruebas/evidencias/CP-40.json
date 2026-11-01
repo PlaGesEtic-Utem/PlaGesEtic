@@ -1,0 +1,2 @@
+{"error":{"codigo":"METODO_NO_PERMITIDO","mensaje":"La bitácora de auditoría es de solo lectura."}}
+HTTP: 405

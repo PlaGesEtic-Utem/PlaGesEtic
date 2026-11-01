@@ -34,7 +34,7 @@ ALTER TABLE security_schema.membresia_estudio ALTER COLUMN id_usuario SET NOT NU
 ALTER TABLE security_schema.sesion_usuario ALTER COLUMN id_usuario SET NOT NULL, ALTER COLUMN token_hash SET NOT NULL, ALTER COLUMN fecha_inicio SET NOT NULL, ALTER COLUMN fecha_expiracion SET NOT NULL, ALTER COLUMN ip SET NOT NULL;
 ALTER TABLE security_schema.mfa_codigo_recuperacion ALTER COLUMN id_usuario SET NOT NULL, ALTER COLUMN codigo_hash SET NOT NULL, ALTER COLUMN usado SET NOT NULL;
 ALTER TABLE security_schema.autorizacion ALTER COLUMN id_usuario SET NOT NULL, ALTER COLUMN id_estudio SET NOT NULL, ALTER COLUMN tipo SET NOT NULL, ALTER COLUMN recurso SET NOT NULL, ALTER COLUMN motivo SET NOT NULL, ALTER COLUMN estado SET NOT NULL, ALTER COLUMN fecha_solicitud SET NOT NULL, ALTER COLUMN fecha_vencimiento SET NOT NULL;
-ALTER TABLE security_schema.auditoria ALTER COLUMN accion SET NOT NULL, ALTER COLUMN resultado SET NOT NULL, ALTER COLUMN fecha_hora SET NOT NULL;
+ALTER TABLE security_schema.auditoria ALTER COLUMN accion SET NOT NULL, ALTER COLUMN resultado SET NOT NULL, ALTER COLUMN fecha_hora SET NOT NULL, ALTER COLUMN secuencia SET NOT NULL, ALTER COLUMN hash_anterior SET NOT NULL, ALTER COLUMN hash SET NOT NULL;
 
 -- 2) UNIQUE compuestos (notas «Restricción:» del diccionario v3)
 ALTER TABLE identity_schema.representante_legal ADD CONSTRAINT uq_representante_legal_par UNIQUE (id_identidad_representante, id_identidad_representado);
@@ -106,6 +106,36 @@ CREATE TRIGGER tr_auditoria_inmutable
 CREATE TRIGGER tr_auditoria_no_truncate
   BEFORE TRUNCATE ON security_schema.auditoria
   FOR EACH STATEMENT EXECUTE FUNCTION security_schema.fn_auditoria_inmutable();
+
+-- 6) Cadena de huellas (ADR-002, D18): cada fila guarda la huella SHA-256 de su contenido y de la fila
+--    anterior. Si alguien cambia una fila por fuera de la aplicación, la cadena se rompe.
+CREATE SEQUENCE security_schema.auditoria_secuencia;
+CREATE UNIQUE INDEX uq_auditoria_secuencia ON security_schema.auditoria (secuencia);
+
+CREATE OR REPLACE FUNCTION security_schema.fn_auditoria_huella(a security_schema.auditoria)
+RETURNS CHAR(64) LANGUAGE sql IMMUTABLE AS $$
+  SELECT encode(sha256(convert_to(jsonb_build_array(
+    a.secuencia, a.id_auditoria, a.id_usuario, a.correo_intentado, a.id_sesion, a.ip, a.entidad,
+    a.id_registro_afectado, a.id_estudio, a.accion, a.resultado, a.justificacion, a.id_autorizacion,
+    a.fecha_hora, a.hash_anterior)::text, 'UTF8')), 'hex')
+$$;
+
+-- El bloqueo evita que dos inserciones simultáneas tomen la misma fila anterior.
+CREATE OR REPLACE FUNCTION security_schema.fn_auditoria_cadena() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, security_schema AS $$
+BEGIN
+  PERFORM pg_advisory_xact_lock(570057);
+  NEW.secuencia := nextval('security_schema.auditoria_secuencia');
+  SELECT a.hash INTO NEW.hash_anterior FROM security_schema.auditoria a ORDER BY a.secuencia DESC LIMIT 1;
+  NEW.hash_anterior := coalesce(NEW.hash_anterior, repeat('0', 64));
+  NEW.hash := security_schema.fn_auditoria_huella(NEW);
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER tr_auditoria_cadena
+  BEFORE INSERT ON security_schema.auditoria
+  FOR EACH ROW EXECUTE FUNCTION security_schema.fn_auditoria_cadena();
 
 COMMIT;
 

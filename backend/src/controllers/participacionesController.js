@@ -1,4 +1,3 @@
-
 'use strict';
 
 /**
@@ -14,6 +13,7 @@
  */
 
 const servicio = require('../services/participacionesService');
+const { registrarAhora } = require('../middlewares/auditoria');
 
 const envolver = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res)).catch(next);
@@ -88,7 +88,7 @@ const contacto = envolver(async (req, res) => {
 
 
   res.set('Cache-Control', 'no-store');
-
+  await registrarAhora(req);
 
   res.json({
     codigo_seudonimo: datosContacto.codigo_seudonimo,

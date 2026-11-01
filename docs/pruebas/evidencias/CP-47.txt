@@ -1,0 +1,4 @@
+ id_auditoria | id_usuario | correo_intentado | id_sesion | ip | entidad | id_registro_afectado | id_estudio | accion | resultado | justificacion | id_autorizacion | fecha_hora 
+--------------+------------+------------------+-----------+----+---------+----------------------+------------+--------+-----------+---------------+-----------------+------------
+(0 rows)
+

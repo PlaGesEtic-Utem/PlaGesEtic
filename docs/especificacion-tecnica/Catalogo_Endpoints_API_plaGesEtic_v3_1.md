@@ -382,6 +382,21 @@ Consulta de la bitácora append-only (objetivo 10) y plantilla para la futura im
 
 <div class="section">
 
+### Actualización de auditoría — Actividad 57
+
+Referencia: feature/auditoria, commit 2cbfc31. [Guía API](../api/auditoria.md) y [guía del Director para el CEC](../guias/consulta-cec-auditoria.md).
+
+| Ruta | Acceso | Entrada | Salida y estado |
+|---|---|---|---|
+| GET /auditoria | Director; auditoria/leer global | id_usuario, id_estudio, entidad, id_registro_afectado, accion, resultado, desde, hasta, limite, desplazamiento | Implementado: datos y paginacion (total, limite, desplazamiento) |
+| GET /auditoria/exportar | Director | Estudio y rango de fechas; contrato exacto pendiente | Previsto: CSV y registro previo exportar sobre auditoria. No encontrado en la rama revisada |
+
+UUID para los tres filtros id_; acciones cerradas a las 13 del diccionario; resultado exito/error. Fechas YYYY-MM-DD inclusivas según America/Santiago. Limite 1–200 (defecto 50), desplazamiento >=0 (defecto 0). Orden fecha_hora e id_auditoria descendentes. Filtros combinados con AND.
+
+Entidad se valida actualmente por formato, no contra la lista D19: pendiente resolver diferencia con CP-46. La consulta no devuelve secuencia/hash_anterior/hash. No filtrar solo por participacion para buscar contactos, porque estos usan contacto_participante.
+
+Errores: 400 validación, 401 autenticación, 403 permisos y 405 escrituras. D17 exige 503 AUDITORIA_NO_DISPONIBLE en acciones sensibles si falla su registro previo. El SQL de cadena existe; aplicación, script de verificación, exportación y evidencia CP-38–CP-49 siguen por verificar/completar.
+
 ## 13. Pendiente de validación
 
 ### Para revisar con el equipo antes de implementar

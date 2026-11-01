@@ -269,5 +269,8 @@ CREATE TABLE security_schema.auditoria (
     resultado VARCHAR(10),
     justificacion TEXT,
     id_autorizacion UUID,
-    fecha_hora TIMESTAMP
+    fecha_hora TIMESTAMP,
+    secuencia BIGINT,
+    hash_anterior CHAR(64),
+    hash CHAR(64)
 );

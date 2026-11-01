@@ -1,0 +1,234 @@
+# =====================================================================
+# plaGesEtic · Pruebas de auditoría y trazabilidad (Actividad 57, casos CP-38 a CP-49)
+# Requiere la extensión «REST Client» de Visual Studio Code (autor: Huachao Mao).
+# Ejecútalas en orden: algunas usan la respuesta de una anterior (las que tienen «# @name»).
+#
+# Antes (una vez):
+#   1. Si tu base es anterior al 21/10, agregar la cadena de huellas (ADR-002, D18):
+#        docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/actualizaciones/act57_cadena_auditoria.sql
+#   2. Recargar los datos de prueba y crear los usuarios:
+#        docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/dev/datos_prueba.sql
+#        docker compose exec api node scripts/usuarios-prueba.js
+#   3. Sacar un token por usuario y pegarlo abajo:
+#        docker compose exec api node scripts/sesion-prueba.js test_director@uxlab.test
+#        (y test_investigador, test_asistente, test_estudiante)
+#
+# Los filtros entidad e id_registro_afectado, el registro previo de D17, el script verificar-auditoria.js
+# y /auditoria/exportar los hace Arias entre el 22 y el 26/10. Antes de eso, esos casos fallan.
+# Las reglas están en el ADR-002 (D16 a D19).
+# =====================================================================
+
+@base = http://localhost:3000
+@tokenDirector     = PEGA_AQUI_EL_TOKEN_DE_test_director@uxlab.test
+@tokenInvestigador = PEGA_AQUI_EL_TOKEN_DE_test_investigador@uxlab.test
+@tokenAsistente    = PEGA_AQUI_EL_TOKEN_DE_test_asistente@uxlab.test
+@tokenEstudiante   = PEGA_AQUI_EL_TOKEN_DE_test_estudiante@uxlab.test
+
+@est01 = 82bbf931-bc9f-594d-8203-77dc4608f2cc
+
+
+# ---------------------------------------------------------------------
+# Preparación: una persona inscrita en EST-01, con un contacto registrado
+# ---------------------------------------------------------------------
+
+### Preparación A. Registrar a una persona (Asistente) → 201
+# Si responde 409 porque ya existe, cambia el correo.
+# @name persona
+POST {{base}}/identidades
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{
+  "nombre": "Trazabilidad Prueba Ficticia",
+  "correo": "traza.act57@correo.test",
+  "telefono": "+56 9 5858 5858",
+  "fecha_nacimiento": "1992-08-14"
+}
+
+### Preparación B. Inscribirla en EST-01 → 201
+# @name part
+POST {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{ "ux_lab_id": "{{persona.response.body.$.ux_lab_id}}" }
+
+### Preparación C. El Investigador responsable pide su contacto → 200
+POST {{base}}/participaciones/{{part.response.body.$.id_participacion}}/contacto
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "motivo": "coordinar_sesion" }
+
+
+# ---------------------------------------------------------------------
+# Consulta y trazabilidad (D16, D19)
+# ---------------------------------------------------------------------
+
+### CP-38. Historial de esa participación → 200
+# Debe traer al menos la inscripción (participacion · crear) y el contacto (contacto_participante · desenmascarar).
+GET {{base}}/auditoria?id_registro_afectado={{part.response.body.$.id_participacion}}&limite=50
+Authorization: Bearer {{tokenDirector}}
+
+### CP-38 (b). El mismo historial, solo los contactos → 200, solo filas contacto_participante
+GET {{base}}/auditoria?entidad=contacto_participante&id_registro_afectado={{part.response.body.$.id_participacion}}
+Authorization: Bearer {{tokenDirector}}
+
+### CP-39 (a). El Investigador consulta la auditoría → 403
+GET {{base}}/auditoria
+Authorization: Bearer {{tokenInvestigador}}
+
+### CP-39 (b). La Asistente → 403
+GET {{base}}/auditoria
+Authorization: Bearer {{tokenAsistente}}
+
+### CP-39 (c). El Estudiante → 403
+GET {{base}}/auditoria
+Authorization: Bearer {{tokenEstudiante}}
+
+### CP-40 (a). Intentar borrar la auditoría por la API → 405
+DELETE {{base}}/auditoria
+Authorization: Bearer {{tokenDirector}}
+
+### CP-40 (b). Intentar modificarla → 405
+PUT {{base}}/auditoria
+Authorization: Bearer {{tokenDirector}}
+Content-Type: application/json
+
+{ "justificacion": "cambio" }
+
+# CP-40 (c), en la base, con el usuario de la aplicación → «permission denied for table auditoria»:
+#   docker compose exec db psql -U plagesetic_app -d plagesetic -c "UPDATE security_schema.auditoria SET justificacion = 'x'"
+#   (pide la contraseña DB_PASSWORD del .env)
+
+
+# ---------------------------------------------------------------------
+# Ingreso (CP-41)
+# ---------------------------------------------------------------------
+
+### CP-41 (a). Contraseña incorrecta → 401
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "correo": "test_investigador@uxlab.test", "password": "incorrecta-act57" }
+
+### CP-41 (b). Paso 1 correcto → 200
+# @name paso1
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "correo": "test_investigador@uxlab.test", "password": "Plagesetic.2026" }
+
+### CP-41 (c). Paso 2 con el código de 6 dígitos → 200
+# Código del momento:  docker compose exec api node scripts/codigo-totp.js test_investigador@uxlab.test
+# @name paso2
+POST {{base}}/auth/login/mfa
+Content-Type: application/json
+
+{ "token_temporal": "{{paso1.response.body.token_temporal}}", "codigo": "000000" }
+
+### CP-41 (d). Cerrar esa sesión → 200
+POST {{base}}/auth/logout
+Authorization: Bearer {{paso2.response.body.token}}
+
+### CP-41 (e). Revisar: login_fallido (con correo_intentado), login_exitoso y cierre_sesion, todas con entidad «sesion»
+GET {{base}}/auditoria?entidad=sesion&limite=10
+Authorization: Bearer {{tokenDirector}}
+
+
+# ---------------------------------------------------------------------
+# Reidentificación y registro previo (D17)
+# ---------------------------------------------------------------------
+
+### CP-42 (a). Desenmascarar (Director) → 200
+POST {{base}}/identidades/{{persona.response.body.$.ux_lab_id}}/desenmascarar
+Authorization: Bearer {{tokenDirector}}
+Content-Type: application/json
+
+{
+  "id_estudio": "{{est01}}",
+  "justificacion": "Revisión del CEC sobre la inscripción de esta persona"
+}
+
+### CP-42 (b). Revisar: filas desenmascarar con entidad identidad y contacto_participante, estudio y justificación
+GET {{base}}/auditoria?accion=desenmascarar&limite=10
+Authorization: Bearer {{tokenDirector}}
+
+# CP-43. Simular que la auditoría no puede escribir. Quitar el permiso (como dueño de la base):
+#   docker compose exec db psql -U plagesetic_owner -d plagesetic -c "REVOKE INSERT ON security_schema.auditoria FROM plagesetic_app"
+# Ejecutar CP-43 (a) y (b), y después devolver el permiso:
+#   docker compose exec db psql -U plagesetic_owner -d plagesetic -c "GRANT INSERT ON security_schema.auditoria TO plagesetic_app"
+
+### CP-43 (a). Desenmascarar con la auditoría caída → 503 AUDITORIA_NO_DISPONIBLE, sin datos personales
+POST {{base}}/identidades/{{persona.response.body.$.ux_lab_id}}/desenmascarar
+Authorization: Bearer {{tokenDirector}}
+Content-Type: application/json
+
+{
+  "id_estudio": "{{est01}}",
+  "justificacion": "Revisión del CEC sobre la inscripción de esta persona"
+}
+
+### CP-43 (b). Una ruta normal sigue funcionando → 200
+GET {{base}}/estudios
+Authorization: Bearer {{tokenDirector}}
+
+### CP-49. El Investigador, sin autorización, intenta desenmascarar → 403
+# Después, en CP-42 (b) debe aparecer una fila con resultado «error», su usuario y el estudio.
+POST {{base}}/identidades/{{persona.response.body.$.ux_lab_id}}/desenmascarar
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{
+  "id_estudio": "{{est01}}",
+  "justificacion": "Quiero confirmar los datos antes de la sesión"
+}
+
+
+# ---------------------------------------------------------------------
+# Integridad (D18)
+# ---------------------------------------------------------------------
+# CP-44 (a). Revisar la cadena → «Cadena íntegra»:
+#   docker compose exec api node scripts/verificar-auditoria.js
+# CP-44 (b). Alterar una fila como dueño de la base, con el trigger desactivado:
+#   docker compose exec db psql -U plagesetic_owner -d plagesetic -c "ALTER TABLE security_schema.auditoria DISABLE TRIGGER tr_auditoria_inmutable; UPDATE security_schema.auditoria SET justificacion = 'alterada' WHERE secuencia = (SELECT min(secuencia) + 2 FROM security_schema.auditoria); ALTER TABLE security_schema.auditoria ENABLE TRIGGER tr_auditoria_inmutable;"
+# CP-44 (c). Revisar otra vez → debe indicar esa secuencia como la primera fila alterada.
+# Para dejar la base como antes: recrear el volumen (docker compose down -v) o restaurar un respaldo.
+
+
+# ---------------------------------------------------------------------
+# Exportación para el CEC y filtros (D16)
+# ---------------------------------------------------------------------
+
+### CP-45 (a). Exportar la auditoría de EST-01 → 200, text/csv
+GET {{base}}/auditoria/exportar?id_estudio={{est01}}&desde=2026-10-01&hasta=2026-12-31
+Authorization: Bearer {{tokenDirector}}
+
+### CP-45 (b). La exportación quedó registrada → una fila exportar sobre auditoria
+GET {{base}}/auditoria?accion=exportar&entidad=auditoria&limite=5
+Authorization: Bearer {{tokenDirector}}
+
+### CP-46 (a). Acción que no existe → 400
+GET {{base}}/auditoria?accion=borrar
+Authorization: Bearer {{tokenDirector}}
+
+### CP-46 (b). «desde» posterior a «hasta» → 400
+GET {{base}}/auditoria?desde=2026-12-01&hasta=2026-10-01
+Authorization: Bearer {{tokenDirector}}
+
+### CP-46 (c). Límite sobre 200 → 400
+GET {{base}}/auditoria?limite=500
+Authorization: Bearer {{tokenDirector}}
+
+### CP-46 (d). Entidad que no está en D19 → 400
+GET {{base}}/auditoria?entidad=planeta
+Authorization: Bearer {{tokenDirector}}
+
+
+# ---------------------------------------------------------------------
+# Revisiones en la base (CP-47 y CP-48)
+# ---------------------------------------------------------------------
+# CP-47. Los datos de la persona de prueba no aparecen en ninguna columna → 0:
+#   docker compose exec db psql -U plagesetic_owner -d plagesetic -c "SELECT count(*) FROM security_schema.auditoria a WHERE a::text ILIKE '%Trazabilidad Prueba%' OR a::text ILIKE '%traza.act57%' OR a::text LIKE '%5858%'"
+# CP-48. Después de ejecutar consentimientos.http, seudonimizacion.http y este archivo, filas sin entidad → 0:
+#   docker compose exec db psql -U plagesetic_owner -d plagesetic -c "SELECT accion, count(*) FROM security_schema.auditoria WHERE entidad IS NULL GROUP BY accion"

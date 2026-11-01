@@ -4,12 +4,11 @@
 /**
  * Rutas protegidas de PlaGesEtic.
  *
- * Todas las rutas montadas aquí ya pasan por
- * autenticación, auditoría general y filtro
- * de privacidad.
+ * Las rutas ya pasan por autenticación,
+ * auditoría general y filtro de privacidad.
  *
- * Cada operación incorpora sus controles
- * de acceso específicos.
+ * Cada operación mantiene sus controles
+ * de acceso correspondientes.
  */
 
 const { Router } = require('express');
@@ -18,6 +17,9 @@ const auditoriaRoutes = require('./auditoriaRoutes');
 
 const { marcarAuditoria } =
   require('../middlewares/auditoria');
+
+const { permitirEnRespuesta } =
+  require('../middlewares/filtroPrivacidad');
 
 const {
   resolverEstudioDeParticipacion,
@@ -34,85 +36,80 @@ const participacionesController =
 module.exports = (pool) => {
   const router = Router();
 
-  /**
-   * Registro y listado de participaciones.
-   *
-   * Estas rutas conservan sus permisos existentes.
-   */
+
   router.use(
     '/estudios/:idEstudio/participaciones',
     require('./participaciones')(pool)
   );
 
-  /**
-   * Documentos de consentimiento de un estudio.
-   */
+
   router.use(
     '/estudios/:idEstudio/documentos-consentimiento',
     require('./documentosConsentimiento')(pool)
   );
 
-  /**
-   * Administración y consulta de estudios.
-   */
+
   router.use(
     '/estudios',
     require('./estudios')(pool)
   );
 
-  /**
-   * Registro, búsqueda y desenmascaramiento
-   * autorizado de identidades.
-   */
+
   router.use(
     '/identidades',
     require('./identidades')(pool)
   );
 
   /**
+   * ACTIVIDAD 56 + D17
+   *
    * POST /participaciones/:idParticipacion/contacto
    *
-   * Consulta excepcional de datos de contacto.
+   * Requisitos:
+   * - Evitar almacenamiento en caché.
+   * - Auditar como contacto_participante.
+   * - Resolver el estudio correspondiente.
+   * - Verificar autorización.
+   * - Permitir únicamente los cuatro campos
+   *   requeridos en la respuesta.
    *
-   * Orden de ejecución:
+   * El controlador ejecuta la auditoría previa
+   * obligatoria mediante registrarAhora(req).
    *
-   * 1. Impedir almacenamiento en caché.
-   * 2. Marcar la auditoría como desenmascaramiento.
-   * 3. Resolver el estudio de la participación.
-   * 4. Verificar permisos de acceso a identidad.
-   * 5. Validar motivo y consultar contacto.
-   *
-   * La respuesta contiene únicamente:
-   * nombre, correo y telefono.
+   * Si falla la auditoría, responde HTTP 503
+   * sin entregar datos personales.
    */
- router.post(
-  '/participaciones/:idParticipacion/contacto',
-  noAlmacenar,
-  marcarAuditoria('contacto_participante', 'desenmascarar'),
-  resolverEstudioDeParticipacion,
-  accesoContacto,
-  participacionesController.contacto
-);
+  router.post(
+    '/participaciones/:idParticipacion/contacto',
+    noAlmacenar,
+    marcarAuditoria(
+      'contacto_participante',
+      'desenmascarar'
+    ),
+    resolverEstudioDeParticipacion,
+    accesoContacto,
+    permitirEnRespuesta(
+      'codigo_seudonimo',
+      'nombre',
+      'correo',
+      'telefono'
+    ),
+    participacionesController.contacto
+  );
 
-  /**
-   * Gestión de consentimientos por participación.
-   */
+
   router.use(
     '/participaciones/:idParticipacion/consentimientos',
     require('./consentimientos')(pool)
   );
 
-  /**
-   * Eventos de un consentimiento.
-   */
+
   router.use(
     '/consentimientos/:idConsentimiento/eventos',
     require('./eventosConsentimiento')(pool)
   );
 
-  /**
-   * Consulta de auditoría.
-   */
+
   router.use(auditoriaRoutes);
 
   return router;

@@ -1,4 +1,3 @@
-
 'use strict';
 
 /**
@@ -15,6 +14,7 @@
  */
 
 const servicio = require('../services/identidadesService');
+const { registrarAhora } = require('../middlewares/auditoria');
 
 const envolver = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res)).catch(next);
@@ -80,6 +80,7 @@ const desenmascarar = envolver(async (req, res) => {
   } = identidad;
 
   res.set('Cache-Control', 'no-store');
+  await registrarAhora(req);
 
   res.json(datosPersonales);
 });

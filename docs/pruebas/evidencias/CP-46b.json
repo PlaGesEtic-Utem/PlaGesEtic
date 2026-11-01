@@ -1,0 +1,2 @@
+{"error":{"codigo":"SOLICITUD_INVALIDA","mensaje":"desde no puede ser posterior a hasta."}}
+HTTP: 400
