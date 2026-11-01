@@ -10,8 +10,9 @@
 #   2. Sacar un token por usuario y pegarlo abajo (duran 8 horas):
 #        docker compose exec api node scripts/sesion-prueba.js test_investigador@uxlab.test
 #        (y test_asistente, test_estudiante, test_director)
-# Para empezar de cero: vuelve a cargar datos_prueba.sql (borra consentimientos y participaciones) y
-# saca tokens nuevos.
+# ATENCIÓN: datos_prueba.sql puede borrar inscripciones y consentimientos existentes.
+# Úsalo solo en una base de datos DESCARTABLE y con autorización del equipo.
+# No recargues el SQL en una base compartida ni en la que guardaste pruebas anteriores.
 #
 # Reglas que se prueban: ADR-002, decisiones D9 (archivos), D10 (estado vigente) y D11 (eventos válidos).
 # Los archivos son PDF ficticios de pruebas/archivos/. Ninguna respuesta debe traer nombres, RUT,
@@ -20,16 +21,21 @@
 
 @base = http://localhost:3000
 @tokenInvestigador = PEGA_AQUI_EL_TOKEN_DE_test_investigador@uxlab.test
+
 @tokenAsistente    = PEGA_AQUI_EL_TOKEN_DE_test_asistente@uxlab.test
+
 @tokenEstudiante   = PEGA_AQUI_EL_TOKEN_DE_test_estudiante@uxlab.test
+
 @tokenDirector     = PEGA_AQUI_EL_TOKEN_DE_test_director@uxlab.test
 
-# Estudios y documentos fijos (ver el final de db/dev/datos_prueba.sql)
+
+# Estudios de prueba fijos (ver el final de db/dev/datos_prueba.sql).
+# El registro/evento de consentimiento recibe la VERSION, no el UUID id_documento.
+@versionV10 = 1.0
+@versionV11 = 1.1
+@versionV12 = 1.2
 @est01 = 82bbf931-bc9f-594d-8203-77dc4608f2cc
 @est02 = 5f74778f-0d12-5b6f-9adf-e18fabee11ee
-@docConsentimientoEst01v10 = a7d33f8a-00de-5eab-9c77-e43433f95084
-@docAsentimientoEst01v10   = 7094fc30-60c6-57da-bbce-8f760d77e8e0
-@docConsentimientoEst02v10 = d6a3faed-4e8e-5b85-becb-b11c9772006a
 
 ### 0. Documentos de EST-01 (Investigador) → 200: consentimiento v1.0 y asentimiento v1.0, ambos vigente: true.
 #      Cada uno trae documento_hash (64 caracteres) y NO trae documento_ruta.
@@ -50,7 +56,7 @@ consentimiento
 ------plagesetic55
 Content-Disposition: form-data; name="version"
 
-1.1
+{{versionV11}}
 ------plagesetic55
 Content-Disposition: form-data; name="archivo"; filename="consentimiento_EST-01_v1.1.pdf"
 Content-Type: application/pdf
@@ -122,9 +128,9 @@ Content-Disposition: form-data; name="tipo"
 
 consentimiento
 ------plagesetic55
-Content-Disposition: form-data; name="id_documento"
+Content-Disposition: form-data; name="version"
 
-{{docV11.response.body.$.id_documento}}
+{{versionV11}}
 ------plagesetic55
 Content-Disposition: form-data; name="tipo_evento"
 
@@ -137,7 +143,8 @@ Content-Type: application/pdf
 ------plagesetic55--
 
 ### CP-17. Un segundo consentimiento del mismo tipo para la misma participación → 409
-#      (los cambios posteriores van por POST /consentimientos/{id}/eventos)
+#      (los cambios posteriores van por POST /consentimientos/{id}/eventos).
+#      Negar no requiere evidencia; se envía solo la decisión para aislar el error de duplicidad.
 POST {{base}}/participaciones/{{partAdulta.response.body.$.id_participacion}}/consentimientos
 Authorization: Bearer {{tokenAsistente}}
 Content-Type: multipart/form-data; boundary=----plagesetic55
@@ -147,18 +154,13 @@ Content-Disposition: form-data; name="tipo"
 
 consentimiento
 ------plagesetic55
-Content-Disposition: form-data; name="id_documento"
+Content-Disposition: form-data; name="version"
 
-{{docV11.response.body.$.id_documento}}
+{{versionV11}}
 ------plagesetic55
 Content-Disposition: form-data; name="tipo_evento"
 
 negar
-------plagesetic55
-Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
-Content-Type: application/pdf
-
-< ./archivos/evidencia_firmada.pdf
 ------plagesetic55--
 
 
@@ -187,7 +189,9 @@ Content-Type: application/json
 
 { "ux_lab_id": "{{segunda.response.body.$.ux_lab_id}}" }
 
-### CP-18. Registrar con un documento de OTRO estudio (consentimiento v1.0 de EST-02) → 409
+### CP-18. Registrar con una versión NO vigente del estudio (v1.0; vigente v1.1) → 409
+# La API recibe version y resuelve el documento dentro del estudio de la participación.
+# Con este contrato ya no se puede intentar seleccionar un documento de otro estudio por UUID.
 POST {{base}}/participaciones/{{partSegunda.response.body.$.id_participacion}}/consentimientos
 Authorization: Bearer {{tokenAsistente}}
 Content-Type: multipart/form-data; boundary=----plagesetic55
@@ -197,9 +201,9 @@ Content-Disposition: form-data; name="tipo"
 
 consentimiento
 ------plagesetic55
-Content-Disposition: form-data; name="id_documento"
+Content-Disposition: form-data; name="version"
 
-{{docConsentimientoEst02v10}}
+{{versionV10}}
 ------plagesetic55
 Content-Disposition: form-data; name="tipo_evento"
 
@@ -221,9 +225,9 @@ Content-Disposition: form-data; name="tipo"
 
 consentimiento
 ------plagesetic55
-Content-Disposition: form-data; name="id_documento"
+Content-Disposition: form-data; name="version"
 
-{{docV11.response.body.$.id_documento}}
+{{versionV11}}
 ------plagesetic55
 Content-Disposition: form-data; name="tipo_evento"
 
@@ -248,7 +252,7 @@ consentimiento
 ------plagesetic55
 Content-Disposition: form-data; name="version"
 
-1.2
+{{versionV12}}
 ------plagesetic55
 Content-Disposition: form-data; name="archivo"; filename="consentimiento_EST-01_v1.1.pdf"
 Content-Type: application/pdf
@@ -272,9 +276,9 @@ Content-Disposition: form-data; name="tipo_evento"
 
 reconsentir
 ------plagesetic55
-Content-Disposition: form-data; name="id_documento"
+Content-Disposition: form-data; name="version"
 
-{{docV12.response.body.$.id_documento}}
+{{versionV12}}
 ------plagesetic55
 Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
 Content-Type: application/pdf
@@ -283,7 +287,7 @@ Content-Type: application/pdf
 ------plagesetic55--
 
 ### CP-22. Retirar (con evidencia firmada del retiro) → 201, estado_vigente: revocado.
-#      Sin id_documento: se usa el documento de la última aceptación (v1.2).
+#      Sin version: se usa el documento de la última aceptación (v1.2).
 POST {{base}}/consentimientos/{{cp16.response.body.$.id_consentimiento}}/eventos
 Authorization: Bearer {{tokenAsistente}}
 Content-Type: multipart/form-data; boundary=----plagesetic55
@@ -320,9 +324,9 @@ Content-Disposition: form-data; name="tipo_evento"
 
 reconsentir
 ------plagesetic55
-Content-Disposition: form-data; name="id_documento"
+Content-Disposition: form-data; name="version"
 
-{{docV12.response.body.$.id_documento}}
+{{versionV12}}
 ------plagesetic55
 Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
 Content-Type: application/pdf
@@ -359,7 +363,7 @@ Content-Type: application/json
 
 { "ux_lab_id": "{{menor.response.body.$.ux_lab_id}}" }
 
-### CP-24 (paso 1). Asentimiento de la menor («aceptar», documento de asentimiento v1.0) → 201
+### CP-24 (paso 1). Asentimiento de la menor («aceptar», versión de asentimiento v1.0) → 201
 POST {{base}}/participaciones/{{partMenor.response.body.$.id_participacion}}/consentimientos
 Authorization: Bearer {{tokenAsistente}}
 Content-Type: multipart/form-data; boundary=----plagesetic55
@@ -369,9 +373,9 @@ Content-Disposition: form-data; name="tipo"
 
 asentimiento
 ------plagesetic55
-Content-Disposition: form-data; name="id_documento"
+Content-Disposition: form-data; name="version"
 
-{{docAsentimientoEst01v10}}
+{{versionV10}}
 ------plagesetic55
 Content-Disposition: form-data; name="tipo_evento"
 
@@ -402,3 +406,15 @@ Authorization: Bearer {{tokenEstudiante}}
 #      entidad consentimiento y documento_consentimiento, acciones crear y leer, resultado exito o error
 GET {{base}}/auditoria?id_estudio={{est01}}&limite=40
 Authorization: Bearer {{tokenDirector}}
+
+### CP-39 (a). El Investigador consulta la auditoría → 403
+GET {{base}}/auditoria
+Authorization: Bearer {{tokenInvestigador}}
+
+### CP-36 (a). Estudios
+GET {{base}}/estudios
+Authorization: Bearer {{tokenInvestigador}}
+
+### CP-36 (b). Participaciones de EST-01
+GET {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenEstudiante}}

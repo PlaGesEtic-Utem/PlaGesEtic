@@ -4,8 +4,9 @@
 # Ejecuta las pruebas EN ORDEN, de arriba hacia abajo: varias usan la respuesta de una anterior
 # (las que tienen «# @name»), así no hay que copiar ids.
 #
-# Antes (una vez):
-#   1. Cargar los datos de prueba (traen la autorización ver_identidad de la Asistente en EST-01):
+# Antes (solo en base de desarrollo DESCARTABLE):
+#   1. Cargar los datos de prueba (pueden REEMPLAZAR inscripciones existentes;
+#      traen la autorización ver_identidad de la Asistente en EST-01):
 #        docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/dev/datos_prueba.sql
 #   2. Si tu base es anterior al 20/10, agregar los permisos nuevos (ADR-002, D12 y D13):
 #        docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/actualizaciones/act56_permisos_identidad.sql
@@ -13,8 +14,8 @@
 #        docker compose exec api node scripts/sesion-prueba.js test_investigador@uxlab.test
 #        (y test_asistente, test_director, test_estudiante)
 #
-# Las rutas /participaciones/{id}/contacto y /identidades/{ux_lab_id}/desenmascarar llegan el
-# miércoles 21 (Arias). Antes de eso responden 404. CP-30 usa la ruta de eventos de la Actividad 55.
+# Rutas vigentes: POST /participaciones/{id}/contacto y
+# POST /identidades/{ux_lab_id}/desenmascarar. CP-30 usa la ruta de eventos de la Actividad 55.
 # Reglas que se prueban: ADR-002, D8 y D12 a D15, y la Matriz de seudonimización v3 (A1, A2, A9, A12).
 # La «persona canario» tiene datos ficticios únicos: si aparecen en una respuesta que no sea de
 # contacto o desenmascarar, es una fuga (CP-36).
@@ -26,10 +27,13 @@
 @tokenDirector     = PEGA_AQUI_EL_TOKEN_DE_test_director@uxlab.test
 @tokenEstudiante   = PEGA_AQUI_EL_TOKEN_DE_test_estudiante@uxlab.test
 
-# Estudios y documento fijos (ver el final de db/dev/datos_prueba.sql)
+# Estudios fijos (ver datos_prueba.sql). La API registra consentimientos por version, no id_documento.
+# Antes de CP-30, comprueba cuál es la versión VIGENTE del consentimiento de EST-01:
+# GET /estudios/{{est01}}/documentos-consentimiento?tipo=consentimiento
+# Ajusta la siguiente variable si tu base tiene otra versión aprobada.
+@versionConsentimientoEst01 = 1.0
 @est01 = 82bbf931-bc9f-594d-8203-77dc4608f2cc
 @est02 = 5f74778f-0d12-5b6f-9adf-e18fabee11ee
-@docConsentimientoEst01v10 = a7d33f8a-00de-5eab-9c77-e43433f95084
 
 
 # ---------------------------------------------------------------------
@@ -119,8 +123,9 @@ Content-Type: application/json
 
 { "ux_lab_id": "{{retirada.response.body.$.ux_lab_id}}" }
 
-### CP-30 (preparación 3). Acepta el consentimiento v1.0 de EST-01 → 201
-#      (si en tu base ya subiste otra versión con consentimientos.http, recarga datos_prueba.sql antes)
+### CP-30 (preparación 3). Acepta la versión vigente de EST-01 → 201
+#      Ajustar @versionConsentimientoEst01 a la versión vigente antes de enviar.
+#      No recargues datos_prueba.sql en una base con registros que deban conservarse.
 # @name consRetirada
 POST {{base}}/participaciones/{{partRetirada.response.body.$.id_participacion}}/consentimientos
 Authorization: Bearer {{tokenAsistente}}
@@ -131,9 +136,9 @@ Content-Disposition: form-data; name="tipo"
 
 consentimiento
 ------plagesetic56
-Content-Disposition: form-data; name="id_documento"
+Content-Disposition: form-data; name="version"
 
-{{docConsentimientoEst01v10}}
+{{versionConsentimientoEst01}}
 ------plagesetic56
 Content-Disposition: form-data; name="tipo_evento"
 

@@ -3,18 +3,18 @@
 # Requiere la extensión «REST Client» de Visual Studio Code (autor: Huachao Mao).
 # Ejecútalas en orden: algunas usan la respuesta de una anterior (las que tienen «# @name»).
 #
-# Antes (una vez):
+# Antes (solo en una base de desarrollo DESCARTABLE; nunca en una base compartida):
 #   1. Si tu base es anterior al 21/10, agregar la cadena de huellas (ADR-002, D18):
 #        docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/actualizaciones/act57_cadena_auditoria.sql
-#   2. Recargar los datos de prueba y crear los usuarios:
+#   2. Recargar los datos de prueba (puede borrar participaciones y consentimientos) y crear los usuarios:
 #        docker compose exec -T db psql -U plagesetic_owner -d plagesetic < db/dev/datos_prueba.sql
 #        docker compose exec api node scripts/usuarios-prueba.js
 #   3. Sacar un token por usuario y pegarlo abajo:
 #        docker compose exec api node scripts/sesion-prueba.js test_director@uxlab.test
 #        (y test_investigador, test_asistente, test_estudiante)
 #
-# Los filtros entidad e id_registro_afectado, el registro previo de D17, el script verificar-auditoria.js
-# y /auditoria/exportar los hace Arias entre el 22 y el 26/10. Antes de eso, esos casos fallan.
+# Versión actual: filtros entidad e id_registro_afectado, auditoría previa D17,
+# script verificar-auditoria.js y GET /auditoria/exportar están implementados.
 # Las reglas están en el ADR-002 (D16 a D19).
 # =====================================================================
 
@@ -25,6 +25,8 @@
 @tokenEstudiante   = PEGA_AQUI_EL_TOKEN_DE_test_estudiante@uxlab.test
 
 @est01 = 82bbf931-bc9f-594d-8203-77dc4608f2cc
+# CP-41 (c): reemplazar por código TOTP real vigente; "000000" no garantiza éxito.
+@codigoTOTP = PEGA_AQUI_EL_CODIGO_TOTP_ACTUAL
 
 
 # ---------------------------------------------------------------------
@@ -125,7 +127,7 @@ Content-Type: application/json
 POST {{base}}/auth/login/mfa
 Content-Type: application/json
 
-{ "token_temporal": "{{paso1.response.body.token_temporal}}", "codigo": "000000" }
+{ "token_temporal": "{{paso1.response.body.token_temporal}}", "codigo": "{{codigoTOTP}}" }
 
 ### CP-41 (d). Cerrar esa sesión → 200
 POST {{base}}/auth/logout
@@ -154,7 +156,9 @@ Content-Type: application/json
 GET {{base}}/auditoria?accion=desenmascarar&limite=10
 Authorization: Bearer {{tokenDirector}}
 
-# CP-43. Simular que la auditoría no puede escribir. Quitar el permiso (como dueño de la base):
+# CP-43. PRUEBA DE FALLO CONTROLADO: ejecutar SOLO en una base DESCARTABLE.
+# Revocar permisos bloquea temporalmente la auditoría, incluso para otras solicitudes.
+# No ejecutar en entornos compartidos. Quitar el permiso (como dueño de la base):
 #   docker compose exec db psql -U plagesetic_owner -d plagesetic -c "REVOKE INSERT ON security_schema.auditoria FROM plagesetic_app"
 # Ejecutar CP-43 (a) y (b), y después devolver el permiso:
 #   docker compose exec db psql -U plagesetic_owner -d plagesetic -c "GRANT INSERT ON security_schema.auditoria TO plagesetic_app"
@@ -190,10 +194,11 @@ Content-Type: application/json
 # ---------------------------------------------------------------------
 # CP-44 (a). Revisar la cadena → «Cadena íntegra»:
 #   docker compose exec api node scripts/verificar-auditoria.js
-# CP-44 (b). Alterar una fila como dueño de la base, con el trigger desactivado:
+# CP-44 (b). PRUEBA DESTRUCTIVA SOLO EN BASE DESCARTABLE: alterar una fila como dueño de la base, con el trigger desactivado:
 #   docker compose exec db psql -U plagesetic_owner -d plagesetic -c "ALTER TABLE security_schema.auditoria DISABLE TRIGGER tr_auditoria_inmutable; UPDATE security_schema.auditoria SET justificacion = 'alterada' WHERE secuencia = (SELECT min(secuencia) + 2 FROM security_schema.auditoria); ALTER TABLE security_schema.auditoria ENABLE TRIGGER tr_auditoria_inmutable;"
 # CP-44 (c). Revisar otra vez → debe indicar esa secuencia como la primera fila alterada.
-# Para dejar la base como antes: recrear el volumen (docker compose down -v) o restaurar un respaldo.
+# Para recuperar la base de prueba descartable: restaurar un respaldo o recrear el volumen.
+# NUNCA ejecutar docker compose down -v contra una base con datos que deban conservarse.
 
 
 # ---------------------------------------------------------------------
