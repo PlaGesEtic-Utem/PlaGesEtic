@@ -1,0 +1,228 @@
+@base = http://localhost:3000
+@est01 = 82bbf931-bc9f-594d-8203-77dc4608f2cc
+@tokenInvestigador = PEGA_AQUI_TOKEN
+
+@tokenDirector= PEGA_AQUI_TOKEN
+
+@uxLabPrueba = UXL-GY5HXYZM
+@tokenAsistente = PEGA_AQUI_TOKEN
+
+@tokenEstudiante =PEGA_AQUI_TOKEN
+
+
+
+
+### CP-78 - Consulta inicial de participantes
+GET {{base}}/estudios/82bbf931-bc9f-594d-8203-77dc4608f2cc/participaciones
+Authorization: Bearer {{tokenInvestigador}}
+### CP-80 - Contacto autorizado del Investigador
+POST {{base}}/participaciones/7c0fee80-29bd-43e0-a0fc-5aa80dcff6b4/contacto
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{
+  "motivo": "coordinar_sesion"
+}
+### CP-80 - Comprobar registro de contacto en auditoria
+GET {{base}}/auditoria?entidad=contacto_participante&limite=10
+Authorization: Bearer {{tokenDirector}}
+### CP-81 - Rechazo por justificacion corta
+POST {{base}}/identidades/{{uxLabPrueba}}/desenmascarar
+Authorization: Bearer {{tokenDirector}}
+Content-Type: application/json
+
+{
+  "id_estudio": "82bbf931-bc9f-594d-8203-77dc4608f2cc",
+  "justificacion": "Prueba breve"
+}
+### Act64 - Preparacion: registrar identidad ficticia
+# @name act64Identidad
+POST {{base}}/identidades
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{
+  "nombre": "Persona Prueba Act64",
+  "correo": "act64.retiro.20261102@correo.test",
+  "telefono": "+56 9 4000 6464",
+  "fecha_nacimiento": "1995-05-15"
+}
+### Act64 - Preparacion: inscribir participante ficticio
+# @name act64Participacion
+POST {{base}}/estudios/82bbf931-bc9f-594d-8203-77dc4608f2cc/participaciones
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{
+  "ux_lab_id": "{{act64Identidad.response.body.$.ux_lab_id}}"
+}
+### Act64 - Verificar participaciones existentes
+GET {{base}}/estudios/82bbf931-bc9f-594d-8203-77dc4608f2cc/participaciones
+Authorization: Bearer {{tokenInvestigador}}
+### Act64 - Verificar consentimiento del participante de prueba
+GET {{base}}/participaciones/4a677d3e-25cd-436a-aefd-25d4c61c0f8b/consentimientos
+Authorization: Bearer {{tokenAsistente}}
+### Act64 - Preparacion: aceptar consentimiento del participante ficticio
+# @name act64Consentimiento
+POST {{base}}/participaciones/4a677d3e-25cd-436a-aefd-25d4c61c0f8b/consentimientos
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic64
+
+------plagesetic64
+Content-Disposition: form-data; name="tipo"
+
+consentimiento
+------plagesetic64
+Content-Disposition: form-data; name="version"
+
+c222015-2
+------plagesetic64
+Content-Disposition: form-data; name="tipo_evento"
+
+aceptar
+------plagesetic64
+Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
+Content-Type: application/pdf
+
+< ./archivos/evidencia_firmada.pdf
+------plagesetic64--
+### CP-78 - Retirar consentimiento del participante ficticio
+# @name act64Retiro
+POST {{base}}/consentimientos/1ff0775f-3607-42db-b58e-057a2abac4bc/eventos
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic64
+
+------plagesetic64
+Content-Disposition: form-data; name="tipo_evento"
+
+retirar
+------plagesetic64
+Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
+Content-Type: application/pdf
+
+< ./archivos/evidencia_firmada.pdf
+------plagesetic64--
+### CP-78 - Comprobar estado posterior al retiro
+GET {{base}}/participaciones/4a677d3e-25cd-436a-aefd-25d4c61c0f8b/consentimientos
+Authorization: Bearer {{tokenAsistente}}
+### CP-79 - Rechazar reconsentimiento posterior al retiro
+POST {{base}}/consentimientos/1ff0775f-3607-42db-b58e-057a2abac4bc/eventos
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic64
+
+------plagesetic64
+Content-Disposition: form-data; name="tipo_evento"
+
+reconsentir
+------plagesetic64
+Content-Disposition: form-data; name="version"
+
+c222015-2
+------plagesetic64
+Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
+Content-Type: application/pdf
+
+< ./archivos/evidencia_firmada.pdf
+------plagesetic64--
+### CP-85 - Estudiante solicita exportacion
+# @name expEst
+POST {{base}}/estudios/{{est01}}/exportaciones
+Authorization: Bearer {{tokenEstudiante}}
+Content-Type: application/json
+
+{
+  "proposito": "analisis",
+  "filtros": {}
+}
+### CP-85 - Investigador aprueba exportacion del Estudiante
+PATCH {{base}}/exportaciones/c2ba731f-ac4a-4a26-825c-5fd7ab73567e/aprobacion
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{
+  "decision": "aprobar",
+  "motivo": "Validación funcional de exportación desidentificada para la Actividad 64"
+}
+### CP-85 - Descargar exportación aprobada
+GET {{base}}/exportaciones/c2ba731f-ac4a-4a26-825c-5fd7ab73567e/descarga
+Authorization: Bearer {{tokenEstudiante}}
+### CP-86 - Preparacion: crear identidad ficticia exclusiva
+# @name cp86Identidad
+POST {{base}}/identidades
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{
+  "nombre": "Persona Ficticia CP86",
+  "correo": "act64.cp86.20261103@correo.test",
+  "telefono": "+56 9 4000 8686",
+  "fecha_nacimiento": "1994-06-20"
+}
+### CP-86 - Preparacion: inscribir participante ficticio
+# @name cp86Participacion
+POST {{base}}/estudios/{{est01}}/participaciones
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{
+  "ux_lab_id": "UXL-L73GNT7C"
+}
+### CP-86 - Preparacion: aceptar consentimiento del participante ficticio
+# @name cp86Consentimiento
+POST {{base}}/participaciones/dfd4b3fb-54b3-44ff-ba45-4eac6aea6379/consentimientos
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic64
+
+------plagesetic64
+Content-Disposition: form-data; name="tipo"
+
+consentimiento
+------plagesetic64
+Content-Disposition: form-data; name="version"
+
+c222015-2
+------plagesetic64
+Content-Disposition: form-data; name="tipo_evento"
+
+aceptar
+------plagesetic64
+Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
+Content-Type: application/pdf
+
+< ./archivos/evidencia_firmada.pdf
+------plagesetic64--
+### CP-86 - Generar paquete antes del retiro
+# @name cp86Exportacion
+POST {{base}}/estudios/{{est01}}/exportaciones
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{
+  "proposito": "analisis",
+  "filtros": {}
+}
+### CP-86 - Descargar paquete antes del retiro
+GET {{base}}/exportaciones/817d231a-500a-4904-a0d8-b6b9fd43be89/descarga
+Authorization: Bearer {{tokenInvestigador}}
+### CP-86 - Retirar al participante ficticio incluido en el paquete
+# @name cp86Retiro
+POST {{base}}/consentimientos/9238a679-cca7-4933-91e2-202509c914c3/eventos
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: multipart/form-data; boundary=----plagesetic64
+
+------plagesetic64
+Content-Disposition: form-data; name="tipo_evento"
+
+retirar
+------plagesetic64
+Content-Disposition: form-data; name="evidencia"; filename="evidencia_firmada.pdf"
+Content-Type: application/pdf
+
+< ./archivos/evidencia_firmada.pdf
+------plagesetic64--
+### CP-86 - Rechazar descarga del paquete despues del retiro
+GET {{base}}/exportaciones/817d231a-500a-4904-a0d8-b6b9fd43be89/descarga
+Authorization: Bearer {{tokenInvestigador}}
+### CP-87 - Revisar privacidad de auditoria de exportaciones
+GET {{base}}/auditoria?entidad=exportacion&limite=20
+Authorization: Bearer {{tokenDirector}}
