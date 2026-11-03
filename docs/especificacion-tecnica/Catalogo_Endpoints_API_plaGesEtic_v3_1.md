@@ -342,15 +342,105 @@ Repositorio de archivos con metadatos, versiones y validación de extensiones (o
 
 ## 10. Exportaciones desidentificadas
 
-Paquetes con códigos independientes del seudónimo (objetivo 11). Un Estudiante no exporta sin aprobación del Investigador responsable.
+Actividad 60. Contrato revisado contra el código de `develop`, commit `24f8aaa`. Esta revisión documental no acredita la ejecución ni la aprobación de las pruebas.
 
-| Recurso                               | Rol autorizado                                    | Permiso en estudio | Entrada                               | Salida                                                                                                                                                                                                                                                                                                          |
-|---------------------------------------|---------------------------------------------------|--------------------|---------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| POST`/estudios/{id}/exportaciones`    | Investigador, Estudiante                          | puede_exportar     | proposito, filtros                    | `exportacion` con `codigo_exportacion` aleatorio. Estado `aprobada` si la pide el Investigador responsable; `solicitada` en otro caso. Excluye siempre las participaciones `retirado`, los datos personales, las fechas exactas de sesión y los archivos sensibles identificables (salvo autorización del CEC). |
-| PATCH`/exportaciones/{id}/aprobacion` | Investigador (responsable), Director              | puede_modificar    | decision (aprobar / rechazar), motivo | Exportación `aprobada` (pasa a `procesando`) o `rechazada`.                                                                                                                                                                                                                                                     |
-| GET`/exportaciones/{id}`              | Solicitante, Investigador (responsable), Director | puede_consultar    | —                                     | Estado del paquete.                                                                                                                                                                                                                                                                                             |
-| GET`/exportaciones/{id}/descarga`     | Solicitante, Investigador (responsable)           | puede_exportar     | —                                     | Paquete .zip con los datos y un `codigo_en_exportacion` por participante; sin seudónimos ni identidades. Auditado como `exportar`.                                                                                                                                                                              |
+Todas las rutas requieren autenticación, permiso de rol para la acción y el control de acceso al estudio correspondiente. Se publican sin el prefijo `/api/v1`.
 
+### Rutas, entradas y salidas
+
+| Recurso | Acceso | Permiso en estudio | Entrada | Respuesta correcta |
+| --- | --- | --- | --- | --- |
+| POST `/estudios/{id}/exportaciones` | Usuario con permiso `exportacion/crear`; previsto para Investigador y Estudiante | `puede_exportar` | `proposito`: `analisis`, `informe` o `publicacion`. `filtros`: objeto vacío `{}`; puede omitirse. | **201** con los metadatos de la exportación. Si solicita el responsable del estudio, se genera el paquete y se devuelve `lista` cuando la generación termina correctamente. Para otro solicitante autorizado, queda `solicitada`. |
+| PATCH `/exportaciones/{id}/aprobacion` | Responsable del estudio con permiso `exportacion/aprobar` | `puede_modificar` | `decision`: `aprobar` o `rechazar`. `motivo`: texto de al menos 5 caracteres después de quitar espacios en los extremos. | **200** con los metadatos. Al aprobar, genera el paquete y devuelve `lista` si termina correctamente; al rechazar, devuelve `rechazada`. Solo admite solicitudes en estado `solicitada`. |
+| GET `/exportaciones/{id}` | Solicitante o responsable del estudio, con permiso `exportacion/leer` | `puede_consultar` | Identificador de la exportación en la ruta. | **200** con los metadatos y el estado. Si el paquete estaba `lista` y ya venció, muestra `vencida`. |
+| GET `/exportaciones/{id}/descarga` | Solicitante o responsable del estudio, con permiso `exportacion/descargar` | `puede_exportar` | Identificador de la exportación en la ruta. | **200** con el archivo `{codigo_exportacion}.zip`, si está listo, no ha vencido y todas las participaciones incluidas siguen siendo elegibles. |
+
+### Metadatos de respuesta
+
+Las rutas de creación, aprobación y consulta devuelven:
+
+- `id_exportacion`
+- `codigo_exportacion`
+- `proposito`
+- `estado`
+- `fecha_solicitud`
+- `fecha_aprobacion`
+- `fecha_generacion`
+- `fecha_vencimiento`
+
+Las fechas de aprobación, generación y vencimiento pueden ser `null`, según el estado y la operación realizada.
+
+La respuesta no incluye la ruta interna del archivo, `hash_paquete` ni la relación entre los códigos del paquete y las identidades.
+
+El motivo de aprobación o rechazo se registra como justificación en la auditoría; no se incluye en estos metadatos.
+
+### Contenido del paquete
+
+El ZIP contiene únicamente:
+
+1. **`participantes.csv`**, con las columnas:
+   - `codigo_en_exportacion`: código `E-` generado para este paquete.
+   - `estado_consentimiento`: `otorgado` para las participaciones elegibles.
+   - `mes_inscripcion`: mes en formato `AAAA-MM`.
+
+2. **`LEEME.txt`**, con el código del paquete, propósito, cantidad de personas incluidas y explicación del contenido y sus límites.
+
+Solo se incluyen participaciones activas con consentimiento aceptado o reconsentido correspondiente a un documento vigente.
+
+El CSV no incluye nombres, RUT, correo, teléfono, fecha de nacimiento, códigos `UXL-` o `P-`, identificadores internos ni fechas exactas. La API de metadatos sí devuelve las fechas de la exportación.
+
+Esta versión no incorpora archivos de sesiones, audio, video ni EEG.
+
+Los códigos `E-` se generan para cada paquete y su relación con las participaciones permanece dentro de la plataforma. La desidentificación reduce el riesgo de identificación, pero no garantiza anonimato total.
+
+### Estados y generación
+
+| Estado | Comportamiento |
+| --- | --- |
+| `solicitada` | Espera la decisión del responsable del estudio. No permite descargar. |
+| `aprobada` | La solicitud fue aprobada y se inicia la generación del paquete. |
+| `rechazada` | La solicitud fue rechazada. No permite descargar. |
+| `procesando` | Estado previsto en el diseño; el servicio revisado no lo asigna explícitamente. |
+| `lista` | El paquete fue generado y puede descargarse si cumple las demás validaciones. |
+| `vencida` | Terminó el plazo de descarga. Se debe solicitar otra exportación. |
+
+La generación se realiza dentro de la misma petición que crea una exportación del responsable o aprueba una solicitud.
+
+El código revisado pasa de `aprobada` a `lista` sin registrar explícitamente `procesando`. Si falla la generación, la petición devuelve un error y la exportación puede permanecer `aprobada`; no se identificó una ruta específica de reintento.
+
+### Vencimiento y revalidación
+
+- El paquete tiene una vigencia de **7 días desde su generación**.
+- Antes de descargar, se comprueba nuevamente la elegibilidad de las participaciones incluidas.
+- Si alguna deja de ser elegible, se bloquea la descarga del paquete completo y se debe solicitar una nueva exportación.
+- La consulta puede mostrar `vencida` sin actualizar el estado almacenado. El intento de descarga de un paquete `lista` cuyo plazo terminó registra el estado `vencida`.
+- El vencimiento y la revalidación controlan nuevas descargas; no eliminan copias descargadas anteriormente.
+
+### Errores
+
+| HTTP | Código o situación | Cuándo ocurre |
+| --- | --- | --- |
+| 400 | Solicitud inválida | Propósito no admitido, filtros distintos de `{}`, decisión inválida, motivo insuficiente o identificador inválido. |
+| 401 | Autenticación requerida o inválida | No existe una sesión válida. |
+| 403 | Acceso denegado | Falta un permiso de rol o acceso al estudio, o el usuario no cumple la condición de responsable o solicitante exigida por la operación. |
+| 404 | Recurso no encontrado | No existe el estudio o la exportación solicitada. |
+| 409 | `EXPORTACION_YA_DECIDIDA` | Se intenta aprobar o rechazar una exportación que ya no está `solicitada`. |
+| 409 | `EXPORTACION_NO_DISPONIBLE` | Se intenta descargar una exportación cuyo estado almacenado no es `lista`. |
+| 409 | `EXPORTACION_VENCIDA` | La exportación estaba `lista`, pero su plazo de descarga terminó. |
+| 409 | `EXPORTACION_DESACTUALIZADA` | Alguna participación incluida ya no cumple las condiciones de elegibilidad. |
+
+### Auditoría y diferencias pendientes
+
+La descarga se registra como acción `exportar` sobre la entidad `exportacion` **antes de entregar el archivo**, mediante `registrarAhora(req)`. Si ese registro falla, el controlador no continúa con la entrega.
+
+El diseño contempla al Director en la aprobación y consulta. Sin embargo, el servicio revisado exige ser responsable del estudio para decidir, y solicitante o responsable para consultar y descargar; no incorpora una excepción por ser Director. Esta diferencia debe resolverse con el líder y verificarse en pruebas.
+
+La actualización del catálogo no cierra por sí sola la Actividad 60. El cierre requiere los resultados y evidencias de las pruebas, la revisión de las diferencias y la integración correspondiente.
+
+### Documentación relacionada
+
+- [Guía API de exportaciones](../api/exportaciones.md)
+- [Qué sale y qué no sale en una exportación](../guias/exportacion-investigador-cec.md)
 </div>
 
 <div class="section">
