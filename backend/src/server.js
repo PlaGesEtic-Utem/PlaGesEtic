@@ -7,7 +7,7 @@ const { crearApp } = require('./app'); // Crear la aplicación Express con las r
 
 const config = cargarConfig(); // Cargar la configuracion de la aplicacion (puerto, entornno, base de datos, etc.)
 const pool = iniciarPool(config.db);  // Entregarle a la aplicacion el pool de conexiones a la base de datos para que pueda realizar consultas
-const app = crearApp({ pool }); // Llamar a la funcion que crea la aplicacion Express y pasarle el pool de conexiones a la base de datos
+const app = crearApp({ pool , origenPermitido: config.origenPermitido }); // Llamar a la funcion que crea la aplicacion Express y pasarle el pool de conexiones a la base de datos
 
 
 // Iniciar el servidor en el puerto especificado en la configuración

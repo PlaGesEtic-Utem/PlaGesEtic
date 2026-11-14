@@ -16,7 +16,7 @@ const crypto = require('crypto');
 const argon2 = require('argon2');
 const jwt = require('jsonwebtoken');
 const repo = require('../repositories/authRepository');
-const { descifrar } = require('../utils/cifrado');
+const { cifrar , descifrar } = require('../utils/cifrado');
 const totp = require('../utils/totp');
 const { cargarConfig } = require('../config');
 const { ErrorApi, errores } = require('../utils/errores');
@@ -27,6 +27,18 @@ const MIN_INACTIVIDAD = 30;
 const HORAS_MAXIMO = 8;
 const SEG_TOKEN_TEMPORAL = 300;
 const LARGO_MIN_PASSWORD = 12;
+const CANTIDAD_CODIGOS_RECUPERACION = 10;
+const ALFABETO_CODIGOS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+// Código de emergencia legible, por ejemplo «K7QM-3XPA-9RTW». Se muestra una sola vez.
+function codigoRecuperacion() {
+  const s = Array.from(crypto.randomBytes(12), (b) => ALFABETO_CODIGOS[b % ALFABETO_CODIGOS.length]).join('');
+  return `${s.slice(0, 4)}-${s.slice(4, 8)}-${s.slice(8, 12)}`;
+}
+
+// Huella del código: es lo único que se guarda. Se calcula igual que en loginMfa (mayúsculas, sin guiones).
+const hashRecuperacion = (codigo) =>
+  crypto.createHash('sha256').update(codigo.toUpperCase().replace(/[^A-Z0-9]/g, '')).digest('hex');
 
 const credencialesInvalidas = () => new ErrorApi(401, 'CREDENCIALES_INVALIDAS', 'Correo o contraseña incorrectos.');
 const codigoInvalido = () => new ErrorApi(401, 'CODIGO_INVALIDO', 'El código no es válido o ya venció. Intenta con el código actual.');
@@ -78,12 +90,13 @@ async function login(cuerpo, aud) {
   }
 
   aud.id_usuario = u.id_usuario;
-  if (!u.mfa_activo || !u.mfa_secret) {
-    // Cuenta sin MFA configurado: en el MVP todos los roles usan MFA. El enrolamiento con QR llega en la Act. 74.
-    aud.accion = 'login_fallido';
-    throw new ErrorApi(403, 'MFA_PENDIENTE', 'Tu cuenta aún no tiene configurado el segundo factor. Pide a Soporte que lo active.');
+    if (!u.mfa_activo) {
+    // Primer ingreso (o MFA reiniciado por Soporte): pase temporal que solo sirve para configurar el celular.
+    aud.accion = 'leer';
+    const tokenEnrolar = jwt.sign({ sub: u.id_usuario, tipo: 'enrolar' }, secretoJwt(),
+      { algorithm: 'HS256', expiresIn: SEG_TOKEN_TEMPORAL });
+    return { token_temporal: tokenEnrolar, enrolamiento_requerido: true, expira_en_segundos: SEG_TOKEN_TEMPORAL };
   }
-
   aud.accion = 'leer'; // paso 1 correcto: todavía no es un ingreso (falta el código)
   const tokenTemporal = jwt.sign({ sub: u.id_usuario, tipo: 'mfa' }, secretoJwt(),
     { algorithm: 'HS256', expiresIn: SEG_TOKEN_TEMPORAL });
@@ -145,6 +158,62 @@ async function loginMfa(cuerpo, aud, ip) {
   };
 }
 
+/** Revisa el pase de enrolamiento y devuelve a quién pertenece. */
+function idDePaseEnrolar(tokenTemporal, aud) {
+  let datos;
+  try {
+    datos = jwt.verify(tokenTemporal, secretoJwt(), { algorithms: ['HS256'] });
+  } catch (e) {
+    aud.accion = 'login_fallido';
+    throw new ErrorApi(401, 'TOKEN_TEMPORAL_INVALIDO', 'El paso anterior venció. Vuelve a ingresar tu correo y contraseña.');
+  }
+  if (datos.tipo !== 'enrolar' || !datos.sub) { aud.accion = 'login_fallido'; throw errores.noAutenticado(); }
+  aud.id_usuario = datos.sub;
+  return datos.sub;
+}
+
+/** POST /auth/mfa/enrolar: crea el secreto (todavía inactivo) y entrega la dirección para dibujar el QR. */
+async function enrolar(cuerpo, aud) {
+  aud.entidad = 'usuario';
+  const idUsuario = idDePaseEnrolar(texto(cuerpo.token_temporal, 'token_temporal'), aud);
+  const u = await repo.usuarioPorId(idUsuario);
+  if (!cuentaUsable(u)) { aud.accion = 'login_fallido'; throw errores.noAutenticado(); }
+  if (u.mfa_activo) throw new ErrorApi(409, 'MFA_YA_ACTIVO', 'Esta cuenta ya tiene configurado el segundo factor.');
+
+  const secreto = totp.generarSecreto();
+  await repo.guardarSecretoPendiente(idUsuario, cifrar(secreto));
+  aud.accion = 'actualizar';
+  aud.id_registro_afectado = idUsuario;
+  return { otpauth_uri: totp.uriOtpauth(secreto, u.correo), secreto };
+}
+
+/** POST /auth/mfa/confirmar: con el primer código correcto se activa el MFA y se entregan los códigos de emergencia. */
+async function confirmar(cuerpo, aud) {
+  aud.entidad = 'usuario';
+  const idUsuario = idDePaseEnrolar(texto(cuerpo.token_temporal, 'token_temporal'), aud);
+  if (await repo.contarFallosPorUsuario(idUsuario, desdeVentana()) >= MAX_FALLOS) {
+    aud.accion = 'login_fallido';
+    throw demasiadosIntentos();
+  }
+  const u = await repo.usuarioPorId(idUsuario);
+  if (!cuentaUsable(u)) { aud.accion = 'login_fallido'; throw errores.noAutenticado(); }
+  if (u.mfa_activo) throw new ErrorApi(409, 'MFA_YA_ACTIVO', 'Esta cuenta ya tiene configurado el segundo factor.');
+  if (!u.mfa_secret) throw errores.solicitudInvalida('Primero genera el código QR.');
+
+  if (!totp.verificar(descifrar(u.mfa_secret), cuerpo.codigo)) {
+    aud.accion = 'login_fallido';
+    throw codigoInvalido();
+  }
+
+  const codigos = Array.from({ length: CANTIDAD_CODIGOS_RECUPERACION }, codigoRecuperacion);
+  await repo.activarMFA(idUsuario, codigos.map(hashRecuperacion));
+  aud.accion = 'actualizar';
+  aud.id_registro_afectado = idUsuario;
+
+  const tokenTemporal = jwt.sign({ sub: idUsuario, tipo: 'mfa' }, secretoJwt(),
+    { algorithm: 'HS256', expiresIn: SEG_TOKEN_TEMPORAL });
+  return { codigos_recuperacion: codigos, token_temporal: tokenTemporal, expira_en_segundos: SEG_TOKEN_TEMPORAL };
+}
 /** POST /auth/logout (con sesión). */
 async function logout(usuario, aud) {
   aud.entidad = 'sesion'; aud.accion = 'cierre_sesion'; aud.id_registro_afectado = usuario.id_sesion;
@@ -166,6 +235,6 @@ async function cambiarPassword(cuerpo, usuario, aud) {
 }
 
 module.exports = {
-  login, loginMfa, logout, cambiarPassword,
+  login, loginMfa, logout, cambiarPassword, enrolar, confirmar,
   MAX_FALLOS, VENTANA_FALLOS_MIN, MIN_INACTIVIDAD, HORAS_MAXIMO, LARGO_MIN_PASSWORD,
 };

@@ -47,6 +47,7 @@
   #rl-qr button{border:0;border-radius:10px;padding:9px 16px;font:600 14px Inter,Arial,sans-serif;cursor:pointer;background:#000B78;color:#fff}
   .rl-qrlink{display:inline-block;margin:2px 0 8px;border:0;background:none;color:#1C2FB9;font:600 13px Inter,Arial,sans-serif;text-decoration:underline;cursor:pointer;padding:0}
   .rl-ver:hover{background:#DDE2FF}.rl-ver:focus-visible{outline:2px solid #253FF6;outline-offset:2px}`;
+  css.textContent += '\n#rl-cel,[data-act="verqr"]{display:none!important}';
   document.head.appendChild(css);
   const badge = document.createElement('div'); badge.id = 'rl-badge'; badge.innerHTML = '<i></i>Comprobando conexión…';
   const cel = document.createElement('div'); cel.id = 'rl-cel';
@@ -55,22 +56,125 @@
   const qrEl = document.createElement('div'); qrEl.id = 'rl-qr'; qrEl.setAttribute('role', 'dialog'); qrEl.setAttribute('aria-modal', 'true');
   document.body.append(badge, cel, toastEl, qrEl);
 
+  // ---------- ACT74: enrolamiento MFA real, sin simulador ----------
+  let act74MfaEnrolamiento = false;
+  let act74MfaEtapa = '';
+
   async function mostrarQR() {
-    if (!R2.correo) return;
-    let uri = '';
-    try { uri = (await (await fetch('/otpauth?correo=' + encodeURIComponent(R2.correo))).json()).uri; } catch (e) { /* sin red */ }
-    if (!uri || typeof qrcode === 'undefined') { toast('No se pudo generar el código QR.', 'err'); return; }
-    const q = qrcode(0, 'M'); q.addData(uri); q.make();
-    qrEl.innerHTML = `<div class="box"><h3>Configura tu celular</h3>
-      <p>Escanea este código con <b>Google Authenticator</b> o <b>Microsoft Authenticator</b> (gratis en App Store y Google Play).</p>
-      <div class="img">${q.createImgTag(6, 8)}</div>
-      <ol><li>Abre la app y toca <b>+</b> → <b>Escanear un código QR</b>.</li><li>Apunta la cámara a este código.</li><li>Aparecerá «plaGesEtic» con un código de 6 dígitos que cambia cada 30 segundos: escríbelo y presiona <b>Verificar</b>.</li></ol>
-      <p style="font-size:12px">Cuenta: ${R2.correo}. En el sistema final este QR se muestra una sola vez, en el primer ingreso (Act. 74).</p>
-      <div class="row"><button type="button" data-act="qrX">Listo</button></div></div>`;
+    if (!act74MfaEnrolamiento || !R2.tmp) return;
+    if (typeof qrcode !== 'function') {
+      throw new Error('No se cargó qrcode.js. Comprueba el servidor de frontend.');
+    }
+
+    const respuesta = await api('POST', '/auth/mfa/enrolar',
+      { token_temporal: R2.tmp }, false);
+    if (!respuesta.otpauth_uri) throw new Error('La API no entregó otpauth_uri.');
+
+    const qr = qrcode(0, 'M');
+    qr.addData(respuesta.otpauth_uri);
+    qr.make();
+    act74MfaEtapa = 'qr';
+
+    qrEl.innerHTML = `<div class="box">
+      <h3>Activa la verificación en dos pasos</h3>
+      <p>Escanea este QR con Google Authenticator o Microsoft Authenticator.
+        Se genera desde la API real y todavía <b>no activa</b> el MFA.</p>
+      <div class="img">${qr.createImgTag(6, 8)}</div>
+      <p style="overflow-wrap:anywhere;font-size:12px">Cuenta: ${h(R2.correo)}</p>
+      <form id="act74-mfa-form">
+        <label for="act74-mfa-codigo">Código actual de 6 dígitos de tu aplicación</label>
+        <input id="act74-mfa-codigo" type="text" inputmode="numeric" pattern="[0-9]{6}"
+          maxlength="6" autocomplete="one-time-code" required
+          style="width:100%;padding:10px;margin-top:6px;box-sizing:border-box">
+        <p id="act74-mfa-error" role="alert" aria-live="polite"
+          style="min-height:18px;color:#b42318;font-size:13px"></p>
+        <div class="row">
+          <button type="button" data-act="act74MfaCancelar">Cancelar</button>
+          <button id="act74-mfa-guardar" type="submit">Activar MFA</button>
+        </div>
+      </form>
+      <p style="font-size:12px">Este pase vence a los 5 minutos. Si vence, inicia sesión otra vez.</p>
+    </div>`;
     qrEl.style.display = 'flex';
   }
 
-  qrEl.addEventListener('click', (e) => { if (e.target === qrEl || e.target.closest('[data-act="qrX"]')) qrEl.style.display = 'none'; });
+  function act74MfaCerrar() {
+    qrEl.style.display = 'none';
+    qrEl.innerHTML = '';
+    act74MfaEtapa = '';
+  }
+
+  qrEl.addEventListener('click', (e) => {
+    const boton = e.target.closest('[data-act="act74MfaCancelar"], [data-act="act74MfaContinuar"]');
+    if (!boton) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (boton.dataset.act === 'act74MfaCancelar') {
+      act74MfaCerrar();
+      act74MfaEnrolamiento = false;
+      R2.tmp = null;
+      R2.correo = null;
+      goProto('a1');
+      return;
+    }
+
+    if (boton.dataset.act === 'act74MfaContinuar' && act74MfaEtapa === 'recuperacion') {
+      act74MfaCerrar(); // Borra los códigos del DOM, sin guardarlos en storage.
+      goProto('a2');
+      toast('MFA activado. Ingresa el código de tu aplicación para iniciar sesión.', 'ok');
+    }
+  });
+
+  qrEl.addEventListener('submit', (e) => {
+    if (e.target?.id !== 'act74-mfa-form') return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (ocupado || !act74MfaEnrolamiento || act74MfaEtapa !== 'qr') return;
+
+    const codigo = (qrEl.querySelector('#act74-mfa-codigo')?.value || '').trim();
+    const error = qrEl.querySelector('#act74-mfa-error');
+    if (!/^[0-9]{6}$/.test(codigo)) {
+      error.textContent = 'Introduce los 6 dígitos de tu aplicación.';
+      return;
+    }
+
+    conEspera(async () => {
+      const boton = qrEl.querySelector('#act74-mfa-guardar');
+      if (boton) boton.disabled = true;
+      error.textContent = '';
+      try {
+        const respuesta = await api('POST', '/auth/mfa/confirmar',
+          { token_temporal: R2.tmp, codigo }, false);
+        if (!respuesta.token_temporal || !Array.isArray(respuesta.codigos_recuperacion)) {
+          throw new Error('El servidor confirmó MFA pero faltan los códigos de recuperación.');
+        }
+        R2.tmp = respuesta.token_temporal;
+        act74MfaEnrolamiento = false;
+        act74MfaEtapa = 'recuperacion';
+
+        qrEl.innerHTML = `<div class="box">
+          <h3>Segundo factor activado</h3>
+          <p><b>Guarda ahora estos códigos de recuperación.</b> Se muestran una sola vez.
+            Cada código permite recuperar el acceso si pierdes tu aplicación.</p>
+          <div style="background:#f1f3fc;padding:12px;border-radius:9px;
+            display:grid;grid-template-columns:1fr 1fr;gap:8px;user-select:all">
+            ${respuesta.codigos_recuperacion.map(c => `<code style="color:#111">${h(c)}</code>`).join('')}
+          </div>
+          <p style="font-size:12px">No los guardes en el navegador ni los compartas.
+            Anótalos o consérvalos en un gestor seguro.</p>
+          <div class="row"><button type="button" data-act="act74MfaContinuar">
+            Ya guardé mis códigos; continuar
+          </button></div>
+        </div>`;
+      } catch (err) {
+        error.textContent = err.mensaje || err.message || 'No se pudo activar MFA.';
+      } finally {
+        if (boton?.isConnected) boton.disabled = false;
+      }
+    });
+  });
+
   let tt;
   function toast(msg, tipo) { toastEl.textContent = msg; toastEl.className = tipo || ''; toastEl.style.display = 'block'; clearTimeout(tt); tt = setTimeout(() => (toastEl.style.display = 'none'), 4200); }
 
@@ -599,6 +703,7 @@
       <label for="rl-clave-nueva" style="display:block;margin-top:14px;font-size:14px">Nueva contraseña (mínimo 12 caracteres)</label>
       <input id="rl-clave-nueva" type="password" autocomplete="new-password" minlength="12" required
         style="width:100%;box-sizing:border-box;padding:10px;margin-top:5px">
+      <p style="font-size:12px;line-height:1.4;color:#4B4F6B;margin:7px 0 0">Usa al menos 12 caracteres. Debe ser distinta de la contraseña anterior y de tu correo electrónico.</p>
       <label for="rl-clave-confirmar" style="display:block;margin-top:14px;font-size:14px">Confirmar nueva contraseña</label>
       <input id="rl-clave-confirmar" type="password" autocomplete="new-password" minlength="12" required
         style="width:100%;box-sizing:border-box;padding:10px;margin-top:5px">
@@ -638,6 +743,11 @@
     }
     if (nueva === actual) {
       error.textContent = 'La nueva contraseña debe ser distinta de la temporal.';
+      return;
+    }
+    const correoCuenta = String(R2.usuario?.correo || R2.correo || '').trim().toLowerCase();
+    if (correoCuenta && nueva.trim().toLowerCase() === correoCuenta) {
+      error.textContent = 'La nueva contraseña debe ser distinta del correo de la cuenta.';
       return;
     }
     if (nueva !== confirmar) {
@@ -692,6 +802,16 @@
         try {
           const r = await api('POST', '/auth/login', { correo, password }, false);
           R2.tmp = r.token_temporal; S.first = false; S.otpErr = '';
+          if (r.enrolamiento_requerido) {
+            act74MfaEnrolamiento = true;
+            try { await mostrarQR(); }
+            catch (err) {
+              toast(err.mensaje || err.message || 'No se pudo preparar el segundo factor.', 'err');
+              if (err.codigo === 'TOKEN_TEMPORAL_INVALIDO') { R2.tmp = null; act74MfaEnrolamiento = false; }
+            }
+            return;
+          }
+          act74MfaEnrolamiento = false;
           goProto('a2');
         } catch (e) {
           S.err = true; S.errMsg = e.codigo === 'MFA_PENDIENTE' ? 'Tu cuenta aún no tiene configurada la verificación en dos pasos. Contacta a Soporte.' : e.codigo === 'CREDENCIALES_INVALIDAS' ? 'Correo o contraseña incorrectos.' : e.codigo === 'DEMASIADOS_INTENTOS' ? 'Demasiados intentos. Espera un momento antes de volver a ingresar.' : e.codigo === 'SIN_RED' ? e.mensaje : 'No se pudo iniciar sesión. Intenta nuevamente más tarde.';

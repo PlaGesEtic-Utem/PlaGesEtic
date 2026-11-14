@@ -21,4 +21,12 @@ const cambiarPassword = envolver(async (req, res) => {
   res.json({ mensaje: 'Contraseña actualizada.' });
 });
 
-module.exports = { login, loginMfa, logout, cambiarPassword };
+const enrolarMfa = envolver(async (req, res) => {
+  res.json(await servicio.enrolar(req.body || {}, req.auditoria));
+});
+
+const confirmarMfa = envolver(async (req, res) => {
+  res.json(await servicio.confirmar(req.body || {}, req.auditoria));
+});
+
+module.exports = { login, loginMfa, logout, cambiarPassword, enrolarMfa, confirmarMfa };
