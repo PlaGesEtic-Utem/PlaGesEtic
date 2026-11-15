@@ -17,6 +17,7 @@ function cargarConfig(env = process.env) {
     entorno: env.NODE_ENV || 'development',
     puerto: Number(env.PORT) || 3000,
     origenPermitido: env.ORIGEN_PERMITIDO || null,  // lo usa el middleware cors() de seguridad.js
+    dominiosPermitidos: (env.DOMINIOS_PERMITIDOS || '').split(',').map((d) => d.trim().toLowerCase()).filter(Boolean),
     db: Object.freeze({
       host: env.DB_HOST,
       port: Number(env.DB_PORT) || 5432,

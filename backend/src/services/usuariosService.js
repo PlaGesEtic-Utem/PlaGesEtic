@@ -11,7 +11,7 @@ const crypto = require('crypto');
 const argon2 = require('argon2');
 const repo = require('../repositories/usuariosRepository');
 const { ErrorApi, errores } = require('../utils/errores');
-
+const { cargarConfig } = require('../config');
 const ROLES = ['Director', 'Soporte', 'Investigador', 'Asistente', 'Estudiante', 'Invitado'];
 const ROLES_TEMPORALES = ['Estudiante', 'Invitado'];
 const CORREO_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -38,6 +38,11 @@ function texto(valor, campo, max) {
 function correo(valor) {
   const v = texto(valor, 'correo', 150).toLowerCase();
   if (!CORREO_RE.test(v)) throw errores.solicitudInvalida('El correo no tiene un formato válido.');
+  const dominios = cargarConfig().dominiosPermitidos; 
+  const dominio = v.split('@')[1];
+  if (dominios.length && !dominios.includes(dominio)) {
+    throw errores.solicitudInvalida(`El dominio del correo debe ser uno de: ${dominios.join(', ')}.`);
+  }
   return v;
 }
 
