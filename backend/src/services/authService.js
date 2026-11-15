@@ -231,8 +231,14 @@ async function cambiarPassword(cuerpo, usuario, aud) {
   if (nueva === actual) throw errores.solicitudInvalida('La nueva contraseña debe ser distinta de la actual.');
   const u = await repo.usuarioPorId(usuario.id_usuario);
   if (!u || !(await argon2.verify(u.hash_password, actual).catch(() => false))) throw credencialesInvalidas();
+  
+  if (nueva.trim().toLowerCase() === String(u.correo).trim().toLowerCase()) {
+    throw errores.solicitudInvalida('La contraseña no puede ser igual al correo electrónico.');
+  }
   await repo.cambiarPassword(u.id_usuario, await argon2.hash(nueva, { type: argon2.argon2id }));
-}
+
+  
+  }
 
 module.exports = {
   login, loginMfa, logout, cambiarPassword, enrolar, confirmar,
