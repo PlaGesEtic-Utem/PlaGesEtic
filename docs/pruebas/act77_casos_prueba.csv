@@ -1,0 +1,13 @@
+ID,Caso,Precondicion,Entrada,Resultado esperado,Resultado obtenido,Estado
+CP-96,Flujo completo: crear estudio y activar,Usuario Investigador autenticado,POST /estudios + POST /estudios/{id}/activar,201 + 200 (activo),,
+CP-97,Flujo completo: registrar identidad y crear participacion,Estudio activo,POST /identidades + POST /estudios/{id}/participaciones,201 + 201 con codigo P-XXXXXX,,
+CP-98,Flujo completo: aceptar consentimiento con evidencia,Participacion creada,POST /participaciones/{id}/consentimientos multipart,201 con estado otorgado,,
+CP-99,Flujo completo: listar participaciones sin PII,Participacion con consentimiento,GET /estudios/{id}/participaciones,200 sin nombre/RUT/correo/UX Lab ID,,
+CP-100,Flujo completo: consultar estado de consentimiento,Consentimiento otorgado,GET /participaciones/{id}/consentimientos,200 con estado otorgado y historial,,
+CP-101,Flujo completo: auditoria registra todas las operaciones,Operaciones previas ejecutadas,GET /auditoria?entidad=participacion,200 con filas de crear/leer,,
+CP-102,Flujo completo: exportar estudio con participacion activa,Participacion activa,POST /estudios/{id}/exportaciones + GET /auditoria/exportar,201 + 200 con CSV,,
+CP-103,Integridad: cadena de auditoria valida,Script verificar-auditoria,node scripts/verificar-auditoria.js,Cadena integra sin errores,,
+CP-104,Integridad: desenmascarar requiere autorizacion,Usuario Asistente sin autorizacion,POST /identidades/{id}/desenmascarar,403 SIN_PERMISO,,
+CP-105,Integridad: retirar consentimiento y verificar 409 en nuevas operaciones,Participacion retirada,POST /participaciones/{id}/consentimientos + POST contacto,409 en ambas,,
+CP-106,Integridad: exportacion bloqueada si participante retirado,Participacion retirada y exportacion previa,GET /auditoria/exportar con validacion,409 EXPORTACION_DESACTUALIZADA,,
+CP-107,Integridad: toda respuesta sin PII en endpoints publicos,Multiples endpoints,GET /estudios /participaciones /consentimientos,Ninguna respuesta trae datos personales,,
