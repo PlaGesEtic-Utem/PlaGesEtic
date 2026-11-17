@@ -1,5 +1,37 @@
 # Controles de seguridad — Actividad 74
 
+## Seguimiento al 17 de noviembre de 2026
+
+**Estado: implementación integrada en `develop`; validación final pendiente.** Corte revisado: `8c48b13`. Esta actualización distingue el estado informado en el Hito 3, el código integrado después y las pruebas de las que se dispone. Las secciones 1 a 6 conservan la revisión inicial; para los pendientes actuales prevalece este seguimiento.
+
+### Contraste con la tabla 7.15
+
+Fuente: [Informe Hito 3, tabla 7.15, corte 04-11-2026](https://docs.google.com/document/d/1bMrvbz5O3hczClvIHnFDmCvxxdDi_20s/edit). De los 18 criterios, el informe registraba 15 como «Cumple», dos como «Parcial» y uno como «Pendiente».
+
+| Criterios | Estado del Hito 3 | Lectura al revisar la actividad 74 |
+|---|---|---|
+| CA-01 a CA-07, CA-09 a CA-11, CA-13 a CA-16 y CA-18 | Cumple | Conservar como resultado histórico. Las nuevas pruebas de contraseña y MFA amplían la cobertura, pero no constituyen una repetición de los 15 criterios. |
+| CA-08 | Parcial | El informe señalaba datos del prototipo en los paneles de Director y Soporte. Las pruebas de seguridad revisadas no validan esos paneles. |
+| CA-12 | Parcial | El informe acreditaba la validación del permiso, pero dejaba pendiente el flujo para solicitar y aprobar autorizaciones. La Act. 74 no aporta aquí evidencia para reclasificarlo. |
+| CA-17 | Pendiente | El enrolamiento está conectado en frontend y backend. Falta acreditar en navegador el recorrido completo de una cuenta nueva: QR, confirmación, diez códigos de recuperación, cambio obligatorio de contraseña y llegada al panel. |
+
+### Qué cambió y qué falta verificar
+
+| Control | Evidencia incorporada en GitHub | Pendiente actual |
+|---|---|---|
+| Contraseña | [PR #42](https://github.com/PlaGesEtic-Utem/PlaGesEtic/pull/42): el cambio de contraseña ya compara la nueva clave con el correo. La prueba automática de la Act. 74 comprueba el rechazo de una clave de ocho caracteres con HTTP 400. | Registrar resultados específicos para clave igual al correo y cambio válido. La prueba de clave corta no cubre esos casos. |
+| MFA | [PR #39](https://github.com/PlaGesEtic-Utem/PlaGesEtic/pull/39) y [PR #41](https://github.com/PlaGesEtic-Utem/PlaGesEtic/pull/41): cambios de interfaz y seguridad integrados. La prueba de confirmación con código inválido exige 401, sin activación ni emisión de códigos de recuperación. | Evidencia del primer ingreso completo para CA-17. |
+| Cabeceras | [Pruebas integradas en el PR #40](https://github.com/PlaGesEtic-Utem/PlaGesEtic/pull/40): comprueban las cuatro cabeceras y la ausencia de X-Powered-By en respuestas 200 y 404. | Conservar la evidencia de ejecución vinculada a la versión probada. |
+| CORS | El mismo archivo de pruebas comprueba que solo el origen configurado recibe la cabecera de acceso. | Revalidar O-01 en el entorno desplegado, incluyendo la petición OPTIONS. |
+| Dependencias | S-09/H-25 registró un aviso de severidad alta en adm-zip y una aceptación de riesgo. | Adjuntar auditoría actualizada o documentar la decisión del líder frente al criterio de cero avisos altos o críticos. |
+| Regresión | [Informe de Arias](../pruebas/act75_avances_arias.md): 151 pruebas de backend, 149 aprobadas, 0 fallidas, 1 omitida y 1 TODO. | Es un resultado global reportado por el equipo, no una prueba del navegador ni una auditoría de dependencias. |
+
+**Resultado documental:** cotejo completado. El documento original ya se integró mediante el PR #38. Esta revisión no ejecutó pruebas nuevas ni cambia el estado del informe histórico. Para cerrar la actividad, incorporar la evidencia pendiente y la decisión sobre H-25.
+
+---
+
+## Revisión inicial (registro histórico)
+
 ## 1. Alcance y fuentes
 
 Revisión documental de la rama `feature/act74-seguridad`, commit `e8f96f21b9aafc5dba7c85bc0061140f2afe8772`.
@@ -10,7 +42,7 @@ Fuentes:
 
 - [Plan de la Actividad 74 v1.2](https://drive.google.com/file/d/1vALHmobRjxsjdyc-Goy8LKdCJAcNPPCv/view).
 - [Criterios de aceptación v2: CA-01 a CA-18](https://drive.google.com/file/d/1M5xgfnfO9tKN4PzDeTlUQhaH5X-a1uVZ/view).
-- [Informe Hito 3](https://docs.google.com/document/d/1bMrvbz5O3hczClvIHnFDmCvxxdDi_20s/edit), tabla 7.15. Queda pendiente cotejar sus estados con esta revisión.
+- [Informe Hito 3](https://docs.google.com/document/d/1bMrvbz5O3hczClvIHnFDmCvxxdDi_20s/edit), tabla 7.15. Cotejo posterior disponible al inicio de este documento.
 - Resultados de Felipe en `docs/pruebas/act74_casos_prueba.csv`, disponibles en la rama revisada.
 - Hallazgos en `docs/pruebas/act74_hallazgos.md`, disponibles en la rama revisada.
 
