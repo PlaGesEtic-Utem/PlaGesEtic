@@ -1,3 +1,53 @@
+/* ACT80_HELPER_INTEGRADO */
+/* Utilidades del listado de estudios (Actividad 80). */
+(function (raiz, fabrica) {
+  const modulo = fabrica();
+  if (typeof module === 'object' && module.exports) module.exports = modulo;
+  if (raiz) raiz.PlaGesAct80Estudios = modulo;
+})(typeof window !== 'undefined' ? window : null, function () {
+  'use strict';
+  function consulta(s) {
+    const p = new URLSearchParams();
+    p.set('pagina', String(s.pagina || 1));
+    p.set('limite', String(s.limite || 20));
+    p.set('orden', s.orden || 'fecha');
+    if (s.q && s.q.trim()) p.set('q', s.q.trim());
+    if (s.estado) p.set('estado', s.estado);
+    p.set('solo_mios', String(Boolean(s.soloMios)));
+    return p.toString();
+  }
+  function normalizar(respuesta, s) {
+    if (Array.isArray(respuesta)) {
+      // Compatibilidad con el backend que aún no pagina.
+      let datos = respuesta.slice();
+      const q = String(s.q || '').trim().toLocaleLowerCase('es');
+      if (q) datos = datos.filter(e =>
+        String(e.codigo_estudio || e.codigo || '').toLocaleLowerCase('es').includes(q) ||
+        String(e.nombre || '').toLocaleLowerCase('es').includes(q));
+      if (s.estado) datos = datos.filter(e => e.estado === s.estado);
+      const total = datos.length;
+      const limite = s.limite || 20;
+      return {
+        datos: datos.slice((s.pagina - 1) * limite, s.pagina * limite),
+        total, pagina: s.pagina, limite, modo: 'compatibilidad'
+      };
+    }
+    if (!respuesta || !Array.isArray(respuesta.datos) ||
+        !Number.isInteger(respuesta.total) || respuesta.total < 0 ||
+        !Number.isInteger(respuesta.pagina) || respuesta.pagina < 1 ||
+        !Number.isInteger(respuesta.limite) || respuesta.limite < 1) {
+      throw new Error('El servidor no devolvió el contrato de paginación esperado.');
+    }
+    return {
+      datos: respuesta.datos,
+      total: respuesta.total,
+      pagina: respuesta.pagina,
+      limite: respuesta.limite,
+      modo: 'servidor'
+    };
+  }
+  return { consulta, normalizar };
+});
 
 /* plaGesEtic · Capa que conecta el prototipo navegable v2.3.1 con la API real (SOLO DEMO / DESARROLLO).
  * No cambia el diseño: reemplaza los datos de ejemplo por los de la API en estas pantallas:
@@ -1979,4 +2029,196 @@
 
   // Arranque: siempre desde el ingreso
   S.err = false; goProto('a1');
+  // Actividad 80: búsqueda y paginación de estudios desde el servidor.
+  // La API conserva una respuesta de lista para las peticiones sin "pagina".
+  const act80Helper = window.PlaGesAct80Estudios;
+  if (!act80Helper) throw new Error('Falta act80-estudios.js');
+
+  const act80Estado = {
+    q: '', estado: '', soloMios: false, orden: 'fecha',
+    pagina: 1, limite: 20, total: 0, datos: [],
+    modo: '', error: '', cargando: false, iniciado: false,
+    secuencia: 0, espera: null
+  };
+  let act80SesionAnterior = R2.token;
+
+  function act80Pintar() {
+    if (document.getElementById('buscaEst')) {
+      const activo = document.activeElement;
+      const recuperarFoco = activo && activo.id === 'buscaEst';
+      const inicio = recuperarFoco ? activo.selectionStart : null;
+      goProto('c1');
+      if (recuperarFoco) {
+        const nuevo = document.getElementById('buscaEst');
+        if (nuevo) {
+          nuevo.focus();
+          try {
+            if (inicio !== null) nuevo.setSelectionRange(inicio, inicio);
+          } catch (_) { /* Algunas entradas search no admiten selección. */ }
+        }
+      }
+    }
+  }
+
+  async function act80Consultar() {
+    const n = ++act80Estado.secuencia;
+    act80Estado.cargando = true;
+    act80Estado.error = '';
+    try {
+      const ruta = '/estudios?' + act80Helper.consulta(act80Estado);
+      const respuesta = await api('GET', ruta);
+      if (n !== act80Estado.secuencia) return;
+      const resultado = act80Helper.normalizar(respuesta, act80Estado);
+      act80Estado.datos = resultado.datos;
+      act80Estado.total = resultado.total;
+      act80Estado.pagina = resultado.pagina;
+      act80Estado.modo = resultado.modo;
+      R2.estudios = resultado.datos;
+      for (const e of resultado.datos) {
+        const codigo = e.codigo_estudio || e.codigo;
+        if (!codigo || !e.id_estudio) continue;
+        const anterior = STUDIES.find(s => s.id === codigo);
+        const info = {
+          id: codigo, n: e.nombre, e: ESTADO[e.estado] || e.estado,
+          cec: e.estado === 'activo' ? 'Estudio activo' : 'Pendiente de aprobación',
+          cecOk: e.estado === 'activo', _uuid: e.id_estudio
+        };
+        if (anterior) Object.assign(anterior, info);
+        else STUDIES.push({ ...info, p: '—' });
+      }
+    } catch (error) {
+      if (n !== act80Estado.secuencia) return;
+      act80Estado.error = error.mensaje || error.message || 'No se pudieron consultar los estudios.';
+      act80Estado.datos = [];
+      act80Estado.total = 0;
+    } finally {
+      if (n === act80Estado.secuencia) {
+        act80Estado.cargando = false;
+        act80Pintar();
+      }
+    }
+  }
+
+  function act80ReiniciarBusqueda() {
+    act80Estado.pagina = 1;
+    ++act80Estado.secuencia; // invalida respuestas anteriores
+    clearTimeout(act80Estado.espera);
+    act80Estado.espera = setTimeout(act80Consultar, 300);
+  }
+
+  function act80Esc(s) { return h(String(s == null ? '' : s)); }
+
+  function act80Tabla() {
+    const filas = act80Estado.datos.map(e => {
+      const codigo = e.codigo_estudio || e.codigo;
+      const previo = STUDIES.find(s => s.id === codigo) || {};
+      const nombre = e.nombre || previo.n || '—';
+      const estado = ESTADO[e.estado] || e.estado || '—';
+      const participantes = previo.p == null ? '—' : previo.p;
+      const esActivo = e.estado === 'activo';
+      const esCerrado = e.estado === 'cerrado';
+      const puedeEditar = S.role === 'Investigador' && !esCerrado;
+      const puedeCerrar = S.role === 'Director' && esActivo;
+      return `<tr><td><code>${act80Esc(codigo)}</code></td>` +
+        `<td>${act80Esc(nombre)}</td>` +
+        `<td><span class="pill ${esActivo ? 'ok' : esCerrado ? 'err' : 'n'}">${act80Esc(estado)}</span></td>` +
+        `<td>${esActivo ? 'Estudio activo' : 'Pendiente de aprobación'}</td>` +
+        `<td>${act80Esc(participantes)}</td><td>` +
+        (puedeEditar ? `<button class="lnk" data-act="stuEdit" data-id="${act80Esc(codigo)}">Editar</button> · ` : '') +
+        `<button class="lnk" data-act="stuVer" data-id="${act80Esc(codigo)}">Ver participantes</button>` +
+        (puedeCerrar ? ` · <button class="lnk" data-act="closeSel" data-id="${act80Esc(codigo)}">Cerrar</button>` : '') +
+        '</td></tr>';
+    }).join('');
+
+    const textoVacio = act80Estado.cargando ? 'Consultando estudios…' :
+      act80Estado.error ? 'No se pudieron cargar los resultados.' :
+      'No se encontraron estudios con estos filtros.';
+    return `<div class="tw"><table><thead><tr><th>Código</th><th>Estudio</th><th>Estado</th>` +
+      '<th>Comité de Ética</th><th>Participantes</th><th>Acciones</th></tr></thead>' +
+      `<tbody>${filas || `<tr><td colspan="6">${textoVacio}</td></tr>`}</tbody></table></div>`;
+  }
+
+  const act80C1Anterior = R.c1;
+  R.c1 = () => {
+    if (act80SesionAnterior !== R2.token) {
+      act80SesionAnterior = R2.token;
+      clearTimeout(act80Estado.espera);
+      ++act80Estado.secuencia;
+      Object.assign(act80Estado, { q: '', estado: '', soloMios: false, pagina: 1, total: 0, datos: [], modo: '', error: '', cargando: false, iniciado: false });
+    }
+    const html = act80C1Anterior();
+    const inputOriginal = /<div class="fld"><input id="buscaEst"[^>]*><\/div>/;
+    const tablaOriginal = /<div class="tw"><table>[\s\S]*?<\/table><\/div>/;
+    if (!inputOriginal.test(html) || !tablaOriginal.test(html)) {
+      return html; // No interrumpir otras pantallas ante cambios del prototipo.
+    }
+    const opciones = [['', 'Todos los estados'], ['activo', 'Activo'],
+      ['borrador', 'Borrador'], ['cerrado', 'Cerrado']];
+    const filtros = `<div class="grid2" style="margin:12px 0">` +
+      `<div class="fld"><label for="buscaEst">Buscar por código o nombre</label>` +
+      `<input id="buscaEst" type="search" value="${act80Esc(act80Estado.q)}" placeholder="Buscar estudios" autocomplete="off"></div>` +
+      `<div class="fld"><label for="act80Estado">Estado</label><select id="act80Estado">` +
+      opciones.map(([v, t]) => `<option value="${v}" ${act80Estado.estado === v ? 'selected' : ''}>${t}</option>`).join('') +
+      '</select></div></div>' +
+      `<div class="acts" style="flex-wrap:wrap;gap:12px">` +
+      `<label><input id="act80SoloMios" type="checkbox" ${act80Estado.soloMios ? 'checked' : ''}> Solo mis estudios</label>` +
+      `<button type="button" class="btn s" data-act="act80Limpiar">Borrar búsqueda</button></div>`;
+    const inicio = act80Estado.datos.length ? (act80Estado.pagina - 1) * act80Estado.limite + 1 : 0;
+    const fin = act80Estado.datos.length ? Math.min(act80Estado.pagina * act80Estado.limite, act80Estado.total) : 0;
+    const rango = act80Estado.total
+      ? `Mostrando ${inicio}–${fin} de ${act80Estado.total}`
+      : 'Mostrando 0 de 0';
+    const maxPaginas = Math.max(1, Math.ceil(act80Estado.total / act80Estado.limite));
+    const pie = `<div class="acts" style="justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:12px">` +
+      `<span aria-live="polite">${rango}${act80Estado.cargando ? ' · Cargando…' : ''}</span>` +
+      `<div><button type="button" class="btn s" data-act="act80Anterior" ${act80Estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button> ` +
+      `<button type="button" class="btn s" data-act="act80Siguiente" ${act80Estado.pagina >= maxPaginas ? 'disabled' : ''}>Siguiente</button></div></div>` +
+      (act80Estado.modo === 'compatibilidad' ?
+        '<p class="hint">Modo temporal: el backend todavía devuelve una lista sin paginar. Los filtros se aplican localmente hasta que se integre la API de búsqueda.</p>' : '') +
+      (act80Estado.error ? `<div class="msg err" role="alert">${act80Esc(act80Estado.error)}</div>` : '');
+    if (!act80Estado.iniciado) {
+      act80Estado.iniciado = true;
+      Promise.resolve().then(act80Consultar);
+    }
+    return html.replace(inputOriginal, filtros).replace(tablaOriginal, act80Tabla() + pie);
+  };
+
+  // Interceptar antes del buscador local antiguo para evitar filtrados duplicados.
+  document.addEventListener('input', e => {
+    if (e.target && e.target.id === 'buscaEst') {
+      e.stopImmediatePropagation();
+      act80Estado.q = e.target.value;
+      act80ReiniciarBusqueda();
+    }
+  }, true);
+  document.addEventListener('change', e => {
+    if (!e.target) return;
+    if (e.target.id === 'act80Estado') {
+      act80Estado.estado = e.target.value;
+      act80ReiniciarBusqueda();
+    } else if (e.target.id === 'act80SoloMios') {
+      act80Estado.soloMios = e.target.checked;
+      act80ReiniciarBusqueda();
+    }
+  }, true);
+  document.addEventListener('click', e => {
+    const boton = e.target.closest('[data-act]');
+    if (!boton) return;
+    const accion = boton.dataset.act;
+    if (!['act80Anterior', 'act80Siguiente', 'act80Limpiar'].includes(accion)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (accion === 'act80Limpiar') {
+      act80Estado.q = '';
+      act80Estado.estado = '';
+      act80Estado.soloMios = false;
+      act80ReiniciarBusqueda();
+    } else {
+      const paginas = Math.max(1, Math.ceil(act80Estado.total / act80Estado.limite));
+      act80Estado.pagina = Math.max(1, Math.min(paginas,
+        act80Estado.pagina + (accion === 'act80Siguiente' ? 1 : -1)));
+      clearTimeout(act80Estado.espera);
+      act80Consultar();
+    }
+  }, true);
 })();
