@@ -1,3 +1,71 @@
+/* ACT80_JUEVES_HELPER */
+'use strict';
+/* Funciones puras para las correcciones UX del jueves - Actividad 80. */
+(function (raiz, fabrica) {
+  const modulo = fabrica();
+  if (typeof module === 'object' && module.exports) module.exports = modulo;
+  if (raiz) raiz.PlaGesAct80Jueves = modulo;
+})(typeof window !== 'undefined' ? window : null, function () {
+  function fechaLocal(d) {
+    return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'),
+      String(d.getDate()).padStart(2, '0')].join('-');
+  }
+  function cuentaVencida(fechaExpiracion, hoy = new Date()) {
+    if (!fechaExpiracion) return false;
+    const fecha = String(fechaExpiracion).slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return false;
+    return fecha < fechaLocal(hoy); // Valida hasta el fin del dia indicado.
+  }
+  function estadoCuenta(usuario, hoy = new Date()) {
+    if (!usuario.activo) return 'Bloqueada';
+    return cuentaVencida(usuario.fecha_expiracion, hoy) ? 'Vencida' : 'Activa';
+  }
+  function secretoDesdeUri(uri) {
+    let u;
+    try { u = new URL(uri); } catch (_) { throw new Error('QR MFA invalido.'); }
+    if (u.protocol !== 'otpauth:' || u.hostname !== 'totp') {
+      throw new Error('Formato del QR MFA no reconocido.');
+    }
+    const secreto = (u.searchParams.get('secret') || '').trim().toUpperCase();
+    if (!/^[A-Z2-7]{16,128}$/.test(secreto)) {
+      throw new Error('El QR no incluye una clave MFA valida.');
+    }
+    return secreto;
+  }
+  function consultaParticipantes(estado) {
+    const p = new URLSearchParams();
+    p.set('pagina', String(estado.pagina || 1));
+    p.set('limite', String(estado.limite || 20));
+    const q = String(estado.q || '').trim();
+    if (q) p.set('q', q);
+    if (estado.estado) p.set('estado', estado.estado);
+    return p.toString();
+  }
+  function normalizarParticipantes(respuesta, estado) {
+    if (Array.isArray(respuesta)) {
+      let datos = respuesta.slice();
+      const q = String(estado.q || '').trim().toLocaleLowerCase('es');
+      if (q) datos = datos.filter(p =>
+        String(p.codigo_seudonimo || '').toLocaleLowerCase('es').includes(q));
+      if (estado.estado) datos = datos.filter(p => p.estado === estado.estado);
+      const limite = estado.limite || 20;
+      const pagina = estado.pagina || 1;
+      return { datos: datos.slice((pagina - 1) * limite, pagina * limite),
+        total: datos.length, pagina, limite, modo: 'compatibilidad' };
+    }
+    if (!respuesta || !Array.isArray(respuesta.datos) ||
+        !Number.isInteger(respuesta.total) || respuesta.total < 0 ||
+        !Number.isInteger(respuesta.pagina) || respuesta.pagina < 1 ||
+        !Number.isInteger(respuesta.limite) ||
+        respuesta.limite < 1 || respuesta.limite > 100) {
+      throw new Error('El backend no devolvio el contrato de paginacion de participantes esperado.');
+    }
+    return { datos: respuesta.datos, total: respuesta.total,
+      pagina: respuesta.pagina, limite: respuesta.limite, modo: 'servidor' };
+  }
+  return { cuentaVencida, estadoCuenta, secretoDesdeUri,
+    consultaParticipantes, normalizarParticipantes };
+});
 /* ACT80_HELPER_INTEGRADO */
 /* Utilidades del listado de estudios (Actividad 80). */
 (function (raiz, fabrica) {
@@ -98,6 +166,14 @@
   .rl-qrlink{display:inline-block;margin:2px 0 8px;border:0;background:none;color:#1C2FB9;font:600 13px Inter,Arial,sans-serif;text-decoration:underline;cursor:pointer;padding:0}
   .rl-ver:hover{background:#DDE2FF}.rl-ver:focus-visible{outline:2px solid #253FF6;outline-offset:2px}`;
   css.textContent += '\n#rl-cel,[data-act="verqr"]{display:none!important}';
+  css.textContent += `
+    .pbar label:has(#roleSel){display:flex;flex-wrap:wrap;min-width:0;gap:6px}
+    .pbar #roleSel{box-sizing:border-box;display:block;flex:0 0 auto;min-width:148px;max-width:100%;height:35px;line-height:1.2;padding:7px 32px 7px 10px;white-space:nowrap}
+    select[data-act73-rol]{min-width:148px;max-width:220px;width:100%;box-sizing:border-box;padding-right:38px}
+    #act80-part-filtros{margin:12px 0;align-items:end}
+    #act80-part-filtros input,#act80-part-filtros select{width:100%;min-width:0}
+    @media(max-width:540px){.pbar{gap:8px}.pbar label:has(#roleSel){width:100%;justify-content:flex-start}}
+  `;
   document.head.appendChild(css);
   const badge = document.createElement('div'); badge.id = 'rl-badge'; badge.innerHTML = '<i></i>Comprobando conexión…';
   const cel = document.createElement('div'); cel.id = 'rl-cel';
@@ -120,6 +196,8 @@
       { token_temporal: R2.tmp }, false);
     if (!respuesta.otpauth_uri) throw new Error('La API no entregó otpauth_uri.');
 
+    // Mostrar la clave de configuracion manual solo durante el enrolamiento.
+    const claveManual = window.PlaGesAct80Jueves.secretoDesdeUri(respuesta.otpauth_uri);
     const qr = qrcode(0, 'M');
     qr.addData(respuesta.otpauth_uri);
     qr.make();
@@ -130,6 +208,9 @@
       <p>Escanea este QR con Google Authenticator o Microsoft Authenticator.
         Se genera desde la API real y todavía <b>no activa</b> el MFA.</p>
       <div class="img">${qr.createImgTag(6, 8)}</div>
+      <p style="font-size:13px"><b>¿No puedes escanear?</b> Añade la cuenta manualmente con esta clave:</p>
+      <code id="act80-mfa-clave" style="display:block;overflow-wrap:anywhere;font-size:15px;letter-spacing:.08em;user-select:all;background:#f1f3fc;padding:10px;border-radius:8px">${h(claveManual)}</code>
+      <p style="font-size:12px">No compartas esta clave. Solo se muestra mientras configuras MFA.</p>
       <p style="overflow-wrap:anywhere;font-size:12px">Cuenta: ${h(R2.correo)}</p>
       <form id="act74-mfa-form">
         <label for="act74-mfa-codigo">Código actual de 6 dígitos de tu aplicación</label>
@@ -982,6 +1063,33 @@
 
   document.addEventListener('click', (e) => { if (e.target.closest('[data-act="verqr"]')) { e.preventDefault(); e.stopImmediatePropagation(); mostrarQR(); } }, true);
 
+  // Act80: al corregir un dato o reintentar, quitar el aviso anterior.
+  document.addEventListener('input', (e) => {
+    const id = e.target?.id;
+    if (id === 'u' || id === 'pw') {
+      S.err = false;
+      S.errMsg = '';
+      const aviso = document.querySelector('#app .msg.err[role="alert"]');
+      if (aviso) aviso.remove();
+    } else if (id === 'otp' || id === 'rc') {
+      S.otpErr = '';
+      const aviso = document.querySelector('#app .msg.err[role="alert"]');
+      if (aviso) aviso.remove();
+    } else if (id === 'act74-mfa-codigo') {
+      const aviso = qrEl.querySelector('#act74-mfa-error');
+      if (aviso) aviso.textContent = '';
+    } else if (['act73Tipo', 'act73Version', 'act73Archivo'].includes(id)) {
+      const aviso = document.getElementById('act73Error');
+      if (aviso) aviso.textContent = '';
+    }
+  }, true);
+  document.addEventListener('change', (e) => {
+    if (['act73Tipo', 'act73Version', 'act73Archivo'].includes(e.target?.id)) {
+      const aviso = document.getElementById('act73Error');
+      if (aviso) aviso.textContent = '';
+    }
+  }, true);
+
   // Mostrar / ocultar contraseña
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-act="verpw"]'); if (!b) return;
@@ -1210,6 +1318,17 @@
     return x;
   }
 
+  // Identificadores internos no son nombres para mostrar en la interfaz.
+  // El UUID completo sigue disponible para copiarlo cuando la API lo exige.
+  function act80ExpReferencia(x) {
+    return x.codigo_exportacion ||
+      ('Solicitud ' + String(x.id_exportacion || '').slice(0, 8).toUpperCase());
+  }
+  function act80ExpCopiar(x) {
+    return `<button type="button" class="lnk" data-act="act80ExpCopiarId"
+      data-id="${h(x.id_exportacion)}">Copiar ID para consultas</button>`;
+  }
+
   function act73ExpListaHTML() {
     const items = Array.from(act73ExpConocidas.values());
     if (!items.length) {
@@ -1218,7 +1337,7 @@
     return `<div class="tw"><table>
       <thead><tr><th>Código</th><th>Propósito</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
       <tbody>${items.map(x => `<tr>
-        <td><code>${h(x.codigo_exportacion || x.id_exportacion)}</code></td>
+        <td><code>${h(act80ExpReferencia(x))}</code></td>
         <td>${h(act73ExpNombreProp[x.proposito] || x.proposito)}</td>
         <td>${h(act73ExpFecha(x.fecha_solicitud))}</td>
         <td>${h(act73ExpTextoEstado(x.estado))}</td>
@@ -1278,10 +1397,10 @@
       <p class="sub">${x.estado === 'solicitada'
         ? 'Pendiente de la decisión del Investigador responsable.'
         : 'Consulta su estado y descarga el paquete cuando esté disponible.'}</p>
-      <div class="big">${h(x.codigo_exportacion)}</div>
+      <div class="big">${h(act80ExpReferencia(x))}</div>
       <div class="tw"><table class="sumtbl" style="min-width:0">
         <tr><td>Identificador para consultas</td>
-          <td><code style="overflow-wrap:anywhere">${h(x.id_exportacion)}</code></td></tr>
+          <td><code>${h(act80ExpReferencia(x))}</code> · ${act80ExpCopiar(x)}</td></tr>
         <tr><td>Propósito</td><td>${h(act73ExpNombreProp[x.proposito] || x.proposito)}</td></tr>
         <tr><td>Estado</td><td>${h(act73ExpTextoEstado(x.estado))}</td></tr>
         <tr><td>Vencimiento</td><td>${h(act73ExpFecha(x.fecha_vencimiento))}</td></tr>
@@ -1302,10 +1421,11 @@
       El backend no dispone aún de un endpoint para listar todas las exportaciones.</p>
     ${act73ExpListaHTML()}
     <div class="fld" style="margin-top:18px">
-      <label for="act73-exp-buscar">Consultar solicitud existente por UUID</label>
+      <label for="act73-exp-buscar">Consultar solicitud por ID de seguimiento</label>
       <input id="act73-exp-buscar" type="text" autocomplete="off"
         placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-      <div class="hint">El servidor solo permite consultar solicitudes propias o del
+      <div class="hint">Si alguien te compartió una solicitud, pega aquí su identificador completo.
+        El servidor solo permite consultar solicitudes propias o del
         Investigador responsable, con los permisos correspondientes.</div>
     </div>
     <div class="acts">
@@ -1320,10 +1440,10 @@
         <div class="acts">${btn('Volver', 'd6', 's')}</div></div>`);
     }
     return shell('d7', `<div class="card">
-      <h2 class="t">Revisar solicitud · ${h(x.codigo_exportacion)}</h2>
+      <h2 class="t">Revisar solicitud · ${h(act80ExpReferencia(x))}</h2>
       <p class="sub">La aprobación está reservada al Investigador responsable del estudio.</p>
       <div class="tw"><table class="sumtbl" style="min-width:0">
-        <tr><td>UUID</td><td><code style="overflow-wrap:anywhere">${h(x.id_exportacion)}</code></td></tr>
+        <tr><td>Referencia</td><td><code>${h(act80ExpReferencia(x))}</code> · ${act80ExpCopiar(x)}</td></tr>
         <tr><td>Propósito</td><td>${h(act73ExpNombreProp[x.proposito] || x.proposito)}</td></tr>
         <tr><td>Estado</td><td>${h(act73ExpTextoEstado(x.estado))}</td></tr>
         <tr><td>Solicitada el</td><td>${h(act73ExpFecha(x.fecha_solicitud))}</td></tr>
@@ -1571,6 +1691,7 @@
   }
 
   function act73FilaUsuario(u) {
+    const estadoVisual = window.PlaGesAct80Jueves.estadoCuenta(u);
     const puedeGestionar = S.role === 'Director' || u.nombre_rol !== 'Director';
     const esPropio = u.correo?.toLowerCase() === R2.usuario?.correo?.toLowerCase();
     const esDirector = S.role === 'Director';
@@ -1581,15 +1702,13 @@
       .join('');
 
     return `<tr>
-      <td><b>${h(u.nombre)}</b><div class="hint">${h(u.correo)}</div><div class="hint">UUID: <code>${h(u.id_usuario)}</code></div></td>
+      <td><b>${h(u.nombre)}</b><div class="hint">${h(u.correo)}</div></td>
       <td>${puedeGestionar && !esPropio
         ? `<select data-act73-rol="1" aria-label="Rol de ${h(u.correo)}">${opcionesRol}</select>
            <button type="button" class="lnk" data-act="act73UserRol"
              data-id="${h(u.id_usuario)}">Guardar rol</button>`
         : h(u.nombre_rol)}</td>
-      <td>${u.activo
-        ? '<span class="pill ok">Activa</span>'
-        : '<span class="pill err">Bloqueada</span>'}</td>
+      <td><span class="pill ${estadoVisual === 'Activa' ? 'ok' : 'err'}">${h(estadoVisual)}</span></td>
       <td>${u.mfa_activo ? 'Configurado' : 'Pendiente'}</td>
       <td>${h(act73FechaCorta(u.fecha_expiracion))}</td>
       <td>${puedeGestionar && !esPropio ? `
@@ -1895,12 +2014,13 @@
 
       <form id="act73-asig-form">
         <div class="fld">
-          <label for="act73-asig-usuario">UUID del usuario</label>
+          <label for="act73-asig-usuario">Identificador de la cuenta</label>
           <input id="act73-asig-usuario" required maxlength="36"
             autocomplete="off"
             placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
           <div class="hint">
-            El UUID se consulta desde Equipo y roles con una cuenta de Director.
+            Por ahora, la API exige este identificador para agregar a alguien.
+            Solicítalo al administrador de cuentas. No se muestra en los listados públicos.
           </div>
         </div>
 
@@ -2219,6 +2339,194 @@
         act80Estado.pagina + (accion === 'act80Siguiente' ? 1 : -1)));
       clearTimeout(act80Estado.espera);
       act80Consultar();
+    }
+  }, true);
+
+  document.addEventListener('click', async (e) => {
+    const boton = e.target.closest('[data-act="act80ExpCopiarId"]');
+    if (!boton) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    try {
+      await navigator.clipboard.writeText(boton.dataset.id);
+      toast('Identificador copiado. Compártelo solo con personas autorizadas.', 'ok');
+    } catch (_) {
+      toast('No se pudo copiar. Usa un navegador que permita el portapapeles.', 'err');
+    }
+  }, true);
+
+  // ---------- Act80 jueves: busqueda y paginacion de participantes (C3) ----------
+  const act80Jueves = window.PlaGesAct80Jueves;
+  if (!act80Jueves) throw new Error('Falta Act80 jueves en flujo-real.js.');
+  const act80Part = {
+    estudio: null, token: null, q: '', estado: '', pagina: 1, limite: 20,
+    total: 0, datos: [], modo: '', error: '', cargando: false,
+    secuencia: 0, espera: null
+  };
+
+  function act80PartReiniciarEstudio() {
+    clearTimeout(act80Part.espera);
+    ++act80Part.secuencia;
+    Object.assign(act80Part, {
+      estudio: S.ceId, token: R2.token, q: '', estado: '', pagina: 1,
+      total: 0, datos: [], modo: '', error: '', cargando: false
+    });
+  }
+
+  function act80PartPintar() {
+    if (cur !== 'c3' || S.tab === 's' ||
+        !document.getElementById('act80PartBuscar')) return;
+    const actual = document.activeElement;
+    const foco = actual?.id === 'act80PartBuscar';
+    const pos = foco ? actual.selectionStart : null;
+    goProto('c3');
+    if (foco) {
+      const nuevo = document.getElementById('act80PartBuscar');
+      nuevo?.focus();
+      if (pos !== null) {
+        try { nuevo?.setSelectionRange(pos, pos); } catch (_) { /* search */ }
+      }
+    }
+  }
+
+  async function act80PartConsultar() {
+    const n = ++act80Part.secuencia;
+    const estudioSolicitado = S.ceId;
+    const tokenSolicitado = R2.token;
+    const uuid = uuidDe(estudioSolicitado);
+    if (!uuid) {
+      act80Part.error = 'No se pudo identificar el estudio seleccionado.';
+      act80Part.datos = [];
+      act80Part.total = 0;
+      PARTS.length = 0;
+      act80PartPintar();
+      return;
+    }
+    act80Part.cargando = true;
+    act80Part.error = '';
+    try {
+      const url = '/estudios/' + encodeURIComponent(uuid) + '/participaciones?' +
+        act80Jueves.consultaParticipantes(act80Part);
+      const resultado = act80Jueves.normalizarParticipantes(
+        await api('GET', url), act80Part);
+      if (n !== act80Part.secuencia || estudioSolicitado !== S.ceId ||
+          tokenSolicitado !== R2.token) return;
+      Object.assign(act80Part, {
+        datos: resultado.datos, total: resultado.total,
+        pagina: resultado.pagina, limite: resultado.limite, modo: resultado.modo
+      });
+      PARTS.length = 0;
+      for (const p of resultado.datos) {
+        if (!p.codigo_seudonimo) continue;
+        if (p.id_participacion) {
+          R2.participaciones.set(p.codigo_seudonimo, p.id_participacion);
+          R2.estudioParticipacion.set(p.codigo_seudonimo, estudioSolicitado);
+        }
+        PARTS.push([p.codigo_seudonimo, p.estado === 'activo' ? 'Activo' : 'Retirado',
+          p.estado === 'activo' ? 'ok' : 'err', FECHA(p.fecha_inicio),
+          p.es_menor_al_enrolar ? 'Sí' : 'No']);
+      }
+    } catch (err) {
+      if (n !== act80Part.secuencia || estudioSolicitado !== S.ceId ||
+          tokenSolicitado !== R2.token) return;
+      act80Part.error = err.mensaje || err.message || 'No fue posible consultar participantes.';
+      act80Part.datos = [];
+      act80Part.total = 0;
+      PARTS.length = 0;
+    } finally {
+      if (n === act80Part.secuencia) {
+        act80Part.cargando = false;
+        act80PartPintar();
+      }
+    }
+  }
+
+  function act80PartReiniciarBusqueda() {
+    act80Part.pagina = 1;
+    ++act80Part.secuencia;
+    clearTimeout(act80Part.espera);
+    act80Part.espera = setTimeout(act80PartConsultar, 300);
+  }
+
+  const act80C3Original = R.c3;
+  R.c3 = () => {
+    const html = act80C3Original();
+    if (S.tab === 's') return html;
+    const tablaRe = /<div class="tw"><table><tr><th>Código<\/th><th>Estado<\/th>[\s\S]*?<\/table><\/div>/;
+    if (!tablaRe.test(html)) return html; // p.ej. bloqueo por etica.
+    const opciones = [['', 'Todos los estados'], ['activo', 'Activo'], ['retirado', 'Retirado']];
+    const filtros = `<div id="act80-part-filtros" class="grid2">` +
+      `<div class="fld"><label for="act80PartBuscar">Buscar por código P-</label>` +
+      `<input type="search" id="act80PartBuscar" value="${h(act80Part.q)}" placeholder="P-…" autocomplete="off"></div>` +
+      `<div class="fld"><label for="act80PartEstado">Estado</label>` +
+      `<select id="act80PartEstado">${opciones.map(([v,t]) =>
+        `<option value="${v}" ${act80Part.estado === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>` +
+      `</div><div class="acts"><button type="button" class="btn s" data-act="act80PartLimpiar">Limpiar filtros</button></div>`;
+    const inicio = act80Part.datos.length ? (act80Part.pagina - 1) * act80Part.limite + 1 : 0;
+    const fin = act80Part.datos.length ?
+      Math.min(act80Part.pagina * act80Part.limite, act80Part.total) : 0;
+    const maxPagina = Math.max(1, Math.ceil(act80Part.total / act80Part.limite));
+    const pie = `<div class="acts" style="justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:12px">` +
+      `<span aria-live="polite">${act80Part.total ? `Mostrando ${inicio}–${fin} de ${act80Part.total}` : 'Mostrando 0 de 0'}${act80Part.cargando ? ' · Cargando…' : ''}</span>` +
+      `<div><button type="button" class="btn s" data-act="act80PartAnterior" ${act80Part.pagina <= 1 ? 'disabled' : ''}>Anterior</button> ` +
+      `<button type="button" class="btn s" data-act="act80PartSiguiente" ${act80Part.pagina >= maxPagina ? 'disabled' : ''}>Siguiente</button></div></div>` +
+      (act80Part.modo === 'compatibilidad' ?
+        '<p class="hint">Modo temporal: los participantes se filtran localmente hasta integrar la paginación del backend.</p>' : '') +
+      (act80Part.error ? `<div class="msg err" role="alert">${h(act80Part.error)}</div>` : '');
+    const columnas = ['Investigador', 'Asistente', 'Director'].includes(S.role) ? 5 : 4;
+    return html.replace(tablaRe, tabla => {
+      const vacio = !act80Part.datos.length ?
+        `<tr><td colspan="${columnas}">${act80Part.error ? 'No se pudo cargar la lista.' :
+        'No hay participantes que coincidan con estos filtros.'}</td></tr>` : '';
+      return filtros + tabla.replace('</table>', vacio + '</table>') + pie;
+    });
+  };
+
+  const act80GoJuevesAnterior = go;
+  go = function (id) {
+    if (id === 'a1' && !R2.token) act80PartReiniciarEstudio();
+    if (id !== 'c3' || !R2.token || R2.usuario?.debe_cambiar_password ||
+        S.tab === 's') return act80GoJuevesAnterior(id);
+    if (act80Part.estudio !== S.ceId || act80Part.token !== R2.token) {
+      act80PartReiniciarEstudio();
+    }
+    return conEspera(async () => {
+      await act80PartConsultar();
+      goProto('c3');
+    });
+  };
+
+  document.addEventListener('input', e => {
+    if (e.target?.id !== 'act80PartBuscar') return;
+    act80Part.q = e.target.value;
+    act80PartReiniciarBusqueda();
+  }, true);
+  document.addEventListener('change', e => {
+    if (e.target?.id !== 'act80PartEstado') return;
+    act80Part.estado = e.target.value;
+    act80PartReiniciarBusqueda();
+  }, true);
+  document.addEventListener('click', e => {
+    const boton = e.target.closest('[data-act]');
+    const accion = boton?.dataset.act;
+    if (!['act80PartLimpiar','act80PartAnterior','act80PartSiguiente'].includes(accion)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (accion === 'act80PartLimpiar') {
+      act80Part.q = '';
+      act80Part.estado = '';
+      act80PartReiniciarBusqueda();
+      // Reflejar limpieza inmediatamente en los controles sin borrar resultados antes de consultar.
+      const input = document.getElementById('act80PartBuscar');
+      const select = document.getElementById('act80PartEstado');
+      if (input) input.value = '';
+      if (select) select.value = '';
+    } else {
+      const ultima = Math.max(1, Math.ceil(act80Part.total / act80Part.limite));
+      act80Part.pagina = Math.max(1, Math.min(ultima,
+        act80Part.pagina + (accion === 'act80PartSiguiente' ? 1 : -1)));
+      clearTimeout(act80Part.espera);
+      act80PartConsultar();
     }
   }, true);
 })();
