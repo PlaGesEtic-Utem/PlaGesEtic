@@ -35,7 +35,7 @@ async function listarPorEstudio(idEstudio) {
        FROM research_schema.exportacion e
        JOIN research_schema.estudio es ON es.id_estudio = e.id_estudio
       WHERE e.id_estudio = $1
-      ORDER BY (e.estado = 'pendiente') DESC, e.fecha_solicitud DESC`,
+      ORDER BY (e.estado = 'solicitada') DESC, e.fecha_solicitud DESC`,
     [idEstudio]);
   return rows;
 }
