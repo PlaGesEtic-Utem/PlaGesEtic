@@ -27,8 +27,21 @@ async function buscarPorId(idExportacion) {
   return rows[0] || null;
 }
 
+/** Solicitudes de exportacion de un estudio, las pendientes primero (H-13)   */
+
+async function listarPorEstudio(idEstudio) {
+  const { rows } = await db.query(
+ `SELECT e.*, es.id_responsable
+       FROM research_schema.exportacion e
+       JOIN research_schema.estudio es ON es.id_estudio = e.id_estudio
+      WHERE e.id_estudio = $1
+      ORDER BY (e.estado = 'pendiente') DESC, e.fecha_solicitud DESC`,
+    [idEstudio]);
+  return rows;
+}
+
 /**
- * Participaciones que pueden ir en un paquete (D23): activas y con su último
+* Participaciones que pueden ir en un paquete (D23): activas y con su último
  * consentimiento otorgado sobre el documento vigente. Orden aleatorio.
  */
 async function participacionesElegibles(cliente, idEstudio) {
@@ -103,4 +116,5 @@ async function contarNoElegibles(idExportacion, idEstudio) {
   return rows[0].n;
 }
 
-module.exports = { crear, buscarPorId, participacionesElegibles, decidir, guardarCodigo, marcarLista, marcarVencida, contarNoElegibles };
+module.exports = { crear, buscarPorId, participacionesElegibles, decidir, guardarCodigo, marcarLista, marcarVencida, contarNoElegibles, listarPorEstudio };
+
