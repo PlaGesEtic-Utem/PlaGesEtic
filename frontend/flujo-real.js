@@ -828,19 +828,16 @@
     <form id="rl-form-cambio" style="background:#fff;color:#131315;width:100%;max-width:440px;padding:26px;border-radius:16px;font-family:Inter,Arial,sans-serif;box-shadow:0 20px 50px rgba(0,0,0,.3)">
       <h2 id="rl-cambio-titulo" style="color:#000B78;margin:0 0 10px;font-size:21px">Cambio obligatorio de contraseña</h2>
       <p style="font-size:14px;line-height:1.5;margin:0 0 14px">Por seguridad, debes reemplazar tu contraseña temporal antes de usar el sistema.</p>
-           <div class="rl-pw" style="margin-top:5px"><input id="rl-clave-actual" type="password" autocomplete="current-password" required
+                <label for="rl-clave-actual" style="display:block;margin-top:14px;font-size:14px">Contraseña temporal</label>
+      <div class="rl-pw" style="margin-top:5px"><input id="rl-clave-actual" type="password" autocomplete="current-password" required
         style="width:100%;box-sizing:border-box;padding:10px"><button type="button" class="rl-ver" data-ver="rl-clave-actual" aria-pressed="false" aria-label="Mostrar contraseña">Mostrar</button></div>
-      <input id="rl-clave-actual" type="password" autocomplete="current-password" required
-        style="width:100%;box-sizing:border-box;padding:10px;margin-top:5px">
-            <div class="rl-pw" style="margin-top:5px"><input id="rl-clave-nueva" type="password" autocomplete="new-password" minlength="12" required
+      <label for="rl-clave-nueva" style="display:block;margin-top:14px;font-size:14px">Nueva contraseña (mínimo 12 caracteres)</label>
+      <div class="rl-pw" style="margin-top:5px"><input id="rl-clave-nueva" type="password" autocomplete="new-password" minlength="12" required
         style="width:100%;box-sizing:border-box;padding:10px"><button type="button" class="rl-ver" data-ver="rl-clave-nueva" aria-pressed="false" aria-label="Mostrar contraseña">Mostrar</button></div>
-      <input id="rl-clave-nueva" type="password" autocomplete="new-password" minlength="12" required
-        style="width:100%;box-sizing:border-box;padding:10px;margin-top:5px">
       <p style="font-size:12px;line-height:1.4;color:#4B4F6B;margin:7px 0 0">Usa al menos 12 caracteres. Debe ser distinta de la contraseña anterior y de tu correo electrónico.</p>
-            <div class="rl-pw" style="margin-top:5px"><input id="rl-clave-confirmar" type="password" autocomplete="new-password" minlength="12" required
+      <label for="rl-clave-confirmar" style="display:block;margin-top:14px;font-size:14px">Confirmar nueva contraseña</label>
+      <div class="rl-pw" style="margin-top:5px"><input id="rl-clave-confirmar" type="password" autocomplete="new-password" minlength="12" required
         style="width:100%;box-sizing:border-box;padding:10px"><button type="button" class="rl-ver" data-ver="rl-clave-confirmar" aria-pressed="false" aria-label="Mostrar contraseña">Mostrar</button></div>
-      <input id="rl-clave-confirmar" type="password" autocomplete="new-password" minlength="12" required
-        style="width:100%;box-sizing:border-box;padding:10px;margin-top:5px">
       <p id="rl-cambio-error" role="alert" aria-live="polite" style="color:#B42318;font-size:13px;min-height:18px"></p>
       <button id="rl-cambio-guardar" type="submit"
         style="width:100%;background:#000B78;color:#fff;border:0;border-radius:9px;padding:12px;cursor:pointer">Actualizar contraseña</button>
