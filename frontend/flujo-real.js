@@ -828,16 +828,16 @@
     <form id="rl-form-cambio" style="background:#fff;color:#131315;width:100%;max-width:440px;padding:26px;border-radius:16px;font-family:Inter,Arial,sans-serif;box-shadow:0 20px 50px rgba(0,0,0,.3)">
       <h2 id="rl-cambio-titulo" style="color:#000B78;margin:0 0 10px;font-size:21px">Cambio obligatorio de contraseña</h2>
       <p style="font-size:14px;line-height:1.5;margin:0 0 14px">Por seguridad, debes reemplazar tu contraseña temporal antes de usar el sistema.</p>
-      <label for="rl-clave-actual" style="display:block;margin-top:14px;font-size:14px">Contraseña temporal</label>
-      <input id="rl-clave-actual" type="password" autocomplete="current-password" required
-        style="width:100%;box-sizing:border-box;padding:10px;margin-top:5px">
+                <label for="rl-clave-actual" style="display:block;margin-top:14px;font-size:14px">Contraseña temporal</label>
+      <div class="rl-pw" style="margin-top:5px"><input id="rl-clave-actual" type="password" autocomplete="current-password" required
+        style="width:100%;box-sizing:border-box;padding:10px"><button type="button" class="rl-ver" data-ver="rl-clave-actual" aria-pressed="false" aria-label="Mostrar contraseña">Mostrar</button></div>
       <label for="rl-clave-nueva" style="display:block;margin-top:14px;font-size:14px">Nueva contraseña (mínimo 12 caracteres)</label>
-      <input id="rl-clave-nueva" type="password" autocomplete="new-password" minlength="12" required
-        style="width:100%;box-sizing:border-box;padding:10px;margin-top:5px">
+      <div class="rl-pw" style="margin-top:5px"><input id="rl-clave-nueva" type="password" autocomplete="new-password" minlength="12" required
+        style="width:100%;box-sizing:border-box;padding:10px"><button type="button" class="rl-ver" data-ver="rl-clave-nueva" aria-pressed="false" aria-label="Mostrar contraseña">Mostrar</button></div>
       <p style="font-size:12px;line-height:1.4;color:#4B4F6B;margin:7px 0 0">Usa al menos 12 caracteres. Debe ser distinta de la contraseña anterior y de tu correo electrónico.</p>
       <label for="rl-clave-confirmar" style="display:block;margin-top:14px;font-size:14px">Confirmar nueva contraseña</label>
-      <input id="rl-clave-confirmar" type="password" autocomplete="new-password" minlength="12" required
-        style="width:100%;box-sizing:border-box;padding:10px;margin-top:5px">
+      <div class="rl-pw" style="margin-top:5px"><input id="rl-clave-confirmar" type="password" autocomplete="new-password" minlength="12" required
+        style="width:100%;box-sizing:border-box;padding:10px"><button type="button" class="rl-ver" data-ver="rl-clave-confirmar" aria-pressed="false" aria-label="Mostrar contraseña">Mostrar</button></div>
       <p id="rl-cambio-error" role="alert" aria-live="polite" style="color:#B42318;font-size:13px;min-height:18px"></p>
       <button id="rl-cambio-guardar" type="submit"
         style="width:100%;background:#000B78;color:#fff;border:0;border-radius:9px;padding:12px;cursor:pointer">Actualizar contraseña</button>
@@ -1091,10 +1091,11 @@
   }, true);
 
   // Mostrar / ocultar contraseña
+
   document.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-act="verpw"]'); if (!b) return;
+        const b = e.target.closest('[data-act="verpw"], [data-ver]'); if (!b) return;
     e.preventDefault(); e.stopImmediatePropagation();
-    const pw = document.getElementById('pw'); if (!pw) return;
+    const pw = document.getElementById(b.dataset.ver || 'pw'); if (!pw) return;
     const ver = pw.type === 'password'; pw.type = ver ? 'text' : 'password';
     b.textContent = ver ? 'Ocultar' : 'Mostrar'; b.setAttribute('aria-pressed', String(ver));
     b.setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña'); pw.focus();
@@ -1429,7 +1430,7 @@
         Investigador responsable, con los permisos correspondientes.</div>
     </div>
     <div class="acts">
-      <button type="button" class="btn s" data-act="act73ExpBuscar">Consultar ID</button>
+      <button type="button" class="btn s" data-act="act73ExpBuscar" data-enter>Consultar ID</button>
       ${btn('Nueva solicitud', 'd3')}
     </div></div>`);
 
@@ -2529,4 +2530,41 @@
       act80PartConsultar();
     }
   }, true);
+
+
+  // H-05: Enter avanza como si se presionara el botón de la pantalla.
+  // Orden: el botón junto al campo (ej. «Buscar»), el marcado con data-enter y el botón principal.
+  // Dentro de un <form> no hace nada: ahí el navegador ya envía con Enter.
+  function botonVisible(zona, selector) {
+    return [...zona.querySelectorAll(selector)].find((b) => !b.disabled && b.offsetParent !== null) || null;
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || e.isComposing || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+    let campo = e.target;
+    // En las pantallas de elegir una opción (estudio, acepta o niega) o de leer el documento,
+    // el foco suele quedar fuera de un campo: Enter igual sigue con el botón principal.
+    if (campo === document.body) {
+      const tarjeta = document.querySelector('.card');
+      if (!tarjeta || !tarjeta.querySelector('.opt, .reader')) return;
+      campo = tarjeta;
+    }
+    if (!(campo instanceof HTMLElement) || campo.closest('form')) return;
+    // En una opción ya marcada, Enter sigue; en una sin marcar, Enter la marca (comportamiento normal).
+    if (campo.matches('.opt') && campo.getAttribute('aria-pressed') !== 'true') return;
+    if (campo.matches('button:not(.opt), a, textarea, [contenteditable]')) return;
+        if (campo instanceof HTMLInputElement &&
+        ['checkbox', 'radio', 'button', 'submit', 'reset', 'search'].includes(campo.type)) return;
+    // En un campo de archivo vacío, Enter abre el explorador; si ya tiene archivo, sigue.
+    if (campo instanceof HTMLInputElement && campo.type === 'file' && !campo.files.length) return;
+    const zona = campo.closest('.card, .box');
+    if (!zona) return;
+    const vecino = [campo.closest('.fld'), campo.closest('.grid2')]
+      .filter((z) => z && z !== zona && zona.contains(z))
+      .map((z) => botonVisible(z, 'button.btn')).find(Boolean);
+    const boton = vecino || botonVisible(zona, '[data-enter]') || botonVisible(zona, '.btn.p');
+    if (!boton) return;
+    e.preventDefault();
+    boton.click();
+  });
+  
 })();
