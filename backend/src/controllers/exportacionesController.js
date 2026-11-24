@@ -22,6 +22,10 @@ const consultar = envolver(async (req, res) => {
   res.json(servicio.consultar(req.exportacion, req.usuario));
 });
 
+
+const listar = envolver(async (req, res) => {
+  res.json(await servicio.listarPorEstudio(req.params.idEstudio, req.usuario));
+});
 // D17: la descarga queda en la auditoría ANTES de entregar el archivo.
 const descargar = envolver(async (req, res) => {
   const archivo = await servicio.prepararDescarga(req.exportacion, req.usuario);
@@ -29,4 +33,4 @@ const descargar = envolver(async (req, res) => {
   res.download(archivo.ruta, archivo.nombre);
 });
 
-module.exports = { solicitar, decidir, consultar, descargar };
+module.exports = { solicitar, decidir, consultar, listar, descargar };

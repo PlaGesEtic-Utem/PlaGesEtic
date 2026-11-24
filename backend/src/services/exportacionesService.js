@@ -137,6 +137,13 @@ function consultar(exportacion, usuario) {
   return vista({ ...exportacion, estado: vencida ? 'vencida' : exportacion.estado });
 }
 
+/** GET /estudios/:idEstudio/exportaciones: el responsable ve todas; el resto, solo las suyas (H-13). */
+async function listarPorEstudio(idEstudio, usuario) {
+  const filas = await repo.listarPorEstudio(idEstudio);
+  return filas
+    .filter((e) => e.id_responsable === usuario.id_usuario || e.id_solicitante === usuario.id_usuario)
+    .map((e) => consultar(e, usuario));
+}
 /** GET /exportaciones/:idExportacion/descarga: revisa todo antes de entregar (D25). */
 async function prepararDescarga(exportacion, usuario) {
   revisarAcceso(exportacion, usuario);
@@ -157,4 +164,4 @@ async function prepararDescarga(exportacion, usuario) {
   };
 }
 
-module.exports = { solicitar, decidir, consultar, prepararDescarga, armarZip };
+module.exports = { solicitar, decidir, consultar, prepararDescarga, armarZip, listarPorEstudio };
