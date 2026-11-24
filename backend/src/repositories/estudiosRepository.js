@@ -36,6 +36,31 @@ async function listarPorMembresia(idUsuario, estado) {
   return rows;
 }
 
+/** Columnas por las que se puede filtrar. La clave tiene validad por el servicio: Nunca se pega texto del usuario. */
+const ORDENES = {
+  fecha: 'e.fecha_inicio DESC NULLS LAST, e.codigo_estudio',
+  nombre: 'e.nombre, e.codigo_estudio',
+  codigo: 'e.codigo_estudio',
+};
+/** Búsqueda con filtros y paginación (H-07). Devuelve la página pedida y el total sin paginar. */
+async function buscar(f) {
+  const filtros = `
+      WHERE ($1::boolean OR EXISTS (
+              SELECT 1 FROM security_schema.membresia_estudio m
+               WHERE m.id_estudio = e.id_estudio AND m.id_usuario = $2
+                 AND m.fecha_inicio <= CURRENT_DATE AND (m.fecha_fin IS NULL OR m.fecha_fin >= CURRENT_DATE)))
+        AND (NOT $3::boolean OR e.id_responsable = $2)
+        AND ($4::varchar IS NULL OR e.estado = $4)
+        AND ($5::text IS NULL OR e.codigo_estudio ILIKE $5 OR e.nombre ILIKE $5)`;
+  const valores = [f.verTodos, f.idUsuario, f.soloMios, f.estado, f.patron];
+
+  const total = await db.query(`SELECT count(*)::int AS n FROM research_schema.estudio e ${filtros}`, valores);
+  const { rows } = await db.query(
+    `SELECT ${COLUMNAS} FROM research_schema.estudio e ${filtros}
+      ORDER BY ${ORDENES[f.orden]} LIMIT $6 OFFSET $7`,
+    [...valores, f.limite, (f.pagina - 1) * f.limite]);
+  return { datos: rows, total: total.rows[0].n };
+}
 async function obtener(idEstudio) {
   const { rows } = await db.query(`SELECT ${COLUMNAS} FROM research_schema.estudio e WHERE e.id_estudio = $1`, [idEstudio]);
   return rows[0] || null;
@@ -91,4 +116,5 @@ async function cambiarEstado(idEstudio, estado) {
 module.exports = {
   rolVeTodosLosEstudios, listarTodos, listarPorMembresia, obtener,
   crearConMembresia, actualizar, tieneProtocoloAprobadoVigente, cambiarEstado,
+  buscar
 };

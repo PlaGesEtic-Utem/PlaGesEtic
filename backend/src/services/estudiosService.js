@@ -70,14 +70,45 @@ async function crear(cuerpo, usuario) {
   } catch (err) { throw traducirErrorBD(err); }
 }
 
-async function listar(usuario, estadoFiltro) {
+async function listar(usuario, consulta = {}) {
   let estado = null;
-  if (estadoFiltro !== undefined && estadoFiltro !== '') {
-    if (!ESTADOS.includes(estadoFiltro)) throw errores.solicitudInvalida('El filtro «estado» debe ser borrador, activo o cerrado.');
-    estado = estadoFiltro;
+  if (consulta.estado !== undefined && consulta.estado !== '') {
+    if (!ESTADOS.includes(consulta.estado)) throw errores.solicitudInvalida('El filtro «estado» debe ser borrador, activo o cerrado.');
+    estado = consulta.estado;
   }
   const verTodos = await repo.rolVeTodosLosEstudios(usuario.nombre_rol);
-  return verTodos ? repo.listarTodos(estado) : repo.listarPorMembresia(usuario.id_usuario, estado);
+
+  // Sin «pagina» responde como antes: la lista completa (compatibilidad con pantallas antiguas).
+  if (consulta.pagina === undefined) {
+    return verTodos ? repo.listarTodos(estado) : repo.listarPorMembresia(usuario.id_usuario, estado);
+  }
+
+  const f = validarBusqueda(consulta);
+  const { datos, total } = await repo.buscar({ ...f, estado, verTodos, idUsuario: usuario.id_usuario });
+  return { datos, total, pagina: f.pagina, limite: f.limite };
+}
+
+/** Valida los parámetros de búsqueda de GET /estudios (H-07). Cualquier valor fuera de lo permitido es un 400. */
+function validarBusqueda(consulta) {
+  const pagina = Number(consulta.pagina);
+  if (!Number.isInteger(pagina) || pagina < 1) throw errores.solicitudInvalida('«pagina» debe ser un número entero desde 1.');
+
+  const limite = consulta.limite === undefined ? 20 : Number(consulta.limite);
+  if (!Number.isInteger(limite) || limite < 1 || limite > 100) throw errores.solicitudInvalida('«limite» debe ser un número entero entre 1 y 100.');
+
+  const orden = consulta.orden === undefined ? 'fecha' : consulta.orden;
+  if (!['fecha', 'nombre', 'codigo'].includes(orden)) throw errores.solicitudInvalida('«orden» debe ser fecha, nombre o codigo.');
+
+  if (![undefined, 'true', 'false'].includes(consulta.solo_mios)) throw errores.solicitudInvalida('«solo_mios» debe ser true o false.');
+  const soloMios = consulta.solo_mios === 'true';
+
+  if (consulta.q !== undefined && typeof consulta.q !== 'string') throw errores.solicitudInvalida('«q» debe ser texto.');
+  const q = (consulta.q || '').trim();
+  if (q.length > 100) throw errores.solicitudInvalida('«q» admite como máximo 100 caracteres.');
+  // %, _ y \ son comodines en ILIKE: se escapan para que se busquen como texto normal.
+  const patron = q ? `%${q.replace(/[\\%_]/g, '\\$&')}%` : null;
+
+  return { pagina, limite, orden, soloMios, patron };
 }
 
 async function obtener(idEstudio) {
