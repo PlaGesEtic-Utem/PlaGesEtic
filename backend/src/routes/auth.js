@@ -21,5 +21,7 @@ module.exports = () => {
   r.post('/login/mfa', limite, c.loginMfa);
   r.post('/logout', autenticacion, c.logout);
   r.post('/password', autenticacion, c.cambiarPassword);
+  r.post('/mfa/enrolar', limite, c.enrolarMfa);
+  r.post('/mfa/confirmar', limite, c.confirmarMfa);
   return r;
 };

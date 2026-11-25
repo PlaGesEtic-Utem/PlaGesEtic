@@ -105,9 +105,9 @@ http.createServer(async (req, res) => {
       let r;
       try { r = await fetch(destino, { method: req.method, headers: cab, body: cuerpo }); }
       catch (e) { return json(res, 502, { error: { codigo: 'API_APAGADA', mensaje: `No se pudo conectar con la API en ${API}. ¿Está corriendo «docker compose up -d»?` } }); }
-      const texto = await r.text();
+      const contenido = Buffer.from(await r.arrayBuffer());
       res.writeHead(r.status, { 'Content-Type': r.headers.get('content-type') || 'application/json', 'Cache-Control': 'no-store' });
-      return res.end(texto);
+      return res.end(contenido);
     }
 
     json(res, 404, { error: 'No existe' });

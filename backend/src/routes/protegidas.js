@@ -65,6 +65,18 @@ module.exports = (pool) => {
   );
   
   /**
+   * Membresías de un estudio y administración de cuentas (Actividad 73).
+   */
+  router.use(
+    '/estudios/:idEstudio/membresias',
+    require('./usuarios').membresias()
+  );
+  router.use(
+    '/usuarios',
+    require('./usuarios').usuarios()
+  );
+
+  /**
    * Gestión de estudios.
    */
   router.use(

@@ -12,7 +12,7 @@ const crear = envolver(async (req, res) => {
 });
 
 const listar = envolver(async (req, res) => {
-  res.json(await servicio.listar(req.usuario, req.query.estado));
+  res.json(await servicio.listar(req.usuario, req.query));
 });
 
 const obtener = envolver(async (req, res) => {

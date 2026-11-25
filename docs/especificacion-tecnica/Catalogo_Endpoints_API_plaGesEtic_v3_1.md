@@ -1,5 +1,7 @@
 > Actualización documental de la sección 8 (Actividad 55) y de las reglas generales, identidades y contacto (Actividad 56). Se conserva el diseño de las demás secciones. Este catálogo distingue el contrato acordado de la implementación y no acredita cierre de pruebas. [Fuente original](https://drive.google.com/file/d/172V5EtjaF20uoevILh5StJMz4zkU-C_g/view).
 
+> Actividad 73: secciones 3 y 5 contrastadas con el backend de `develop` (`09d266a`). Las demás secciones mantienen su contenido previo.
+
 <div>
 
 UX Observatorio UX · UXLab UTEM Diseño técnico · v3.1Alineado con el documento del cliente
@@ -69,37 +71,216 @@ Contrato según ADR-002 D12–D15 y Matriz v3. Ejemplos y tabla de roles: [Guía
 
 ## 2. Autenticación y MFA
 
-Login en dos pasos (contraseña + TOTP), códigos de recuperación y control de sesiones (objetivo 7, RNF-SEC-04). No pasan por el RBAC por estudio.
+Contrato revisado en `feature/act74-seguridad`, commit `e8f96f21b9aafc5dba7c85bc0061140f2afe8772`.
 
-| Recurso                 | Rol autorizado                | Permiso en estudio | Entrada                                             | Salida                                                                                                                        |
-|-------------------------|-------------------------------|--------------------|-----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
-| POST`/auth/login`       | Público                       | — (público)        | correo, contraseña                                  | token_temporal para el paso MFA, o error 401. Indica si `debe_cambiar_password` o si falta enrolar el MFA.                    |
-| POST`/auth/login/mfa`   | Público (con token_temporal)  | — (público)        | token_temporal, codigo_totp *o* codigo_recuperacion | JWT de sesión; crea la fila en `sesion_usuario`. Un código de recuperación queda marcado como `usado`.                        |
-| POST`/auth/mfa/enrolar` | Cualquier usuario autenticado | — (global)         | —                                                   | QR de enrolamiento + 10 códigos de recuperación (se muestran una sola vez); `mfa_activo: true` al confirmar el primer código. |
-| POST`/auth/mfa/codigos` | Cualquier usuario autenticado | — (global)         | codigo_totp                                         | Nuevos códigos de recuperación; invalida los anteriores.                                                                      |
-| POST`/auth/password`    | Cualquier usuario autenticado | — (global)         | password_actual, password_nueva                     | Confirmación; `debe_cambiar_password: false`.                                                                                 |
-| POST`/auth/logout`      | Cualquier usuario autenticado | — (global)         | —                                                   | Cierra la `sesion_usuario` actual (`fecha_cierre`).                                                                           |
+Describe el código disponible en esa rama. No certifica integración en `develop` ni pruebas aprobadas.
 
+Las rutas se expresan sin prefijo `/api/v1`; el proxy de demostración utiliza `/api`.
+
+### Rutas y respuestas
+
+| Método y ruta | Acceso | Entrada JSON | Respuesta correcta (200) |
+|---|---|---|---|
+| `POST /auth/login` | Público; cuenta activa y no vencida | `correo`, `password` | Con MFA activo: `token_temporal`, `mfa_requerido: true`, `expira_en_segundos: 300`. Sin MFA activo: `token_temporal`, `enrolamiento_requerido: true`, `expira_en_segundos: 300`. No entrega una sesión en este paso. |
+| `POST /auth/mfa/enrolar` | Token temporal de tipo `enrolar` en el cuerpo; no requiere sesión Bearer | `token_temporal` | `otpauth_uri`, `secreto`. El secreto se guarda cifrado y MFA permanece inactivo. El frontend debe representar la URI como QR. |
+| `POST /auth/mfa/confirmar` | Token temporal de tipo `enrolar` | `token_temporal`, `codigo` TOTP | `codigos_recuperacion` (diez), nuevo `token_temporal` de tipo `mfa`, `expira_en_segundos: 300`. Activa MFA después de un código válido. No entrega una sesión todavía. |
+| `POST /auth/login/mfa` | Token temporal de tipo `mfa` | `token_temporal` y exactamente uno: `codigo` o `codigo_recuperacion` | `token` de sesión, `expira_por_inactividad` y `usuario` con `nombre`, `correo`, `rol`, `debe_cambiar_password`. |
+| `POST /auth/password` | `Authorization: Bearer <TOKEN_SESION>`; permitida con cambio obligatorio pendiente | `password_actual`, `password_nueva` | `{"mensaje":"Contraseña actualizada."}`. Elimina la obligación de cambio. |
+| `POST /auth/logout` | Sesión Bearer; permitida con cambio obligatorio pendiente | Sin campos obligatorios | `{"mensaje":"Sesión cerrada."}`. Cierra la sesión actual. |
+
+`POST /auth/mfa/codigos` pertenece al diseño previo, pero no está montada en la rama revisada. La regeneración de códigos mediante esa ruta queda pendiente.
+
+### Flujo de primer ingreso
+
+1. Enviar correo y contraseña a `/auth/login`. Si devuelve `enrolamiento_requerido: true`, utilizar el token temporal para enrolar y confirmar.
+2. Solicitar el enrolamiento y mostrar el QR generado desde `otpauth_uri`. La respuesta contiene material secreto y no debe incluirse en registros ni capturas compartidas.
+3. Enviar el primer TOTP a `/auth/mfa/confirmar`. Un código inválido no activa MFA.
+4. La confirmación correcta activa MFA, guarda los hashes de diez códigos de recuperación y entrega esos códigos al usuario para que los conserve de forma segura.
+5. Utilizar el nuevo token de tipo `mfa` en `/auth/login/mfa`, junto con un código válido, para obtener la sesión.
+6. Si `debe_cambiar_password` es verdadero, cambiar la contraseña antes del acceso operativo. Con esa condición, el middleware permite únicamente `/auth/password` y `/auth/logout`.
+
+Volver a llamar a enrolar mientras MFA sigue inactivo genera un nuevo secreto pendiente; el QR anterior deja de corresponder. La implementación no limita la emisión del QR a una sola llamada. Si MFA ya está activo, responde 409.
+
+El frontend revisado todavía consulta el QR de demostración mediante `/otpauth` y no implementa este flujo completo. La conexión con enrolar y confirmar queda pendiente.
+
+### Política de contraseña
+
+**Regla requerida por la Actividad 74:**
+
+- Mínimo 12 caracteres.
+- Distinta del correo.
+- Aplicación en cambio de contraseña y creación de usuarios.
+
+**Comportamiento observado:**
+
+- El cambio exige un mínimo de 12 caracteres.
+- La contraseña nueva debe ser distinta de la actual.
+- Se valida la contraseña actual antes del cambio.
+- La contraseña nueva se almacena mediante Argon2id.
+- El alta y restablecimiento de usuarios generan una contraseña temporal de 14 caracteres desde el servidor.
+- El alta no recibe una contraseña elegida por el administrador.
+- La cuenta exige un cambio posterior de contraseña.
+
+**Pendiente:** incorporar la comparación explícita con el correo y verificar la regla completa en alta, restablecimiento y cambio.
+
+### Errores y límites
+
+| HTTP / código | Situación |
+|---|---|
+| `400 SOLICITUD_INVALIDA` | Campos obligatorios ausentes, contraseña nueva corta o igual a la actual, selección incorrecta entre TOTP y recuperación, o confirmación sin haber generado el QR. |
+| `401 CREDENCIALES_INVALIDAS` | Login inválido, incluida cuenta bloqueada o vencida, con mensaje genérico; también contraseña actual incorrecta durante el cambio. |
+| `401 TOKEN_TEMPORAL_INVALIDO` | Token temporal inválido o vencido. |
+| `401 NO_AUTENTICADO` | Token de tipo incorrecto, cuenta no utilizable en enrolamiento o confirmación, o sesión no válida. |
+| `401 CODIGO_INVALIDO` | TOTP incorrecto, código de recuperación inválido o usado en login MFA, o TOTP incorrecto en confirmación. |
+| `409 MFA_YA_ACTIVO` | Intento de enrolar o confirmar una cuenta que ya tiene MFA activo. |
+| `429` | Límite de solicitudes. `DEMASIADOS_INTENTOS` identifica el control de fallos de autenticación. |
+
+Los tokens temporales duran 300 segundos.
+
+La sesión tiene un límite de 30 minutos de inactividad y una duración máxima de 8 horas.
+
+Login, login MFA, enrolar y confirmar comparten el limitador de rutas configurado a 20 solicitudes por minuto. Login y las verificaciones MFA aplican además el control de cinco fallos en una ventana de 15 minutos.
+
+### Ejemplos de solicitud
+
+Los siguientes ejemplos muestran el formato de las solicitudes. No constituyen pruebas ejecutadas ni contienen credenciales reales.
+
+**Generar el enrolamiento:**
+
+```http
+POST /auth/mfa/enrolar
+Content-Type: application/json
+
+{
+  "token_temporal": "<TOKEN_DE_ENROLAMIENTO>"
+}
+```
+
+**Confirmar el primer código:**
+
+```http
+POST /auth/mfa/confirmar
+Content-Type: application/json
+
+{
+  "token_temporal": "<TOKEN_DE_ENROLAMIENTO>",
+  "codigo": "<TOTP_ACTUAL>"
+}
+```
+
+**Cambiar la contraseña:**
+
+```http
+POST /auth/password
+Authorization: Bearer <TOKEN_DE_SESION>
+Content-Type: application/json
+
+{
+  "password_actual": "<ACTUAL>",
+  "password_nueva": "<NUEVA_DE_AL_MENOS_12_CARACTERES>"
+}
+```
+
+### Trazabilidad y pendientes
+
+El enrolamiento y la confirmación correctos marcan la acción `actualizar` sobre la entidad `usuario`. Un código incorrecto en confirmación marca `login_fallido`.
+
+Debe comprobarse que los registros efectivos y sus resultados queden en la auditoría.
+
+La actualización del catálogo no acredita por sí sola el cierre de CA-17 ni de la Actividad 74. Quedan pendientes la integración del frontend, la comparación de contraseña con correo y las evidencias de las pruebas correspondientes.
+
+Ver [controles de seguridad](../seguridad/controles.md).
 </div>
 
 <div class="section">
 
 ## 3. Usuarios, sesiones y permisos
 
-Administración global de cuentas. Soporte crea, activa, bloquea y recupera cuentas; el Director administra roles y permisos (perfiles del documento del cliente).
+### Usuarios — contrato implementado en la Actividad 73
 
-| Recurso                             | Rol autorizado                       | Permiso en estudio | Entrada                                                              | Salida                                                                              |
-|-------------------------------------|--------------------------------------|--------------------|----------------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| GET`/usuarios`                      | Director, Soporte                    | — (global)         | filtros: id_rol, activo                                              | Lista de usuarios (id, nombre, correo, rol, activo, mfa_activo, fecha_expiracion).  |
-| POST`/usuarios`                     | Director, Soporte                    | — (global)         | nombre, correo, id_rol, fecha_expiracion (obligatoria para Invitado) | Usuario creado con contraseña temporal y `debe_cambiar_password: true`.             |
-| PATCH`/usuarios/{id}/estado`        | Director, Soporte                    | — (global)         | activo (true / false)                                                | Usuario activado o bloqueado; al bloquear se cierran sus sesiones.                  |
-| PATCH`/usuarios/{id}/rol`           | Director                             | — (global)         | id_rol                                                               | Usuario con nuevo rol.                                                              |
-| POST`/usuarios/{id}/password/reset` | Soporte                              | — (global)         | —                                                                    | Contraseña temporal (recuperación de cuenta).                                       |
-| POST`/usuarios/{id}/mfa/reset`      | Soporte                              | — (global)         | —                                                                    | Borra `mfa_secret` y los códigos de recuperación; el usuario debe enrolar de nuevo. |
-| GET`/usuarios/{id}/sesiones`        | Director, Soporte, el propio usuario | — (global)         | —                                                                    | Sesiones de login activas y recientes (inicio, expiración, IP).                     |
-| DELETE`/sesiones/{id_sesion}`       | Director, Soporte, el propio usuario | — (global)         | —                                                                    | Sesión cerrada (`fecha_cierre`).                                                    |
-| GET`/roles/{id}/permisos`           | Director                             | — (global)         | —                                                                    | Filas de `permiso` del rol.                                                         |
-| PUT`/roles/{id}/permisos`           | Director                             | — (global)         | lista de (recurso, accion, alcance)                                  | Permisos del rol reemplazados.                                                      |
+Revisión del código de `develop`, commit `09d266aa356b40cbbbca364ab4e2e540c3845641`. Las rutas se expresan sin prefijo `/api/v1`: la aplicación monta estas rutas en la raíz. En el servidor de demostración del frontend, `/api` es el prefijo del proxy.
+
+Todas requieren `Authorization: Bearer <TOKEN>` de una sesión vigente, cuenta activa y no vencida, sin cambio obligatorio de contraseña pendiente. Las respuestas son JSON. Los permisos indicados corresponden a `backend/db/init/05_permisos_base.sql`; deben contrastarse con la configuración de la base utilizada.
+
+| Método y ruta | Permiso del rol / alcance | Entrada | Respuesta correcta |
+|---|---|---|---|
+| `GET /usuarios` | Director y Soporte: `usuario/leer`, global | Query opcional: `rol`, `activo` | `200`: arreglo de cuentas, ordenado por nombre; sin paginación implementada. |
+| `GET /usuarios/{idUsuario}` | Director y Soporte: `usuario/leer`, global | UUID del usuario | `200`: cuenta con arreglo `membresias` vigentes. |
+| `POST /usuarios` | Director y Soporte: `usuario/crear`, global | `nombre`, `correo`, `rol`, `fecha_expiracion` | `201`: cuenta creada y `password_temporal`. |
+| `PATCH /usuarios/{idUsuario}` | Director y Soporte: `usuario/actualizar`, global | UUID y al menos un campo admitido de actualización | `200`: cuenta actualizada; incluye `password_temporal` solo si se restableció la contraseña. |
+
+### Entradas y reglas de cuentas
+
+- `nombre`: texto obligatorio, no vacío, máximo 150 caracteres; se recortan espacios en extremos.
+- `correo`: obligatorio, máximo 150 caracteres, con formato de correo; se recortan espacios y se convierte a minúsculas.
+- `rol`: nombre exacto entre `Director`, `Soporte`, `Investigador`, `Asistente`, `Estudiante` e `Invitado`. Se utiliza `rol`, no `id_rol`, tanto en el alta como en el filtro y la actualización.
+- `fecha_expiracion`: fecha `AAAA-MM-DD` posterior a hoy. Puede omitirse o ser `null` para roles no temporales. Es obligatoria para **Estudiante e Invitado**.
+- El filtro `activo` admite las cadenas `true` y `false`; omitido o vacío no filtra. `rol` omitido o vacío tampoco filtra.
+- El alta genera una contraseña temporal de 14 caracteres y guarda su hash Argon2id. La cuenta nace con `activo: true`, `debe_cambiar_password: true` y `mfa_activo: false`.
+- `PATCH` admite `activo` booleano, `rol`, `fecha_expiracion`, `restablecer_password: true` y `reiniciar_mfa: true`. Los dos últimos solo admiten `true` cuando se envían. No implementa edición de nombre ni correo.
+- Soporte no puede crear ni modificar cuentas de Director, ni asignar ese rol. Esta restricción es de escritura; la lectura de cuentas sigue disponible según `usuario/leer`.
+- No se permite bloquear la propia cuenta ni enviar un cambio de rol sobre ella.
+- Bloquear, restablecer la contraseña o reiniciar MFA cierra las sesiones abiertas de la cuenta. El cambio de rol o de fecha de expiración por sí solo no ejecuta ese cierre en el repositorio revisado.
+- Reiniciar MFA deja `mfa_activo: false`, elimina el secreto y los códigos de recuperación. No constituye un enrolamiento nuevo.
+
+### Campos de respuesta de cuentas
+
+La cuenta contiene `id_usuario`, `nombre`, `correo`, `nombre_rol`, `activo`, `mfa_activo`, `debe_cambiar_password`, `fecha_expiracion` y `fecha_creacion`. No entrega `hash_password` ni `mfa_secret`. El nombre y el correo corresponden a la cuenta del sistema, no a una identidad de participante.
+
+La consulta individual agrega `membresias`, con `id_membresia`, `id_estudio`, `codigo_estudio`, los cinco permisos `puede_*`, `fecha_inicio` y `fecha_fin`. Incluye las vigentes por fechas.
+
+`password_temporal` se entrega únicamente en la respuesta de creación o restablecimiento; no aparece en consultas posteriores. No incorporarlo a capturas ni reportes de pruebas compartidos.
+
+### Ejemplos de solicitudes
+
+Ejemplos ilustrativos, no evidencias de pruebas ejecutadas. Sustituir los identificadores por UUID existentes y utilizar una fecha futura al momento de probar.
+
+```http
+GET /usuarios?rol=Investigador&activo=true
+Authorization: Bearer <TOKEN_DIRECTOR_O_SOPORTE>
+```
+
+```json
+{
+  "nombre": "Usuario de prueba",
+  "correo": "usuario.ejemplo@example.test",
+  "rol": "Estudiante",
+  "fecha_expiracion": "2027-12-31"
+}
+```
+
+El cuerpo anterior corresponde a `POST /usuarios`. Para bloquear una cuenta mediante `PATCH /usuarios/{idUsuario}`:
+
+```json
+{ "activo": false }
+```
+
+### Errores de cuentas
+
+Formato común: `{ "error": { "codigo": "...", "mensaje": "..." } }`.
+
+| HTTP | Código | Situación |
+|---|---|---|
+| 400 | `SOLICITUD_INVALIDA` | UUID, filtros, rol, fecha o campos inválidos; falta expiración para un rol temporal; actualización sin cambios admitidos. |
+| 401 | `NO_AUTENTICADO` | Falta token válido, sesión vigente o cuenta habilitada. |
+| 403 | `CAMBIO_PASSWORD_REQUERIDO` | La cuenta autenticada debe cambiar su contraseña antes de administrar usuarios. |
+| 403 | `SIN_PERMISO` | Falta permiso del rol o se intenta administrar una cuenta de Director sin ser Director. |
+| 404 | `NO_ENCONTRADO` | El usuario solicitado no existe. |
+| 409 | `CORREO_DUPLICADO` | Ya existe una cuenta con el correo indicado. |
+| 409 | `CAMBIO_PROPIO` | Se intenta bloquear la propia cuenta o cambiar su rol. |
+
+### Sesiones y permisos del diseño anterior
+
+Las siguientes rutas se conservan como referencia de diseño: **no están montadas en el backend revisado**.
+
+| Ruta prevista | Finalidad prevista |
+|---|---|
+| `GET /usuarios/{id}/sesiones` | Consultar sesiones de una cuenta. |
+| `DELETE /sesiones/{id_sesion}` | Cerrar una sesión seleccionada. |
+| `GET /roles/{id}/permisos` | Consultar permisos de un rol. |
+| `PUT /roles/{id}/permisos` | Reemplazar permisos de un rol. |
+
+Las rutas separadas `/usuarios/{id}/estado`, `/usuarios/{id}/rol`, `/usuarios/{id}/password/reset` y `/usuarios/{id}/mfa/reset` del diseño anterior se sustituyen, en el contrato implementado, por `PATCH /usuarios/{idUsuario}` con los campos descritos arriba.
 
 </div>
 
@@ -127,14 +308,84 @@ Ciclo de vida del estudio y aprobación ética (objetivo 4). Un estudio solo pas
 
 ## 5. Membresías de estudio
 
-El Investigador responsable administra el acceso de asistentes, estudiantes e invitados a sus estudios, con permisos diferenciados (objetivo 8, RNF-SEC-05).
+### Membresías — contrato implementado en la Actividad 73
 
-| Recurso                                          | Rol autorizado                       | Permiso en estudio | Entrada                                                                                                              | Salida                                                                                                                                  |
-|--------------------------------------------------|--------------------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| GET`/estudios/{id}/membresias`                   | Investigador (responsable), Director | puede_consultar    | —                                                                                                                    | Membresías con sus cinco permisos y vigencia.                                                                                           |
-| POST`/estudios/{id}/membresias`                  | Investigador (responsable), Director | puede_modificar    | id_usuario, puede_consultar, puede_cargar, puede_modificar, puede_descargar, puede_exportar, fecha_inicio, fecha_fin | Membresía creada (`id_otorgante` = usuario actual). A un Invitado solo se le puede dar `puede_consultar`, y `fecha_fin` es obligatoria. |
-| PATCH`/estudios/{id}/membresias/{id_membresia}`  | Investigador (responsable), Director | puede_modificar    | permisos, fecha_fin                                                                                                  | Membresía actualizada.                                                                                                                  |
-| DELETE`/estudios/{id}/membresias/{id_membresia}` | Investigador (responsable), Director | puede_modificar    | —                                                                                                                    | Acceso revocado.                                                                                                                        |
+Misma referencia de código y requisitos de autenticación de la sección 3. El recurso usado por el control de acceso es **`membresia`**; `membresia_estudio` es el nombre de la tabla.
+
+| Método y ruta | Rol y permiso base | Control en el estudio | Entrada | Respuesta correcta |
+|---|---|---|---|---|
+| `GET /estudios/{idEstudio}/membresias` | Director: `membresia/leer` global; Investigador: `membresia/leer` de estudio | Director sin membresía; Investigador con `puede_consultar` o autorización aplicable | UUID del estudio; query opcional `todas=true` | `200`: arreglo de membresías, ordenado por nombre. |
+| `POST /estudios/{idEstudio}/membresias` | Investigador: `membresia/crear` | `puede_modificar` o autorización aplicable; estudio no cerrado | `id_usuario`, cinco permisos `puede_*`, `fecha_fin` | `201`: membresía creada o reactivada. |
+| `DELETE /estudios/{idEstudio}/membresias/{idMembresia}` | Investigador: `membresia/actualizar` | `puede_modificar` o autorización aplicable; estudio no cerrado | UUID del estudio y de la membresía; sin cuerpo requerido | `200`: membresía revocada, con `vigente: false`. |
+
+Con los permisos base revisados, **Director solo consulta membresías** y Soporte no tiene permisos sobre este recurso. Una autorización especial no sustituye la necesidad de que el rol tenga el permiso de la acción.
+
+### Entradas, vigencia y revocación
+
+- `id_usuario`: UUID obligatorio de una cuenta existente y activa.
+- `puede_consultar`, `puede_cargar`, `puede_modificar`, `puede_descargar` y `puede_exportar`: booleanos. Si se omiten, consultar vale `true` y los otros cuatro valen `false`. `puede_consultar: false` se rechaza.
+- `fecha_fin`: opcional o `null`; cuando se envía una fecha, debe tener formato `AAAA-MM-DD` y no ser anterior a hoy.
+- Si la cuenta tiene expiración, una fecha final omitida o posterior se ajusta a la expiración de la cuenta.
+- Director y Soporte no pueden ser destinatarios de una membresía.
+- `fecha_inicio` e `id_otorgante` los asigna el servidor: fecha actual de la base y usuario autenticado. No son entradas configurables del alta.
+- La vigencia depende de `fecha_inicio <= CURRENT_DATE` y de una `fecha_fin` nula o igual/posterior a la fecha actual. No equivale por sí sola a que la cuenta esté activa.
+- El listado devuelve solo vigentes por defecto. Únicamente `todas=true` incluye también las no vigentes; no implementa paginación.
+- Si ya existe una membresía vigente del usuario en el estudio, el alta responde `409`. Si la existente no está vigente, reutiliza su fila e identificador y reemplaza permisos, otorgante y fechas.
+- Revocar conserva la fila y fija `fecha_fin` en el día anterior. No se puede revocar la membresía del responsable del estudio.
+- No existe `PATCH /estudios/{idEstudio}/membresias/{idMembresia}` en las rutas revisadas. No documentar esa operación como disponible.
+
+### Campos de respuesta de membresías
+
+Cada objeto contiene `id_membresia`, `id_usuario`, `nombre`, `correo`, `nombre_rol`, los cinco permisos `puede_*`, `fecha_inicio`, `fecha_fin` y `vigente`. El listado, el alta y la revocación no incluyen `id_estudio` ni `id_otorgante` en la respuesta del controlador revisado.
+
+### Ejemplo de alta
+
+`POST /estudios/{idEstudio}/membresias`, con token de un Investigador autorizado. Sustituir el UUID por el de una cuenta existente. Ejemplo ilustrativo:
+
+```json
+{
+  "id_usuario": "11111111-1111-4111-8111-111111111111",
+  "puede_consultar": true,
+  "puede_cargar": true,
+  "puede_modificar": false,
+  "puede_descargar": false,
+  "puede_exportar": false,
+  "fecha_fin": "2027-12-31"
+}
+```
+
+El servidor puede reducir `fecha_fin` si la cuenta vence antes. Consultar después el listado permite comprobar los permisos y fechas devueltos.
+
+### Errores de membresías
+
+| HTTP | Código | Situación |
+|---|---|---|
+| 400 | `SOLICITUD_INVALIDA` | UUID o fecha inválidos, permiso no booleano, consultar deshabilitado o destinatario Director/Soporte. |
+| 401 | `NO_AUTENTICADO` | Falta autenticación válida. |
+| 403 | `CAMBIO_PASSWORD_REQUERIDO` | Cambio obligatorio de contraseña pendiente en la cuenta autenticada. |
+| 403 | `SIN_PERMISO` | Falta permiso del rol o acceso suficiente al estudio. |
+| 404 | `NO_ENCONTRADO` | Usuario destinatario inexistente; membresía inexistente o de otro estudio al revocar. |
+| 409 | `ESTUDIO_CERRADO` | Se intenta otorgar o revocar una membresía en un estudio cerrado. |
+| 409 | `USUARIO_BLOQUEADO` | La cuenta destinataria está inactiva. |
+| 409 | `MEMBRESIA_EXISTENTE` | El usuario ya tiene una membresía vigente en el estudio. |
+| 409 | `MEMBRESIA_NO_VIGENTE` | Se intenta revocar una membresía no vigente. |
+| 409 | `RESPONSABLE_DEL_ESTUDIO` | Se intenta revocar la membresía del responsable. |
+
+### Auditoría y diferencias por validar
+
+Las rutas marcan `usuario` con acciones `leer`, `crear` o `actualizar`; las de membresías marcan `membresia` con `leer`, `crear` o `revocar`. Para revocar, el permiso evaluado es `actualizar`, aunque la acción auditada es `revocar`.
+
+Diferencias respecto del diseño anterior que requieren revisión del equipo:
+
+1. El Director no tiene alta ni revocación de membresías en los permisos base actuales.
+2. El alta y la revocación verifican el rol y el acceso al estudio, pero no exigen que el actor sea específicamente `id_responsable`. Un Investigador con el permiso requerido puede pasar ese control.
+3. El servicio de membresías no restringe al Invitado a solo consultar: acepta los cinco booleanos. El acceso final sigue sujeto a los permisos globales del rol. Confirmar y probar la regla prevista para Invitado.
+4. El alta comprueba `activo` del destinatario, pero no rechaza explícitamente una cuenta ya expirada antes de ajustar `fecha_fin`. Revisar este caso con pruebas.
+5. No hay actualización directa de una membresía vigente mediante `PATCH`; la reactivación por `POST` solo aplica a una fila no vigente.
+
+Esta actualización documental no acredita ejecución de pruebas ni cierra toda la Actividad 73. La documentación de enrolamiento MFA y la regla de contraseña corresponde a la Actividad 74.
+
+Fuentes del contrato: `backend/src/routes/protegidas.js`, `backend/src/routes/usuarios.js`, `backend/src/controllers/usuariosController.js`, servicios y repositorios `usuarios`/`membresias`, `backend/src/middlewares/controlAcceso.js`, `backend/src/middlewares/autenticacion.js` y `backend/db/init/05_permisos_base.sql`.
 
 </div>
 

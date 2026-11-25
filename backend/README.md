@@ -183,6 +183,47 @@ Volver a cargar `datos_prueba.sql` deja la base como al inicio: también borra l
 
 `db/dev/`, `scripts/sesion-prueba.js`, `scripts/usuarios-prueba.js` y `scripts/codigo-totp.js` son **solo para desarrollo**: se niegan a correr en producción.
 
+## Actividad 83 — Preparación de la demo del MVP (Hito 4)
+
+Esta sección reúne los cuatro comandos necesarios para preparar la demostración con datos sintéticos en un entorno **exclusivamente de desarrollo**. Ejecútalos desde la carpeta `backend/`, con Docker Desktop o Docker Engine + Compose instalados.
+
+**Antes de comenzar:** crea el archivo `.env` a partir de `.env.example` y configura las contraseñas y claves de desarrollo. Usa una base de datos descartable, no una que contenga avances que quieras conservar. Para aislar esta demo se utiliza el nombre de proyecto Docker `plagesetic_hito4`; comprueba que los puertos configurados en `.env` estén disponibles.
+
+### Preparación en cuatro comandos (en orden)
+
+1. **Levantar PostgreSQL y la API:**
+
+   ```bash
+   docker compose -p plagesetic_hito4 up -d --build
+   ```
+
+2. **Cargar los datos base de prueba:**
+
+   ```bash
+   docker compose -p plagesetic_hito4 exec -T db sh -c 'psql -X -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1' < db/dev/datos_prueba.sql
+   ```
+
+3. **Cargar los cuatro registros sintéticos para la demo:**
+
+   ```bash
+   docker compose -p plagesetic_hito4 exec -T db sh -c 'psql -X -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1' < db/dev/datos_demo.sql
+   ```
+
+4. **Preparar las contraseñas y los segundos factores de los usuarios de prueba:**
+
+   ```bash
+   docker compose -p plagesetic_hito4 exec -T api node scripts/usuarios-prueba.js
+   ```
+
+El paso 3 incorpora al estudio `EST-01` cuatro participaciones activas: `EXP-901`, `EXP-902`, `EXP-903` (adultos) y `EXP-904` (menor de edad). El script requiere que el estudio esté activo, con protocolo aprobado por el CEC y documento de consentimiento vigente. **No inventa identidades vinculadas, consentimientos, eventos ni exportaciones**: esos procesos se realizan a través de los flujos reales del sistema durante la demostración.
+
+**Precauciones:**
+
+- `datos_prueba.sql` puede restablecer o borrar datos previos del entorno de pruebas. Ejecuta los pasos **solo en una base descartable** y en el orden indicado, nunca sobre una base con avances que deban conservarse.
+- `usuarios-prueba.js` actualiza las contraseñas y los secretos MFA de los usuarios `@uxlab.test` e imprime secretos TOTP y códigos de recuperación. **No publiques ni compartas su salida**. Reejecútalo solo cuando corresponda, por ejemplo después de recargar los datos base.
+- Para verificar los contenedores, usa `docker compose -p plagesetic_hito4 ps`. Para el login real, sigue la sección «Ingresar al sistema con el login real (Actividad 46)».
+- La preparación debe reproducirse en un **segundo computador del equipo** con una copia de la rama que contenga `db/dev/datos_demo.sql` y este README, su propio `.env` y los cuatro comandos anteriores. La prueba en el computador de desarrollo no sustituye esa comprobación.
+
 ## Pruebas
 
 ```bash

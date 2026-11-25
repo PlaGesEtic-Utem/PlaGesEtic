@@ -1,3 +1,122 @@
+/* ACT80_JUEVES_HELPER */
+'use strict';
+/* Funciones puras para las correcciones UX del jueves - Actividad 80. */
+(function (raiz, fabrica) {
+  const modulo = fabrica();
+  if (typeof module === 'object' && module.exports) module.exports = modulo;
+  if (raiz) raiz.PlaGesAct80Jueves = modulo;
+})(typeof window !== 'undefined' ? window : null, function () {
+  function fechaLocal(d) {
+    return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'),
+      String(d.getDate()).padStart(2, '0')].join('-');
+  }
+  function cuentaVencida(fechaExpiracion, hoy = new Date()) {
+    if (!fechaExpiracion) return false;
+    const fecha = String(fechaExpiracion).slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return false;
+    return fecha < fechaLocal(hoy); // Valida hasta el fin del dia indicado.
+  }
+  function estadoCuenta(usuario, hoy = new Date()) {
+    if (!usuario.activo) return 'Bloqueada';
+    return cuentaVencida(usuario.fecha_expiracion, hoy) ? 'Vencida' : 'Activa';
+  }
+  function secretoDesdeUri(uri) {
+    let u;
+    try { u = new URL(uri); } catch (_) { throw new Error('QR MFA invalido.'); }
+    if (u.protocol !== 'otpauth:' || u.hostname !== 'totp') {
+      throw new Error('Formato del QR MFA no reconocido.');
+    }
+    const secreto = (u.searchParams.get('secret') || '').trim().toUpperCase();
+    if (!/^[A-Z2-7]{16,128}$/.test(secreto)) {
+      throw new Error('El QR no incluye una clave MFA valida.');
+    }
+    return secreto;
+  }
+  function consultaParticipantes(estado) {
+    const p = new URLSearchParams();
+    p.set('pagina', String(estado.pagina || 1));
+    p.set('limite', String(estado.limite || 20));
+    const q = String(estado.q || '').trim();
+    if (q) p.set('q', q);
+    if (estado.estado) p.set('estado', estado.estado);
+    return p.toString();
+  }
+  function normalizarParticipantes(respuesta, estado) {
+    if (Array.isArray(respuesta)) {
+      let datos = respuesta.slice();
+      const q = String(estado.q || '').trim().toLocaleLowerCase('es');
+      if (q) datos = datos.filter(p =>
+        String(p.codigo_seudonimo || '').toLocaleLowerCase('es').includes(q));
+      if (estado.estado) datos = datos.filter(p => p.estado === estado.estado);
+      const limite = estado.limite || 20;
+      const pagina = estado.pagina || 1;
+      return { datos: datos.slice((pagina - 1) * limite, pagina * limite),
+        total: datos.length, pagina, limite, modo: 'compatibilidad' };
+    }
+    if (!respuesta || !Array.isArray(respuesta.datos) ||
+        !Number.isInteger(respuesta.total) || respuesta.total < 0 ||
+        !Number.isInteger(respuesta.pagina) || respuesta.pagina < 1 ||
+        !Number.isInteger(respuesta.limite) ||
+        respuesta.limite < 1 || respuesta.limite > 100) {
+      throw new Error('El backend no devolvio el contrato de paginacion de participantes esperado.');
+    }
+    return { datos: respuesta.datos, total: respuesta.total,
+      pagina: respuesta.pagina, limite: respuesta.limite, modo: 'servidor' };
+  }
+  return { cuentaVencida, estadoCuenta, secretoDesdeUri,
+    consultaParticipantes, normalizarParticipantes };
+});
+/* ACT80_HELPER_INTEGRADO */
+/* Utilidades del listado de estudios (Actividad 80). */
+(function (raiz, fabrica) {
+  const modulo = fabrica();
+  if (typeof module === 'object' && module.exports) module.exports = modulo;
+  if (raiz) raiz.PlaGesAct80Estudios = modulo;
+})(typeof window !== 'undefined' ? window : null, function () {
+  'use strict';
+  function consulta(s) {
+    const p = new URLSearchParams();
+    p.set('pagina', String(s.pagina || 1));
+    p.set('limite', String(s.limite || 20));
+    p.set('orden', s.orden || 'fecha');
+    if (s.q && s.q.trim()) p.set('q', s.q.trim());
+    if (s.estado) p.set('estado', s.estado);
+    p.set('solo_mios', String(Boolean(s.soloMios)));
+    return p.toString();
+  }
+  function normalizar(respuesta, s) {
+    if (Array.isArray(respuesta)) {
+      // Compatibilidad con el backend que aún no pagina.
+      let datos = respuesta.slice();
+      const q = String(s.q || '').trim().toLocaleLowerCase('es');
+      if (q) datos = datos.filter(e =>
+        String(e.codigo_estudio || e.codigo || '').toLocaleLowerCase('es').includes(q) ||
+        String(e.nombre || '').toLocaleLowerCase('es').includes(q));
+      if (s.estado) datos = datos.filter(e => e.estado === s.estado);
+      const total = datos.length;
+      const limite = s.limite || 20;
+      return {
+        datos: datos.slice((s.pagina - 1) * limite, s.pagina * limite),
+        total, pagina: s.pagina, limite, modo: 'compatibilidad'
+      };
+    }
+    if (!respuesta || !Array.isArray(respuesta.datos) ||
+        !Number.isInteger(respuesta.total) || respuesta.total < 0 ||
+        !Number.isInteger(respuesta.pagina) || respuesta.pagina < 1 ||
+        !Number.isInteger(respuesta.limite) || respuesta.limite < 1) {
+      throw new Error('El servidor no devolvió el contrato de paginación esperado.');
+    }
+    return {
+      datos: respuesta.datos,
+      total: respuesta.total,
+      pagina: respuesta.pagina,
+      limite: respuesta.limite,
+      modo: 'servidor'
+    };
+  }
+  return { consulta, normalizar };
+});
+
 /* plaGesEtic · Capa que conecta el prototipo navegable v2.3.1 con la API real (SOLO DEMO / DESARROLLO).
  * No cambia el diseño: reemplaza los datos de ejemplo por los de la API en estas pantallas:
  *   A1/A2  ingreso con contraseña + código (o código de recuperación)  → POST /auth/login, /auth/login/mfa
@@ -7,7 +126,9 @@
  *   B0-B5  alta de participante: busca, y al guardar la decisión del consentimiento registra la identidad cifrada
  *          e inscribe → POST /identidades(/buscar), /estudios/{id}/participaciones
  *   Cerrar sesión                                                      → POST /auth/logout
- * El resto de las pantallas sigue siendo el prototipo (aún no tiene API).
+ *   Cambio obligatorio de contraseña                                  → POST /auth/password
+ * Administración y archivos de sesión siguen pendientes de integración; exportaciones y consentimientos PDF usan la API.
+ * La experiencia continúa siendo una demo de desarrollo.
  */
 (function () {
   'use strict';
@@ -44,28 +165,147 @@
   #rl-qr button{border:0;border-radius:10px;padding:9px 16px;font:600 14px Inter,Arial,sans-serif;cursor:pointer;background:#000B78;color:#fff}
   .rl-qrlink{display:inline-block;margin:2px 0 8px;border:0;background:none;color:#1C2FB9;font:600 13px Inter,Arial,sans-serif;text-decoration:underline;cursor:pointer;padding:0}
   .rl-ver:hover{background:#DDE2FF}.rl-ver:focus-visible{outline:2px solid #253FF6;outline-offset:2px}`;
+  css.textContent += '\n#rl-cel,[data-act="verqr"]{display:none!important}';
+  css.textContent += `
+    .pbar label:has(#roleSel){display:flex;flex-wrap:wrap;min-width:0;gap:6px}
+    .pbar #roleSel{box-sizing:border-box;display:block;flex:0 0 auto;min-width:148px;max-width:100%;height:35px;line-height:1.2;padding:7px 32px 7px 10px;white-space:nowrap}
+    select[data-act73-rol]{min-width:148px;max-width:220px;width:100%;box-sizing:border-box;padding-right:38px}
+    #act80-part-filtros{margin:12px 0;align-items:end}
+    #act80-part-filtros input,#act80-part-filtros select{width:100%;min-width:0}
+    @media(max-width:540px){.pbar{gap:8px}.pbar label:has(#roleSel){width:100%;justify-content:flex-start}}
+  `;
   document.head.appendChild(css);
-  const badge = document.createElement('div'); badge.id = 'rl-badge'; badge.innerHTML = '<i></i>Conectado a la API real';
+  const badge = document.createElement('div'); badge.id = 'rl-badge'; badge.innerHTML = '<i></i>Comprobando conexión…';
   const cel = document.createElement('div'); cel.id = 'rl-cel';
   cel.innerHTML = '<small>Celular simulado · app de autenticación</small><div class="c" title="Clic para copiarlo al campo">------</div><div class="b"><div></div></div><small style="margin-top:6px" id="rl-cel-u"></small>';
   const toastEl = document.createElement('div'); toastEl.id = 'rl-toast';
   const qrEl = document.createElement('div'); qrEl.id = 'rl-qr'; qrEl.setAttribute('role', 'dialog'); qrEl.setAttribute('aria-modal', 'true');
   document.body.append(badge, cel, toastEl, qrEl);
+
+  // ---------- ACT74: enrolamiento MFA real, sin simulador ----------
+  let act74MfaEnrolamiento = false;
+  let act74MfaEtapa = '';
+
   async function mostrarQR() {
-    if (!R2.correo) return;
-    let uri = '';
-    try { uri = (await (await fetch('/otpauth?correo=' + encodeURIComponent(R2.correo))).json()).uri; } catch (e) { /* sin red */ }
-    if (!uri || typeof qrcode === 'undefined') { toast('No se pudo generar el código QR.', 'err'); return; }
-    const q = qrcode(0, 'M'); q.addData(uri); q.make();
-    qrEl.innerHTML = `<div class="box"><h3>Configura tu celular</h3>
-      <p>Escanea este código con <b>Google Authenticator</b> o <b>Microsoft Authenticator</b> (gratis en App Store y Google Play).</p>
-      <div class="img">${q.createImgTag(6, 8)}</div>
-      <ol><li>Abre la app y toca <b>+</b> → <b>Escanear un código QR</b>.</li><li>Apunta la cámara a este código.</li><li>Aparecerá «plaGesEtic» con un código de 6 dígitos que cambia cada 30 segundos: escríbelo y presiona <b>Verificar</b>.</li></ol>
-      <p style="font-size:12px">Cuenta: ${R2.correo}. En el sistema final este QR se muestra una sola vez, en el primer ingreso (Act. 74).</p>
-      <div class="row"><button type="button" data-act="qrX">Listo</button></div></div>`;
+    if (!act74MfaEnrolamiento || !R2.tmp) return;
+    if (typeof qrcode !== 'function') {
+      throw new Error('No se cargó qrcode.js. Comprueba el servidor de frontend.');
+    }
+
+    const respuesta = await api('POST', '/auth/mfa/enrolar',
+      { token_temporal: R2.tmp }, false);
+    if (!respuesta.otpauth_uri) throw new Error('La API no entregó otpauth_uri.');
+
+    // Mostrar la clave de configuracion manual solo durante el enrolamiento.
+    const claveManual = window.PlaGesAct80Jueves.secretoDesdeUri(respuesta.otpauth_uri);
+    const qr = qrcode(0, 'M');
+    qr.addData(respuesta.otpauth_uri);
+    qr.make();
+    act74MfaEtapa = 'qr';
+
+    qrEl.innerHTML = `<div class="box">
+      <h3>Activa la verificación en dos pasos</h3>
+      <p>Escanea este QR con Google Authenticator o Microsoft Authenticator.
+        Se genera desde la API real y todavía <b>no activa</b> el MFA.</p>
+      <div class="img">${qr.createImgTag(6, 8)}</div>
+      <p style="font-size:13px"><b>¿No puedes escanear?</b> Añade la cuenta manualmente con esta clave:</p>
+      <code id="act80-mfa-clave" style="display:block;overflow-wrap:anywhere;font-size:15px;letter-spacing:.08em;user-select:all;background:#f1f3fc;padding:10px;border-radius:8px">${h(claveManual)}</code>
+      <p style="font-size:12px">No compartas esta clave. Solo se muestra mientras configuras MFA.</p>
+      <p style="overflow-wrap:anywhere;font-size:12px">Cuenta: ${h(R2.correo)}</p>
+      <form id="act74-mfa-form">
+        <label for="act74-mfa-codigo">Código actual de 6 dígitos de tu aplicación</label>
+        <input id="act74-mfa-codigo" type="text" inputmode="numeric" pattern="[0-9]{6}"
+          maxlength="6" autocomplete="one-time-code" required
+          style="width:100%;padding:10px;margin-top:6px;box-sizing:border-box">
+        <p id="act74-mfa-error" role="alert" aria-live="polite"
+          style="min-height:18px;color:#b42318;font-size:13px"></p>
+        <div class="row">
+          <button type="button" data-act="act74MfaCancelar">Cancelar</button>
+          <button id="act74-mfa-guardar" type="submit">Activar MFA</button>
+        </div>
+      </form>
+      <p style="font-size:12px">Este pase vence a los 5 minutos. Si vence, inicia sesión otra vez.</p>
+    </div>`;
     qrEl.style.display = 'flex';
   }
-  qrEl.addEventListener('click', (e) => { if (e.target === qrEl || e.target.closest('[data-act="qrX"]')) qrEl.style.display = 'none'; });
+
+  function act74MfaCerrar() {
+    qrEl.style.display = 'none';
+    qrEl.innerHTML = '';
+    act74MfaEtapa = '';
+  }
+
+  qrEl.addEventListener('click', (e) => {
+    const boton = e.target.closest('[data-act="act74MfaCancelar"], [data-act="act74MfaContinuar"]');
+    if (!boton) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (boton.dataset.act === 'act74MfaCancelar') {
+      act74MfaCerrar();
+      act74MfaEnrolamiento = false;
+      R2.tmp = null;
+      R2.correo = null;
+      goProto('a1');
+      return;
+    }
+
+    if (boton.dataset.act === 'act74MfaContinuar' && act74MfaEtapa === 'recuperacion') {
+      act74MfaCerrar(); // Borra los códigos del DOM, sin guardarlos en storage.
+      goProto('a2');
+      toast('MFA activado. Ingresa el código de tu aplicación para iniciar sesión.', 'ok');
+    }
+  });
+
+  qrEl.addEventListener('submit', (e) => {
+    if (e.target?.id !== 'act74-mfa-form') return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (ocupado || !act74MfaEnrolamiento || act74MfaEtapa !== 'qr') return;
+
+    const codigo = (qrEl.querySelector('#act74-mfa-codigo')?.value || '').trim();
+    const error = qrEl.querySelector('#act74-mfa-error');
+    if (!/^[0-9]{6}$/.test(codigo)) {
+      error.textContent = 'Introduce los 6 dígitos de tu aplicación.';
+      return;
+    }
+
+    conEspera(async () => {
+      const boton = qrEl.querySelector('#act74-mfa-guardar');
+      if (boton) boton.disabled = true;
+      error.textContent = '';
+      try {
+        const respuesta = await api('POST', '/auth/mfa/confirmar',
+          { token_temporal: R2.tmp, codigo }, false);
+        if (!respuesta.token_temporal || !Array.isArray(respuesta.codigos_recuperacion)) {
+          throw new Error('El servidor confirmó MFA pero faltan los códigos de recuperación.');
+        }
+        R2.tmp = respuesta.token_temporal;
+        act74MfaEnrolamiento = false;
+        act74MfaEtapa = 'recuperacion';
+
+        qrEl.innerHTML = `<div class="box">
+          <h3>Segundo factor activado</h3>
+          <p><b>Guarda ahora estos códigos de recuperación.</b> Se muestran una sola vez.
+            Cada código permite recuperar el acceso si pierdes tu aplicación.</p>
+          <div style="background:#f1f3fc;padding:12px;border-radius:9px;
+            display:grid;grid-template-columns:1fr 1fr;gap:8px;user-select:all">
+            ${respuesta.codigos_recuperacion.map(c => `<code style="color:#111">${h(c)}</code>`).join('')}
+          </div>
+          <p style="font-size:12px">No los guardes en el navegador ni los compartas.
+            Anótalos o consérvalos en un gestor seguro.</p>
+          <div class="row"><button type="button" data-act="act74MfaContinuar">
+            Ya guardé mis códigos; continuar
+          </button></div>
+        </div>`;
+      } catch (err) {
+        error.textContent = err.mensaje || err.message || 'No se pudo activar MFA.';
+      } finally {
+        if (boton?.isConnected) boton.disabled = false;
+      }
+    });
+  });
+
   let tt;
   function toast(msg, tipo) { toastEl.textContent = msg; toastEl.className = tipo || ''; toastEl.style.display = 'block'; clearTimeout(tt); tt = setTimeout(() => (toastEl.style.display = 'none'), 4200); }
 
@@ -75,11 +315,12 @@
     if (conToken && R2.token) cab.Authorization = 'Bearer ' + R2.token;
     let r, j = {};
     try { r = await fetch(API + ruta, { method: metodo, headers: cab, cache: 'no-store', body: cuerpo ? JSON.stringify(cuerpo) : undefined }); }
-    catch (e) { throw { codigo: 'SIN_RED', mensaje: 'No se pudo contactar el servidor de la demo.' }; }
+    catch (e) { throw { codigo: 'SIN_RED', mensaje: 'No se pudo conectar con el servidor. Revisa tu conexión e intenta nuevamente.' }; }
     try { j = await r.json(); } catch (e) { /* sin cuerpo */ }
     if (!r.ok) throw Object.assign({ status: r.status }, j.error || { codigo: 'ERROR', mensaje: 'Error ' + r.status });
     return j;
   }
+
   // FormData: el navegador asigna el boundary; no enviar Content-Type manualmente.
   async function apiArchivo(ruta, datos) {
     let respuesta, cuerpo = {};
@@ -103,6 +344,7 @@
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const lista = (respuesta) => Array.isArray(respuesta) ? respuesta : (respuesta.datos || []);
   const VERSION_FALTA = 'Este estudio no tiene un documento de consentimiento vigente. Solicita que lo carguen antes de continuar.';
+
   async function documentosVigentes() {
     const estudio = uuidDe(S.study);
     if (!estudio) throw new Error('Selecciona un estudio activo antes de registrar la decisión.');
@@ -111,13 +353,14 @@
     if (!vigente || !vigente.version) throw new Error(VERSION_FALTA);
     R2.documentos = { consentimiento: vigente };
   }
+
   // API del consentimiento: se usa un servicio reutilizable y comprobable por separado.
   const act58 = window.PlaGesActividad58;
   if (!act58) throw new Error('No se cargó actividad58-eventos.js');
   const flujoConsentimiento = window.PlaGesConsentimiento;
   if (!flujoConsentimiento) throw new Error('No se cargó consentimiento-integracion.js');
 
-  api('GET', '/salud', null, false).then(() => badge.classList.remove('off')).catch(() => { badge.classList.add('off'); badge.innerHTML = '<i></i>API apagada: ejecuta «docker compose up -d»'; });
+  api('GET', '/salud', null, false).then(() => { badge.classList.remove('off'); badge.innerHTML = '<i></i>Servidor disponible al iniciar'; }).catch(() => { badge.classList.add('off'); badge.innerHTML = '<i></i>No se pudo comprobar la conexión'; });
 
   // ---------- celular simulado ----------
   setInterval(async () => {
@@ -129,11 +372,13 @@
       if (j.codigo) { cel.querySelector('.c').textContent = j.codigo.slice(0, 3) + ' ' + j.codigo.slice(3); cel.querySelector('.b>div').style.width = (j.segundos_restantes / 30 * 100) + '%'; document.getElementById('rl-cel-u').textContent = R2.correo; }
     } catch (e) { /* ignora */ }
   }, 1000);
+
   cel.querySelector('.c').onclick = () => { const o = document.getElementById('otp'); if (o) o.value = cel.querySelector('.c').textContent.replace(/\s/g, ''); };
 
   // ---------- datos reales → estructuras del prototipo ----------
   const FECHA = (d) => (d ? String(d).slice(0, 10).split('-').reverse().join('/') : '—');
   const ESTADO = { activo: 'Activo', borrador: 'Borrador', cerrado: 'Cerrado' };
+
   async function cargarEstudios() {
     const lista = await api('GET', '/estudios');
     R2.estudios = Array.isArray(lista) ? lista : (lista.datos || []);
@@ -150,7 +395,9 @@
     for (const s of nuevos) { try { await cargarParticipantes(s.id, true); } catch (x) { /* sin permiso */ } }
     if (STUDIES[0]) S.ceId = STUDIES[0].id;
   }
+
   const uuidDe = (codigo) => (STUDIES.find((s) => s.id === codigo) || {})._uuid;
+
   async function cargarParticipantes(codigo, acumular) {
     const id = uuidDe(codigo); if (!id) return;
     const ps = await api('GET', '/estudios/' + id + '/participaciones');
@@ -165,6 +412,7 @@
         p.estado === 'activo' ? 'ok' : 'err', FECHA(p.fecha_inicio), p.es_menor_al_enrolar ? 'Sí' : 'No']);
     });
   }
+
   function aplicarUsuario(u) {
     R2.usuario = u;
     const rol = ROLES.includes(u.rol) ? u.rol : 'Investigador';
@@ -180,20 +428,25 @@
     .replace(/<label class="chk">[\s\S]*?<\/label>/, '')
     .replace('<button class="lnk" data-act="err">Simular contraseña incorrecta</button>', '<span class="hint">Usuarios de prueba: test_[rol]@uxlab.test · clave Plagesetic.2026</span>')
     .replace('Usuario o contraseña incorrectos.', S.errMsg || 'Usuario o contraseña incorrectos.');
+
   const a2V = R.a2;
   R.a2 = () => a2V().replace('<button class="lnk" data-go="a2r">', (S.otpErr ? `<div class="msg err" role="alert">${S.otpErr}</div>` : '') + '<button type="button" class="rl-qrlink" data-act="verqr">¿Primera vez? Configura tu celular con un código QR</button><br><button class="lnk" data-go="a2r">');
+
   const a2rV = R.a2r;
   R.a2r = () => a2rV().replace('<button class="lnk" data-go="a2">', (S.otpErr ? `<div class="msg err" role="alert">${S.otpErr}</div>` : '') + '<button class="lnk" data-go="a2">');
+
   // Mis estudios: cada fila abre SU estudio (el prototipo esperaba códigos UX-2026-0X)
   const c1V = R.c1;
   R.c1 = () => c1V().replace(/<tr><td><code>([^<]+)<\/code><\/td>([\s\S]*?)<\/tr>/g, (m, id, resto) =>
     `<tr><td><code>${id}</code></td>` + resto
       .replace('<button class="lnk" data-go="c3">Ver</button>', `<button class="lnk" data-act="stuVer" data-id="${id}">Ver participantes</button>`)
       .replace('<button class="lnk" data-go="c2">Editar</button>', `<button class="lnk" data-act="stuEdit" data-id="${id}">Editar</button>`) + '</tr>');
-        // Buscador de estudios (C1): filtra las filas por código o nombre, sin llamar a la API
+
+  // Buscador de estudios (C1): filtra las filas por código o nombre, sin llamar a la API
   const c1Base = R.c1;
   R.c1 = () => c1Base().replace('<div class="tw">',
     '<div class="fld"><input id="buscaEst" type="search" placeholder="Buscar por código o nombre"></div><div class="tw">');
+
   document.addEventListener('input', (e) => {
     if (e.target.id !== 'buscaEst') return;
     const texto = e.target.value.trim().toLowerCase();
@@ -202,13 +455,16 @@
       fila.style.display = fila.textContent.toLowerCase().includes(texto) ? '' : 'none';
     });
   });
-      // Textos de «prototipo» → datos reales
+
+  // Textos de «prototipo» → datos reales
   const shellV = shell;
   shell = function (mc, inner) { return shellV(mc, inner).replace('· nombre ficticio', '· usuario de prueba'); };
   const a3V = R.a3;
   R.a3 = () => a3V().replace(/· PROTOTIPO/gi, '· plaGesEtic');
-    const c2V = R.c2;
+
+  const c2V = R.c2;
   R.c2 = () => c2V().replace(btn('Guardar', 'c1', 's'), '<button class="btn s" data-act="estGuardar">Guardar</button>');
+
   const c3V = R.c3;
   R.c3 = () => {
     const s = STUDIES.find((x) => x.id === S.ceId) || STUDIES[0] || { id: '—', n: '' };
@@ -368,11 +624,13 @@
   const fichaActual = () => R2.ficha && R2.ficha.codigo === S.ficha ? R2.ficha : null;
   const idParticipacionActual = () => R2.participaciones.get(S.ficha);
   const avisoD21 = '<div class="msg warn"><b>Privacidad D21:</b> no escribas nombres, RUT, correos ni otros datos identificatorios en el motivo, la observación o la justificación.</div>';
+
   function borrarSensibles() {
     // Los datos solo viven durante la pantalla que los muestra, nunca en storage/logs.
     R2.sensible = null;
     R2.contactoMotivo = null;
   }
+
   async function idConsentimientoActual() {
     const id = idParticipacionActual();
     if (!id) throw new Error('No se encontró la participación. Vuelve a cargar sus participantes.');
@@ -387,6 +645,7 @@
     R2.idsConsentimiento.set(id, r.id_consentimiento);
     return r.id_consentimiento;
   }
+
   async function abrirEvento(tipo) {
     if (!fichaActual()) await cargarFicha(S.ficha);
     if (!tipoActual()) throw new Error('No existe un consentimiento registrado para esta participación.');
@@ -407,6 +666,7 @@
     }
     goProto('act58evento');
   }
+
   R.act58evento = () => {
     const retiro = R2.eventoTipo === 'retirar';
     const actual = tipoActual() || {};
@@ -423,6 +683,7 @@
       <div class="acts">${btn('Cancelar','c6','s')}
         <button type="button" class="btn p" data-act="act58GuardarEvento">${retiro?'Confirmar retiro':'Guardar reconsentimiento'}</button></div></div>`);
   };
+
   async function guardarEvento() {
     if (!R2.eventoTipo) throw new Error('Selecciona un evento.');
     const tipo = R2.eventoTipo;
@@ -443,9 +704,10 @@
     try { await cargarParticipantes(codigoEstudio); } catch (_) { /* la ficha igual se actualizó */ }
     R2.eventoTipo = null;
     R2.documentoReconsentimiento = null;
-    toast(tipo === 'retirar' ? 'Retiro registrado en la API.' : 'Reconsentimiento registrado en la API.', 'ok');
+    toast(tipo === 'retirar' ? 'Retiro registrado.' : 'Reconsentimiento registrado.', 'ok');
     goProto('c6');
   }
+
   R.act58contact = () => shell('c1', `<div class="card"><h2 class="t">Datos de contacto · ${h(S.ficha || '—')}</h2>
     <p class="sub">Acceso excepcional para el Investigador responsable o el Director. La consulta queda auditada.</p>
     ${avisoD21}
@@ -456,6 +718,7 @@
     <div class="fld"><label for="act58Detalle">Detalle para «Otro»</label>
     <textarea id="act58Detalle" rows="3" placeholder="Explica el propósito sin datos identificatorios"></textarea></div>
     <div class="acts">${btn('Cancelar','c6','s')}<button class="btn p" data-act="act58ConsultarContacto">Consultar contacto</button></div></div>`);
+
   async function consultarContacto() {
     const id = idParticipacionActual();
     if (!id) throw new Error('No se encontró la participación.');
@@ -466,6 +729,7 @@
     R2.contactoMotivo = motivo;
     goProto('act58resultado');
   }
+
   R.act58identity = () => {
     const codigoEstudio = R2.estudioParticipacion.get(S.ficha) || S.ceId;
     const estudios = STUDIES.map(s => `<option value="${h(s.id)}" ${s.id === codigoEstudio ? 'selected' : ''}>${h(s.id)} · ${h(s.n)}</option>`).join('');
@@ -480,6 +744,7 @@
     <div class="acts">${btn('Cancelar', fichaActual() ? 'c6' : 'a3','s')}
       <button class="btn p" data-act="act58Desenmascarar">Solicitar desenmascaramiento</button></div></div>`);
   };
+
   async function consultarIdentidad() {
     const ux = val('act58UXL').toUpperCase();
     const uuid = uuidDe(val('act58Estudio'));
@@ -491,6 +756,7 @@
     R2.sensible = { clase: 'identidad', datos: act58.soloIdentidad(resultado) };
     goProto('act58resultado');
   }
+
   R.act58resultado = () => {
     const datos = R2.sensible;
     if (!datos) return shell('c1', `<div class="card"><h2 class="t">Datos no disponibles</h2>
@@ -504,6 +770,7 @@
       ${campos.map(([key, titulo]) => `<tr><td>${titulo}</td><td>${h(datos.datos[key] ?? '—')}</td></tr>`).join('')}</table></div>
       <div class="acts"><button type="button" class="btn p" data-act="act58CerrarSensibles">Cerrar y borrar datos</button></div></div>`);
   };
+
   // Captura de los botones heredados del prototipo ANTES de que puedan activar sus simulaciones.
   // No se emiten datos personales a consola, storage ni a otros componentes.
   const accionAct58 = async (accion) => {
@@ -518,6 +785,7 @@
       else if (accion === 'act58CerrarSensibles') { borrarSensibles(); go('a3'); }
     } catch (e) { toast(act58.mensajeError(e), 'err'); }
   };
+
   const accionesAct58 = new Set(['act58RetiroForm','act58ReconsForm','act58ContactForm','contacto',
     'act58IdentityForm','act58GuardarEvento','act58ConsultarContacto','contactOk','act58Desenmascarar',
     'act58CerrarSensibles','retirar']);
@@ -547,7 +815,106 @@
   }
   const val = (id) => ((document.getElementById(id) || {}).value || '').trim();
 
+  // ---------- Actividad 73: cambio obligatorio de contrasena ----------
+  // Este formulario se abre solamente despues de verificar el MFA.
+  // No guarda contrasenas en localStorage, sessionStorage ni en la consola.
+  const cambioClave = document.createElement('div');
+  cambioClave.id = 'rl-cambio-clave';
+  cambioClave.setAttribute('role', 'dialog');
+  cambioClave.setAttribute('aria-modal', 'true');
+  cambioClave.setAttribute('aria-labelledby', 'rl-cambio-titulo');
+  cambioClave.style.cssText = 'display:none;position:fixed;inset:0;z-index:10010;background:rgba(11,14,50,.88);align-items:center;justify-content:center;padding:16px';
+  cambioClave.innerHTML = `
+    <form id="rl-form-cambio" style="background:#fff;color:#131315;width:100%;max-width:440px;padding:26px;border-radius:16px;font-family:Inter,Arial,sans-serif;box-shadow:0 20px 50px rgba(0,0,0,.3)">
+      <h2 id="rl-cambio-titulo" style="color:#000B78;margin:0 0 10px;font-size:21px">Cambio obligatorio de contraseña</h2>
+      <p style="font-size:14px;line-height:1.5;margin:0 0 14px">Por seguridad, debes reemplazar tu contraseña temporal antes de usar el sistema.</p>
+                <label for="rl-clave-actual" style="display:block;margin-top:14px;font-size:14px">Contraseña temporal</label>
+      <div class="rl-pw" style="margin-top:5px"><input id="rl-clave-actual" type="password" autocomplete="current-password" required
+        style="width:100%;box-sizing:border-box;padding:10px"><button type="button" class="rl-ver" data-ver="rl-clave-actual" aria-pressed="false" aria-label="Mostrar contraseña">Mostrar</button></div>
+      <label for="rl-clave-nueva" style="display:block;margin-top:14px;font-size:14px">Nueva contraseña (mínimo 12 caracteres)</label>
+      <div class="rl-pw" style="margin-top:5px"><input id="rl-clave-nueva" type="password" autocomplete="new-password" minlength="12" required
+        style="width:100%;box-sizing:border-box;padding:10px"><button type="button" class="rl-ver" data-ver="rl-clave-nueva" aria-pressed="false" aria-label="Mostrar contraseña">Mostrar</button></div>
+      <p style="font-size:12px;line-height:1.4;color:#4B4F6B;margin:7px 0 0">Usa al menos 12 caracteres. Debe ser distinta de la contraseña anterior y de tu correo electrónico.</p>
+      <label for="rl-clave-confirmar" style="display:block;margin-top:14px;font-size:14px">Confirmar nueva contraseña</label>
+      <div class="rl-pw" style="margin-top:5px"><input id="rl-clave-confirmar" type="password" autocomplete="new-password" minlength="12" required
+        style="width:100%;box-sizing:border-box;padding:10px"><button type="button" class="rl-ver" data-ver="rl-clave-confirmar" aria-pressed="false" aria-label="Mostrar contraseña">Mostrar</button></div>
+      <p id="rl-cambio-error" role="alert" aria-live="polite" style="color:#B42318;font-size:13px;min-height:18px"></p>
+      <button id="rl-cambio-guardar" type="submit"
+        style="width:100%;background:#000B78;color:#fff;border:0;border-radius:9px;padding:12px;cursor:pointer">Actualizar contraseña</button>
+      <button id="rl-cambio-salir" type="button"
+        style="width:100%;margin-top:10px;background:#eee;color:#131315;border:0;border-radius:9px;padding:10px;cursor:pointer">Cerrar sesión</button>
+    </form>`;
+  document.body.appendChild(cambioClave);
+
+  function abrirCambioClave() {
+    cambioClave.style.display = 'flex';
+    document.getElementById('rl-cambio-error').textContent = '';
+    document.getElementById('rl-clave-actual').focus();
+  }
+
+  function ocultarCambioClave() {
+    cambioClave.querySelector('#rl-form-cambio').reset();
+    cambioClave.style.display = 'none';
+  }
+
+  cambioClave.querySelector('#rl-form-cambio').addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    if (!R2.token || !R2.usuario?.debe_cambiar_password) return;
+
+    const actual = document.getElementById('rl-clave-actual').value;
+    const nueva = document.getElementById('rl-clave-nueva').value;
+    const confirmar = document.getElementById('rl-clave-confirmar').value;
+    const error = document.getElementById('rl-cambio-error');
+    const boton = document.getElementById('rl-cambio-guardar');
+    error.textContent = '';
+
+    if (nueva.length < 12) {
+      error.textContent = 'La nueva contraseña debe tener al menos 12 caracteres.';
+      return;
+    }
+    if (nueva === actual) {
+      error.textContent = 'La nueva contraseña debe ser distinta de la temporal.';
+      return;
+    }
+    const correoCuenta = String(R2.usuario?.correo || R2.correo || '').trim().toLowerCase();
+    if (correoCuenta && nueva.trim().toLowerCase() === correoCuenta) {
+      error.textContent = 'La nueva contraseña debe ser distinta del correo de la cuenta.';
+      return;
+    }
+    if (nueva !== confirmar) {
+      error.textContent = 'Las contraseñas nuevas no coinciden.';
+      return;
+    }
+
+    boton.disabled = true;
+    try {
+      await api('POST', '/auth/password', { password_actual: actual, password_nueva: nueva });
+      R2.usuario.debe_cambiar_password = false;
+      ocultarCambioClave();
+      try { await cargarEstudios(); } catch (_) { /* El panel se muestra igualmente. */ }
+      goProto('a3');
+      toast('Contraseña actualizada correctamente.', 'ok');
+    } catch (err) {
+      error.textContent = err.mensaje || 'No se pudo actualizar la contraseña.';
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  cambioClave.querySelector('#rl-cambio-salir').addEventListener('click', async () => {
+    await go('a1');
+    if (!R2.token) ocultarCambioClave();
+    else document.getElementById('rl-cambio-error').textContent =
+      'No se pudo cerrar la sesión. Inténtalo nuevamente.';
+  });
+
   go = function (id) {
+    // Mientras se deba cambiar la contrasena, no se puede acceder a otras pantallas.
+    // El backend tambien restringe las rutas hasta completar el cambio.
+    if (R2.token && R2.usuario?.debe_cambiar_password && id !== 'a1') {
+      abrirCambioClave();
+      return;
+    }
     if (cur === 'act58resultado' && id !== 'act58resultado') borrarSensibles();
     if (id === 'bdir' || id === 'bid') { borrarSensibles(); return goProto('act58identity'); }
     if (id === 'c8') { borrarSensibles(); return goProto('act58contact'); }
@@ -557,6 +924,7 @@
         catch (e) { toast(act58.mensajeError(e), 'err'); }
       });
     }
+
     // Paso 1: correo y contraseña
     if (cur === 'a1' && id === 'a2') {
       return conEspera(async () => {
@@ -565,13 +933,24 @@
         try {
           const r = await api('POST', '/auth/login', { correo, password }, false);
           R2.tmp = r.token_temporal; S.first = false; S.otpErr = '';
+          if (r.enrolamiento_requerido) {
+            act74MfaEnrolamiento = true;
+            try { await mostrarQR(); }
+            catch (err) {
+              toast(err.mensaje || err.message || 'No se pudo preparar el segundo factor.', 'err');
+              if (err.codigo === 'TOKEN_TEMPORAL_INVALIDO') { R2.tmp = null; act74MfaEnrolamiento = false; }
+            }
+            return;
+          }
+          act74MfaEnrolamiento = false;
           goProto('a2');
         } catch (e) {
-          S.err = true; S.errMsg = e.codigo === 'MFA_PENDIENTE' ? 'Tu cuenta aún no tiene configurada la verificación en dos pasos (se habilita en la Act. 74).' : e.codigo === 'DEMASIADOS_INTENTOS' ? e.mensaje : 'Usuario o contraseña incorrectos.';
+          S.err = true; S.errMsg = e.codigo === 'MFA_PENDIENTE' ? 'Tu cuenta aún no tiene configurada la verificación en dos pasos. Contacta a Soporte.' : e.codigo === 'CREDENCIALES_INVALIDAS' ? 'Correo o contraseña incorrectos.' : e.codigo === 'DEMASIADOS_INTENTOS' ? 'Demasiados intentos. Espera un momento antes de volver a ingresar.' : e.codigo === 'SIN_RED' ? e.mensaje : 'No se pudo iniciar sesión. Intenta nuevamente más tarde.';
           render();
         }
       });
     }
+
     // Paso 2: código de la app o código de recuperación
     if ((cur === 'a2' || cur === 'a2r') && (id === 'a3' || id === 'a2c')) {
       return conEspera(async () => {
@@ -579,7 +958,14 @@
         if (cur === 'a2') cuerpo.codigo = val('otp').replace(/\s/g, ''); else cuerpo.codigo_recuperacion = val('rc');
         try {
           const r = await api('POST', '/auth/login/mfa', cuerpo, false);
-          R2.token = r.token; S.otpErr = ''; aplicarUsuario(r.usuario);
+          R2.token = r.token;
+          R2.tmp = null;
+          S.otpErr = '';
+          aplicarUsuario(r.usuario);
+          if (r.usuario.debe_cambiar_password) {
+            abrirCambioClave();
+            return;
+          }
           try { await cargarEstudios(); } catch (e) { /* el panel se muestra igual */ }
           toast('Sesión iniciada como ' + r.usuario.nombre + ' (' + r.usuario.rol + ')', 'ok');
           goProto('a3');
@@ -590,21 +976,55 @@
         }
       });
     }
+
     // Cerrar sesión (menú lateral)
     if (id === 'a1' && R2.token) {
-      const t = R2.token; R2.token = null; R2.tmp = null;
-      R2.participaciones.clear(); R2.estudioParticipacion.clear(); R2.idsConsentimiento.clear();
-      borrarSensibles(); R2.eventoTipo = null; R2.documentos = null; R2.altaProceso = null;
-      R2.confirmacion = null; R2.ficha = null; S.alta = null;
-      fetch(API + '/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + t } }).catch(() => {});
-      toast('Sesión cerrada: el token ya no sirve.', 'ok');
-      S.err = false; return goProto('a1');
+      return conEspera(async () => {
+        try {
+          // Esperar la confirmación del backend antes de cerrar la sesión local.
+          await api('POST', '/auth/logout');
+
+          // Eliminar los datos de autenticación y de la sesión anterior.
+          R2.token = null;
+          R2.tmp = null;
+          R2.correo = null;
+          R2.usuario = null;
+          R2.estudios = [];
+
+          // Limpiar datos relacionados con participantes y consentimientos.
+          R2.participaciones.clear();
+          R2.estudioParticipacion.clear();
+          R2.idsConsentimiento.clear();
+          borrarSensibles();
+
+          R2.eventoTipo = null;
+          R2.documentos = null;
+          R2.altaProceso = null;
+          R2.confirmacion = null;
+          R2.ficha = null;
+          R2.pantallaAnterior = null;
+          S.alta = null;
+          S.err = false;
+          ocultarCambioClave();
+
+          // Volver al ingreso solamente después del cierre exitoso.
+          goProto('a1');
+          toast('Sesión cerrada correctamente.', 'ok');
+        } catch (e) {
+          toast(
+            e.mensaje || 'No se pudo cerrar la sesión. Inténtalo nuevamente.',
+            'err'
+          );
+        }
+      });
     }
+
     // Sin sesión real no se entra a pantallas internas
     if (!R2.token && !id.startsWith('a')) { toast('Primero inicia sesión.', 'err'); return goProto('a1'); }
+
     // Estudios y participantes
-    if (id === 'c1') return conEspera(async () => { try { await cargarEstudios(); } catch (e) { toast(e.mensaje || 'No se pudieron cargar los estudios', 'err'); } goProto('c1'); });
-    if (id === 'c3') return conEspera(async () => { try { await cargarParticipantes(S.ceId); } catch (e) { toast(e.mensaje || 'Sin permiso para ver participantes', 'err'); return; } goProto('c3'); });
+    if (id === 'c1') return conEspera(async () => { try { await cargarEstudios(); } catch (e) { toast(e.mensaje || 'No se pudieron cargar los estudios. Intenta nuevamente.', 'err'); } goProto('c1'); });
+    if (id === 'c3') return conEspera(async () => { try { await cargarParticipantes(S.ceId); } catch (e) { toast(e.mensaje || 'No se pudieron cargar los participantes. Intenta nuevamente.', 'err'); return; } goProto('c3'); });
     if (id === 'b3' && !S.recons) {
       return conEspera(async () => {
         try { await documentosVigentes(); goProto('b3'); }
@@ -617,6 +1037,7 @@
         catch (e) { toast(e.mensaje || e.message || 'No se pudo abrir la ficha.', 'err'); }
       });
     }
+
     // B4: inscribir y luego guardar la decisión con la evidencia requerida.
     // Si falla el segundo POST se conserva el UUID en memoria: no se repite la inscripción.
     if (cur === 'b4' && id === 'b5' && !S.recons) {
@@ -642,11 +1063,39 @@
 
   document.addEventListener('click', (e) => { if (e.target.closest('[data-act="verqr"]')) { e.preventDefault(); e.stopImmediatePropagation(); mostrarQR(); } }, true);
 
+  // Act80: al corregir un dato o reintentar, quitar el aviso anterior.
+  document.addEventListener('input', (e) => {
+    const id = e.target?.id;
+    if (id === 'u' || id === 'pw') {
+      S.err = false;
+      S.errMsg = '';
+      const aviso = document.querySelector('#app .msg.err[role="alert"]');
+      if (aviso) aviso.remove();
+    } else if (id === 'otp' || id === 'rc') {
+      S.otpErr = '';
+      const aviso = document.querySelector('#app .msg.err[role="alert"]');
+      if (aviso) aviso.remove();
+    } else if (id === 'act74-mfa-codigo') {
+      const aviso = qrEl.querySelector('#act74-mfa-error');
+      if (aviso) aviso.textContent = '';
+    } else if (['act73Tipo', 'act73Version', 'act73Archivo'].includes(id)) {
+      const aviso = document.getElementById('act73Error');
+      if (aviso) aviso.textContent = '';
+    }
+  }, true);
+  document.addEventListener('change', (e) => {
+    if (['act73Tipo', 'act73Version', 'act73Archivo'].includes(e.target?.id)) {
+      const aviso = document.getElementById('act73Error');
+      if (aviso) aviso.textContent = '';
+    }
+  }, true);
+
   // Mostrar / ocultar contraseña
+
   document.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-act="verpw"]'); if (!b) return;
+        const b = e.target.closest('[data-act="verpw"], [data-ver]'); if (!b) return;
     e.preventDefault(); e.stopImmediatePropagation();
-    const pw = document.getElementById('pw'); if (!pw) return;
+    const pw = document.getElementById(b.dataset.ver || 'pw'); if (!pw) return;
     const ver = pw.type === 'password'; pw.type = ver ? 'text' : 'password';
     b.textContent = ver ? 'Ocultar' : 'Mostrar'; b.setAttribute('aria-pressed', String(ver));
     b.setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña'); pw.focus();
@@ -671,7 +1120,7 @@
     }
   });
 
-    // Guardar estudio (C2): si el código ya existe, lo edita; si no, lo crea
+  // Guardar estudio (C2): si el código ya existe, lo edita; si no, lo crea
   document.addEventListener('click', async (e) => {
     const b = e.target.closest('[data-act="estGuardar"]'); if (!b) return;
     e.preventDefault(); e.stopImmediatePropagation();
@@ -693,6 +1142,1429 @@
       }
     });
   }, true);
+
+  // ---------- ACT73_DOCUMENTOS_REAL: versiones PDF de consentimiento ----------
+  // Se reemplazan solamente d1/d2; no se simulan archivos de sesiones.
+  const ACT73_MAX_PDF = 10 * 1024 * 1024;
+  const ACT73_VERSION_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$/;
+  let act73Documentos = [];
+  let act73EstudioConsultado = null;
+  let act73ErrorConsulta = '';
+
+  async function consultarDocumentosAct73(codigo) {
+    act73Documentos = [];
+    act73EstudioConsultado = codigo;
+    act73ErrorConsulta = '';
+    const id = uuidDe(codigo);
+    if (!id) return;
+    try {
+      act73Documentos = lista(await api('GET', '/estudios/' + encodeURIComponent(id) + '/documentos-consentimiento'));
+    } catch (e) {
+      act73ErrorConsulta = e.mensaje || 'No se pudieron consultar los documentos del estudio.';
+    }
+  }
+
+  R.d2 = () => {
+    const estudio = STUDIES.find(s => s.id === S.fstudy);
+    const docs = act73EstudioConsultado === S.fstudy ? act73Documentos : [];
+    const error = act73EstudioConsultado === S.fstudy ? act73ErrorConsulta : '';
+    const opciones = STUDIES.map(s => `<option value="${h(s.id)}" ${s.id === S.fstudy ? 'selected' : ''}>${h(s.id)} · ${h(s.n)}</option>`).join('');
+    const permiteCarga = estudio && estudio.e !== 'Cerrado' && ['Director', 'Investigador', 'Asistente'].includes(S.role);
+    return shell('d2', `<div class="card wide">
+      <h2 class="t">Documentos de consentimiento</h2>
+      <p class="sub">Versiones PDF registradas en la API. Los audios, videos y archivos de sesiones no se administran desde este módulo.</p>
+      <div class="fld" style="max-width:580px"><label for="act73Estudio">Estudio</label>
+        <select id="act73Estudio"><option value="">Selecciona un estudio</option>${opciones}</select></div>
+      ${!estudio ? '<div class="msg info">Selecciona un estudio para consultar sus documentos.</div>' :
+        error ? `<div class="msg err" role="alert">${h(error)}</div>` :
+        !docs.length ? '<div class="msg info">No hay documentos registrados para este estudio.</div>' :
+        `<div class="tw"><table><tr><th>Tipo</th><th>Versión</th><th>Estado</th><th>Huella SHA-256</th></tr>
+        ${docs.map(d => `<tr><td>${h(d.tipo || '—')}</td><td>${h(d.version || '—')}</td>
+          <td>${d.vigente ? '<span class="pill ok">Vigente</span>' : '<span class="pill n">Anterior</span>'}</td>
+          <td><code style="overflow-wrap:anywhere">${h(d.documento_hash || '—')}</code></td></tr>`).join('')}
+        </table></div>`}
+      ${estudio?.e === 'Cerrado' ? '<div class="msg warn">Estudio cerrado: no se pueden subir nuevas versiones.</div>' : ''}
+      <div class="acts"><span></span>
+        ${permiteCarga ? '<button type="button" class="btn p" data-go="d1">+ Nueva versión PDF</button>' : ''}
+      </div>
+    </div>`);
+  };
+
+  R.d1 = () => {
+    const estudio = STUDIES.find(s => s.id === S.fstudy);
+    if (!estudio) return shell('d2', `<div class="card"><h2 class="t">Selecciona primero un estudio</h2>${btn('Volver', 'd2', 's')}</div>`);
+    return shell('d2', `<div class="card">
+      <h2 class="t">Subir nueva versión de consentimiento</h2>
+      <p class="sub">Estudio: <b>${h(estudio.id)}</b> · ${h(estudio.n)}</p>
+      <div class="msg info">El nuevo PDF reemplaza la versión vigente del mismo tipo, pero mantiene su registro histórico.</div>
+      <form id="act73-form-doc">
+        <div class="fld"><label for="act73Tipo">Tipo</label><select id="act73Tipo" required>
+          <option value="consentimiento">Consentimiento</option><option value="asentimiento">Asentimiento</option></select></div>
+        <div class="fld"><label for="act73Version">Nueva versión (por ejemplo v1.2)</label>
+          <input id="act73Version" placeholder="v1.2" maxlength="20" required autocomplete="off">
+          <div class="hint">1 a 20 caracteres: letras, números, punto, guion y guion bajo.</div></div>
+        <div class="fld"><label for="act73Archivo">Archivo PDF</label>
+          <input id="act73Archivo" type="file" accept=".pdf,application/pdf" required>
+          <div class="hint">Solo PDF de hasta 10 MB. El servidor revisa también su contenido.</div></div>
+        <p id="act73Error" role="alert" style="color:#B42318;font-size:13px"></p>
+        <div class="acts">${btn('Cancelar', 'd2', 's')}
+          <button type="submit" class="btn p">Subir versión</button></div>
+      </form>
+    </div>`);
+  };
+
+  document.addEventListener('change', e => {
+    if (e.target?.id !== 'act73Estudio') return;
+    S.fstudy = e.target.value || null;
+    conEspera(async () => {
+      await consultarDocumentosAct73(S.fstudy);
+      goProto('d2');
+    });
+  });
+
+  document.addEventListener('submit', e => {
+    if (e.target?.id !== 'act73-form-doc') return;
+    e.preventDefault();
+    if (ocupado) return;
+    const uuid = uuidDe(S.fstudy);
+    const tipo = document.getElementById('act73Tipo').value;
+    const version = document.getElementById('act73Version').value.trim();
+    const archivo = document.getElementById('act73Archivo').files[0];
+    const salida = document.getElementById('act73Error');
+    salida.textContent = '';
+    if (!R2.token || !uuid) { salida.textContent = 'Selecciona un estudio e inicia sesión.'; return; }
+    if (!['Director', 'Investigador', 'Asistente'].includes(S.role)) {
+      salida.textContent = 'Tu rol no puede subir documentos desde esta pantalla.'; return;
+    }
+    if (!['consentimiento', 'asentimiento'].includes(tipo)) { salida.textContent = 'Selecciona un tipo válido.'; return; }
+    if (!ACT73_VERSION_RE.test(version)) { salida.textContent = 'Versión inválida: hasta 20 caracteres, letras, números, punto o guion.'; return; }
+    if (!archivo) { salida.textContent = 'Selecciona un archivo PDF.'; return; }
+    if (!/\.pdf$/i.test(archivo.name) || (archivo.type && archivo.type !== 'application/pdf')) {
+      salida.textContent = 'Solo se admiten archivos PDF.'; return;
+    }
+    if (archivo.size === 0 || archivo.size > ACT73_MAX_PDF) {
+      salida.textContent = 'El PDF debe tener contenido y no superar los 10 MB.'; return;
+    }
+    const form = new FormData();
+    form.append('tipo', tipo);
+    form.append('version', version);
+    form.append('archivo', archivo, archivo.name);
+    conEspera(async () => {
+      try {
+        await apiArchivo('/estudios/' + encodeURIComponent(uuid) + '/documentos-consentimiento', form);
+        await consultarDocumentosAct73(S.fstudy);
+        goProto('d2');
+        toast('Nueva versión registrada correctamente.', 'ok');
+      } catch (err) {
+        const mensaje = err.codigo === 'VERSION_DUPLICADA' ? 'Esa versión ya existe para este tipo de documento.' :
+          err.codigo === 'ARCHIVO_MUY_GRANDE' ? 'El PDF supera 10 MB.' :
+          err.status === 403 ? 'No tienes permiso de carga en este estudio.' :
+          (err.mensaje || 'No se pudo subir el documento.');
+        const aviso = document.getElementById('act73Error');
+        if (aviso) aviso.textContent = mensaje;
+        else toast(mensaje, 'err');
+      }
+    });
+  }, true);
+
+  const act73GoAnterior = go;
+  go = function (id) {
+    if (id === 'a1') {
+      act73Documentos = []; act73EstudioConsultado = null; act73ErrorConsulta = '';
+      return act73GoAnterior(id);
+    }
+    if (!['d1', 'd2'].includes(id) || !R2.token || R2.usuario?.debe_cambiar_password)
+      return act73GoAnterior(id);
+    if (id === 'd2') return conEspera(async () => {
+      await consultarDocumentosAct73(S.fstudy);
+      goProto('d2');
+    });
+    const estudio = STUDIES.find(s => s.id === S.fstudy);
+    if (!estudio) { toast('Selecciona primero un estudio.', 'err'); return go('d2'); }
+    if (estudio.e === 'Cerrado') { toast('No se puede cargar en un estudio cerrado.', 'err'); return; }
+    if (!['Director', 'Investigador', 'Asistente'].includes(S.role)) {
+      toast('Tu rol no permite subir documentos.', 'err'); return;
+    }
+    return goProto('d1');
+  };
+
+
+  // ---------- ACT73_EXPORTACIONES_REAL: API real y ZIP autenticado ----------
+  // Sin endpoint de listado global: se guardan solo IDs de esta sesion;
+  // otro usuario autorizado puede consultar una solicitud con su UUID.
+  const act73ExpConocidas = new Map();
+  let act73ExpUltima = null;
+  let act73ExpSeleccionada = null;
+  const act73ExpUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const act73ExpEstados = {
+    solicitada: 'Pendiente de aprobación',
+    aprobada: 'Aprobada, preparando paquete',
+    lista: 'Lista para descargar',
+    rechazada: 'Rechazada',
+    vencida: 'Vencida'
+  };
+  const act73ExpTextoEstado = e => act73ExpEstados[e] || String(e || '—');
+  const act73ExpFecha = f => f ? new Date(f).toLocaleString('es-CL') : '—';
+  const act73ExpNombreProp = {
+    analisis: 'Análisis',
+    informe: 'Informe',
+    publicacion: 'Publicación'
+  };
+
+  function act73ExpGuardar(x) {
+    if (!x || !act73ExpUuid.test(x.id_exportacion || '')) {
+      throw new Error('La API no entregó un identificador de exportación válido.');
+    }
+    act73ExpConocidas.set(x.id_exportacion, x);
+    return x;
+  }
+
+  // Identificadores internos no son nombres para mostrar en la interfaz.
+  // El UUID completo sigue disponible para copiarlo cuando la API lo exige.
+  function act80ExpReferencia(x) {
+    return x.codigo_exportacion ||
+      ('Solicitud ' + String(x.id_exportacion || '').slice(0, 8).toUpperCase());
+  }
+  function act80ExpCopiar(x) {
+    return `<button type="button" class="lnk" data-act="act80ExpCopiarId"
+      data-id="${h(x.id_exportacion)}">Copiar ID para consultas</button>`;
+  }
+
+  function act73ExpListaHTML() {
+    const items = Array.from(act73ExpConocidas.values());
+    if (!items.length) {
+      return '<div class="msg info">No hay solicitudes consultadas en esta sesión. Puedes solicitar una nueva o buscar una existente por su identificador.</div>';
+    }
+    return `<div class="tw"><table>
+      <thead><tr><th>Código</th><th>Propósito</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody>${items.map(x => `<tr>
+        <td><code>${h(act80ExpReferencia(x))}</code></td>
+        <td>${h(act73ExpNombreProp[x.proposito] || x.proposito)}</td>
+        <td>${h(act73ExpFecha(x.fecha_solicitud))}</td>
+        <td>${h(act73ExpTextoEstado(x.estado))}</td>
+        <td>
+          <button type="button" class="lnk" data-act="act73ExpVer"
+            data-id="${h(x.id_exportacion)}">Consultar</button>
+          ${x.estado === 'lista' ? ` · <button type="button" class="lnk"
+            data-act="act73ExpBajar" data-id="${h(x.id_exportacion)}">Descargar ZIP</button>` : ''}
+        </td>
+      </tr>`).join('')}</tbody></table></div>`;
+  }
+
+  function act73ExpEstudios() {
+    const actual = [S.fstudy, S.study, S.ceId]
+      .find(c => STUDIES.some(s => s.id === c)) || '';
+    return '<option value="">Selecciona un estudio</option>' +
+      STUDIES.map(s => `<option value="${h(s.id)}" ${s.id === actual ? 'selected' : ''}>
+        ${h(s.id)} · ${h(s.n)}</option>`).join('');
+  }
+
+  R.d3 = () => shell('d3', `<div class="card">
+    <h2 class="t">Solicitar exportación de datos</h2>
+    <p class="sub">La API genera un ZIP desidentificado con participantes elegibles:
+      código E-, estado del consentimiento y mes de inscripción.</p>
+    <form id="act73-exp-solicitar">
+      <div class="fld">
+        <label for="act73-exp-estudio">Estudio</label>
+        <select id="act73-exp-estudio" required>${act73ExpEstudios()}</select>
+      </div>
+      <div class="fld">
+        <label for="act73-exp-proposito">Propósito</label>
+        <select id="act73-exp-proposito" required>
+          <option value="analisis">Análisis</option>
+          <option value="informe">Informe</option>
+          <option value="publicacion">Publicación</option>
+        </select>
+      </div>
+      <div class="msg info">La versión actual no admite filtros personalizados.
+        No se exportan nombres, RUT, contacto ni archivos originales.</div>
+      <div class="acts">
+        <button type="button" class="btn s" data-go="d6">Mis solicitudes</button>
+        <button type="submit" class="btn p">Solicitar exportación</button>
+      </div>
+    </form></div>`);
+
+  R.d4 = () => {
+    const x = act73ExpUltima && act73ExpConocidas.get(act73ExpUltima);
+    if (!x) {
+      return shell('d4', `<div class="card">
+        <h2 class="t">Sin solicitud reciente</h2>
+        <p class="sub">Crea una solicitud para ver su resultado.</p>
+        <div class="acts">${btn('Solicitar exportación', 'd3')}</div></div>`);
+    }
+    return shell('d4', `<div class="card">
+      <div class="check">✓</div>
+      <h2 class="t">Solicitud registrada en la API</h2>
+      <p class="sub">${x.estado === 'solicitada'
+        ? 'Pendiente de la decisión del Investigador responsable.'
+        : 'Consulta su estado y descarga el paquete cuando esté disponible.'}</p>
+      <div class="big">${h(act80ExpReferencia(x))}</div>
+      <div class="tw"><table class="sumtbl" style="min-width:0">
+        <tr><td>Identificador para consultas</td>
+          <td><code>${h(act80ExpReferencia(x))}</code> · ${act80ExpCopiar(x)}</td></tr>
+        <tr><td>Propósito</td><td>${h(act73ExpNombreProp[x.proposito] || x.proposito)}</td></tr>
+        <tr><td>Estado</td><td>${h(act73ExpTextoEstado(x.estado))}</td></tr>
+        <tr><td>Vencimiento</td><td>${h(act73ExpFecha(x.fecha_vencimiento))}</td></tr>
+      </table></div>
+      <div class="hint">Conserva el identificador si otra persona autorizada debe aprobarla:
+        la API todavía no ofrece un listado global de solicitudes.</div>
+      <div class="acts">
+        ${btn('Ver solicitudes', 'd6', 's')}
+        ${x.estado === 'lista' ? `<button type="button" class="btn p"
+          data-act="act73ExpBajar" data-id="${h(x.id_exportacion)}">
+          Descargar ZIP</button>` : ''}
+      </div></div>`);
+  };
+
+  R.d6 = () => shell('d6', `<div class="card wide">
+    <h2 class="t">Exportaciones del estudio</h2>
+    <p class="sub">Se muestran solicitudes creadas o consultadas en esta sesión.
+      El backend no dispone aún de un endpoint para listar todas las exportaciones.</p>
+    ${act73ExpListaHTML()}
+    <div class="fld" style="margin-top:18px">
+      <label for="act73-exp-buscar">Consultar solicitud por ID de seguimiento</label>
+      <input id="act73-exp-buscar" type="text" autocomplete="off"
+        placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+      <div class="hint">Si alguien te compartió una solicitud, pega aquí su identificador completo.
+        El servidor solo permite consultar solicitudes propias o del
+        Investigador responsable, con los permisos correspondientes.</div>
+    </div>
+    <div class="acts">
+      <button type="button" class="btn s" data-act="act73ExpBuscar" data-enter>Consultar ID</button>
+      ${btn('Nueva solicitud', 'd3')}
+    </div></div>`);
+
+  R.d7 = () => {
+    const x = act73ExpSeleccionada && act73ExpConocidas.get(act73ExpSeleccionada);
+    if (!x) {
+      return shell('d7', `<div class="card"><h2 class="t">Selecciona una solicitud</h2>
+        <div class="acts">${btn('Volver', 'd6', 's')}</div></div>`);
+    }
+    return shell('d7', `<div class="card">
+      <h2 class="t">Revisar solicitud · ${h(act80ExpReferencia(x))}</h2>
+      <p class="sub">La aprobación está reservada al Investigador responsable del estudio.</p>
+      <div class="tw"><table class="sumtbl" style="min-width:0">
+        <tr><td>Referencia</td><td><code>${h(act80ExpReferencia(x))}</code> · ${act80ExpCopiar(x)}</td></tr>
+        <tr><td>Propósito</td><td>${h(act73ExpNombreProp[x.proposito] || x.proposito)}</td></tr>
+        <tr><td>Estado</td><td>${h(act73ExpTextoEstado(x.estado))}</td></tr>
+        <tr><td>Solicitada el</td><td>${h(act73ExpFecha(x.fecha_solicitud))}</td></tr>
+        <tr><td>Vence</td><td>${h(act73ExpFecha(x.fecha_vencimiento))}</td></tr>
+      </table></div>
+      ${x.estado === 'solicitada' ? `<div class="fld" style="margin-top:16px">
+        <label for="act73-exp-motivo">Motivo de la decisión (mínimo 5 caracteres)</label>
+        <textarea id="act73-exp-motivo" rows="3"
+          placeholder="Explica la aprobación o rechazo, sin datos personales"></textarea>
+      </div>` : ''}
+      <div class="acts">
+        ${btn('Volver', 'd6', 's')}
+        ${x.estado === 'solicitada' && S.role === 'Investigador' ? `
+          <button type="button" class="btn s"
+            data-act="act73ExpDecidir" data-decision="rechazar">Rechazar</button>
+          <button type="button" class="btn p"
+            data-act="act73ExpDecidir" data-decision="aprobar">Aprobar</button>` : ''}
+        ${x.estado === 'lista' ? `<button type="button" class="btn p"
+          data-act="act73ExpBajar" data-id="${h(x.id_exportacion)}">Descargar ZIP</button>` : ''}
+      </div></div>`);
+  };
+
+  async function act73ExpConsultar(id) {
+    if (!act73ExpUuid.test(id)) {
+      throw new Error('Escribe un identificador UUID válido.');
+    }
+    return act73ExpGuardar(
+      await api('GET', '/exportaciones/' + encodeURIComponent(id))
+    );
+  }
+
+  async function act73ExpDescargar(id) {
+    const x = await act73ExpConsultar(id);
+    if (x.estado !== 'lista') {
+      throw new Error('La exportación no está disponible para descarga: ' +
+        act73ExpTextoEstado(x.estado));
+    }
+
+    let respuesta;
+    try {
+      respuesta = await fetch(
+        API + '/exportaciones/' + encodeURIComponent(id) + '/descarga',
+        {
+          method: 'GET',
+          headers: { Authorization: 'Bearer ' + R2.token },
+          cache: 'no-store'
+        }
+      );
+    } catch (_) {
+      throw new Error('No se pudo conectar con la API.');
+    }
+
+    if (!respuesta.ok) {
+      let detalle = {};
+      try { detalle = await respuesta.json(); } catch (_) {}
+      throw new Error(detalle.error?.mensaje ||
+        'La descarga fue rechazada por la API (HTTP ' + respuesta.status + ').');
+    }
+
+    const zip = await respuesta.blob();
+    if (!zip.size) throw new Error('La API devolvió un archivo vacío.');
+
+    const nombre = String(x.codigo_exportacion || 'exportacion')
+      .replace(/[^A-Za-z0-9_-]/g, '') + '.zip';
+
+    const enlace = URL.createObjectURL(zip);
+    try {
+      const a = document.createElement('a');
+      a.href = enlace;
+      a.download = nombre;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } finally {
+      setTimeout(() => URL.revokeObjectURL(enlace), 30000);
+    }
+    toast('Descarga ZIP iniciada.', 'ok');
+  }
+
+  document.addEventListener('submit', e => {
+    if (e.target?.id !== 'act73-exp-solicitar') return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    if (ocupado || !R2.token || R2.usuario?.debe_cambiar_password) return;
+
+    const codigo = document.getElementById('act73-exp-estudio')?.value || '';
+    const proposito = document.getElementById('act73-exp-proposito')?.value || '';
+    const uuid = uuidDe(codigo);
+
+    if (!uuid) {
+      toast('Selecciona un estudio disponible.', 'err');
+      return;
+    }
+    if (!['analisis', 'informe', 'publicacion'].includes(proposito)) {
+      toast('Selecciona un propósito válido.', 'err');
+      return;
+    }
+
+    conEspera(async () => {
+      try {
+        const x = act73ExpGuardar(
+          await api('POST',
+            '/estudios/' + encodeURIComponent(uuid) + '/exportaciones',
+            { proposito, filtros: {} })
+        );
+        act73ExpUltima = x.id_exportacion;
+        S.fstudy = codigo;
+        goProto('d4');
+        toast('Solicitud creada en la API.', 'ok');
+      } catch (err) {
+        toast(err.mensaje || err.message || 'No se pudo solicitar la exportación.', 'err');
+      }
+    });
+  }, true);
+
+  const act73ExpAcciones = new Set([
+    'act73ExpBuscar', 'act73ExpVer', 'act73ExpDecidir', 'act73ExpBajar'
+  ]);
+
+  document.addEventListener('click', e => {
+    const boton = e.target.closest('[data-act]');
+    if (!boton || !act73ExpAcciones.has(boton.dataset.act)) return;
+
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    if (ocupado || !R2.token || R2.usuario?.debe_cambiar_password) return;
+
+    const accion = boton.dataset.act;
+    const id = accion === 'act73ExpBuscar'
+      ? (document.getElementById('act73-exp-buscar')?.value || '').trim()
+      : accion === 'act73ExpDecidir'
+        ? act73ExpSeleccionada
+        : boton.dataset.id;
+
+    conEspera(async () => {
+      try {
+        if (accion === 'act73ExpBajar') {
+          await act73ExpDescargar(id);
+          return;
+        }
+
+        if (accion === 'act73ExpDecidir') {
+          if (S.role !== 'Investigador') {
+            throw new Error('Solo el Investigador responsable puede decidir.');
+          }
+
+          const motivo =
+            (document.getElementById('act73-exp-motivo')?.value || '').trim();
+          const decision = boton.dataset.decision;
+
+          if (motivo.length < 5) {
+            throw new Error('El motivo debe tener al menos 5 caracteres.');
+          }
+          if (!['aprobar', 'rechazar'].includes(decision)) {
+            throw new Error('Decisión inválida.');
+          }
+
+          act73ExpGuardar(
+            await api('PATCH',
+              '/exportaciones/' + encodeURIComponent(id) + '/aprobacion',
+              { decision, motivo })
+          );
+          toast('Decisión registrada por la API.', 'ok');
+          goProto('d7');
+          return;
+        }
+
+        const x = await act73ExpConsultar(id);
+        act73ExpSeleccionada = x.id_exportacion;
+        goProto('d7');
+      } catch (err) {
+        toast(err.mensaje || err.message || 'Operación no disponible.', 'err');
+      }
+    });
+  }, true);
+
+  const act73ExpGoAnterior = go;
+  go = function(id) {
+    if (id === 'a1') {
+      const salida = act73ExpGoAnterior(id);
+      Promise.resolve(salida).then(() => {
+        if (!R2.token) {
+          act73ExpConocidas.clear();
+          act73ExpUltima = null;
+          act73ExpSeleccionada = null;
+        }
+      });
+      return salida;
+    }
+
+    if (!['d3', 'd4', 'd6', 'd7'].includes(id) ||
+        !R2.token || R2.usuario?.debe_cambiar_password) {
+      return act73ExpGoAnterior(id);
+    }
+    return goProto(id);
+  };
+
+  // ---------- ACT73_CUENTAS_REAL: administración de cuentas mediante API ----------
+  let act73Usuarios = [];
+  const act73Roles = ['Director', 'Soporte', 'Investigador', 'Asistente', 'Estudiante', 'Invitado'];
+  const act73FechaCorta = f => f ? String(f).slice(0, 10) : '—';
+
+  // La contraseña temporal solo se muestra una vez, sin guardarla en storage.
+  const act73ClaveDialogo = document.createElement('div');
+  act73ClaveDialogo.id = 'act73-clave-dialogo';
+  act73ClaveDialogo.setAttribute('role', 'dialog');
+  act73ClaveDialogo.setAttribute('aria-modal', 'true');
+  act73ClaveDialogo.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(11,14,50,.85);z-index:10020;align-items:center;justify-content:center;padding:16px';
+  act73ClaveDialogo.innerHTML = `<div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:440px;color:#131315;font-family:Inter,Arial,sans-serif">
+    <h2 style="color:#000B78;margin:0 0 10px">Contraseña temporal</h2>
+    <p id="act73-clave-cuenta" style="overflow-wrap:anywhere"></p>
+    <p style="font-size:13px">Cópiala y entrégala mediante un canal seguro. No volverá a mostrarse al cerrar esta ventana.</p>
+    <div id="act73-clave-valor" style="font-size:20px;font-weight:700;letter-spacing:.04em;padding:12px;background:#f2f3fa;border-radius:8px;user-select:all;overflow-wrap:anywhere"></div>
+    <button type="button" id="act73-clave-cerrar" class="btn p" style="margin-top:18px">Ya la guardé; cerrar</button>
+  </div>`;
+
+  document.body.appendChild(act73ClaveDialogo);
+
+  function act73OcultarClave() {
+    act73ClaveDialogo.querySelector('#act73-clave-valor').textContent = '';
+    act73ClaveDialogo.querySelector('#act73-clave-cuenta').textContent = '';
+    act73ClaveDialogo.style.display = 'none';
+  }
+
+  function act73MostrarClave(correo, clave) {
+    act73ClaveDialogo.querySelector('#act73-clave-cuenta').textContent = 'Cuenta: ' + correo;
+    act73ClaveDialogo.querySelector('#act73-clave-valor').textContent = clave;
+    act73ClaveDialogo.style.display = 'flex';
+    act73ClaveDialogo.querySelector('#act73-clave-cerrar').focus();
+  }
+
+  act73ClaveDialogo.querySelector('#act73-clave-cerrar')
+    .addEventListener('click', act73OcultarClave);
+
+  const act73AdminPermitido = () =>
+    R2.token && !R2.usuario?.debe_cambiar_password &&
+    ['Director', 'Soporte'].includes(S.role);
+
+  const act73PantallaCuentas = () => S.role === 'Soporte' ? 'e3' : 'e1';
+
+  async function act73CargarUsuarios() {
+    act73Usuarios = lista(await api('GET', '/usuarios'));
+  }
+
+  function act73FilaUsuario(u) {
+    const estadoVisual = window.PlaGesAct80Jueves.estadoCuenta(u);
+    const puedeGestionar = S.role === 'Director' || u.nombre_rol !== 'Director';
+    const esPropio = u.correo?.toLowerCase() === R2.usuario?.correo?.toLowerCase();
+    const esDirector = S.role === 'Director';
+
+    const opcionesRol = act73Roles
+      .filter(r => esDirector || r !== 'Director')
+      .map(r => `<option value="${h(r)}" ${r === u.nombre_rol ? 'selected' : ''}>${h(r)}</option>`)
+      .join('');
+
+    return `<tr>
+      <td><b>${h(u.nombre)}</b><div class="hint">${h(u.correo)}</div></td>
+      <td>${puedeGestionar && !esPropio
+        ? `<select data-act73-rol="1" aria-label="Rol de ${h(u.correo)}">${opcionesRol}</select>
+           <button type="button" class="lnk" data-act="act73UserRol"
+             data-id="${h(u.id_usuario)}">Guardar rol</button>`
+        : h(u.nombre_rol)}</td>
+      <td><span class="pill ${estadoVisual === 'Activa' ? 'ok' : 'err'}">${h(estadoVisual)}</span></td>
+      <td>${u.mfa_activo ? 'Configurado' : 'Pendiente'}</td>
+      <td>${h(act73FechaCorta(u.fecha_expiracion))}</td>
+      <td>${puedeGestionar && !esPropio ? `
+        <button type="button" class="lnk" data-act="act73UserBloqueo"
+          data-id="${h(u.id_usuario)}"
+          data-activo="${u.activo ? 'false' : 'true'}">
+          ${u.activo ? 'Bloquear' : 'Activar'}
+        </button> ·
+        <button type="button" class="lnk" data-act="act73UserClave"
+          data-id="${h(u.id_usuario)}">Restablecer clave</button> ·
+        <button type="button" class="lnk" data-act="act73UserMfa"
+          data-id="${h(u.id_usuario)}">Reiniciar MFA</button>
+        ` : 'Sin permisos'}
+      </td>
+    </tr>`;
+  }
+
+  function act73RenderUsuarios(pantalla) {
+    const titulo = pantalla === 'e3' ? 'Cuentas de usuario' : 'Usuarios y roles';
+
+    return shell(pantalla, `<div class="card wide">
+      <div class="top" style="margin:0 0 14px">
+        <div>
+          <h2 class="t">${titulo}</h2>
+          <p class="sub" style="margin:0">
+            Cuentas obtenidas de la API real. Los cambios se auditan en el servidor.
+          </p>
+        </div>
+        ${btn('+ Nueva cuenta', 'e2')}
+      </div>
+
+      <div class="tw"><table>
+        <thead><tr>
+          <th>Nombre / correo</th><th>Rol</th><th>Estado</th>
+          <th>MFA</th><th>Vence</th><th>Acciones</th>
+        </tr></thead>
+        <tbody>${act73Usuarios.map(act73FilaUsuario).join('') ||
+          '<tr><td colspan="6">No hay cuentas disponibles.</td></tr>'}</tbody>
+      </table></div>
+
+      <div class="hint" style="margin-top:12px">
+        Solo Director puede administrar cuentas de Director.
+        Restablecer una contraseña o reiniciar MFA puede cerrar sesiones activas.
+      </div>
+    </div>`);
+  }
+
+  R.e1 = () => act73RenderUsuarios('e1');
+  R.e3 = () => act73RenderUsuarios('e3');
+
+  R.e2 = () => shell('e2', `<div class="card">
+    <h2 class="t">Crear cuenta</h2>
+    <p class="sub">
+      La API entrega una contraseña temporal que se muestra una sola vez.
+    </p>
+
+    <form id="act73-user-form">
+      <div class="fld">
+        <label for="act73-user-nombre">Nombre</label>
+        <input id="act73-user-nombre" required maxlength="150" autocomplete="off">
+      </div>
+      <div class="fld">
+        <label for="act73-user-correo">Correo</label>
+        <input id="act73-user-correo" type="email" required autocomplete="off">
+      </div>
+      <div class="fld">
+        <label for="act73-user-rol">Rol</label>
+        <select id="act73-user-rol">
+          ${act73Roles
+            .filter(r => S.role === 'Director' || r !== 'Director')
+            .map(r => `<option value="${h(r)}">${h(r)}</option>`)
+            .join('')}
+        </select>
+      </div>
+      <div class="fld">
+        <label for="act73-user-fin">
+          Fecha de término (requerida para roles temporales)
+        </label>
+        <input id="act73-user-fin" type="date">
+        <div class="hint">
+          El servidor valida qué roles necesitan fecha de expiración.
+        </div>
+      </div>
+      <div class="acts">
+        <button class="btn s" type="button"
+          data-go="${act73PantallaCuentas()}">Cancelar</button>
+        <button type="submit" class="btn p">Crear cuenta</button>
+      </div>
+    </form>
+  </div>`);
+
+  document.addEventListener('submit', e => {
+    if (e.target?.id !== 'act73-user-form') return;
+
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    if (ocupado || !act73AdminPermitido()) return;
+
+    const nombre = (document.getElementById('act73-user-nombre')?.value || '').trim();
+    const correo = (document.getElementById('act73-user-correo')?.value || '')
+      .trim().toLowerCase();
+    const rol = document.getElementById('act73-user-rol')?.value || '';
+    const fecha = document.getElementById('act73-user-fin')?.value || '';
+
+    if (!nombre || !correo || !act73Roles.includes(rol)) {
+      return toast('Completa los campos obligatorios.', 'err');
+    }
+
+    conEspera(async () => {
+      try {
+        const creado = await api('POST', '/usuarios', {
+          nombre,
+          correo,
+          rol,
+          ...(fecha ? { fecha_expiracion: fecha } : {})
+        });
+
+        try {
+          await act73CargarUsuarios();
+          goProto(act73PantallaCuentas());
+        } catch (_) {
+          toast('Cuenta creada; no se pudo actualizar el listado.', 'err');
+        }
+
+        if (creado.password_temporal) {
+          act73MostrarClave(creado.correo || correo, creado.password_temporal);
+        } else {
+          toast('Cuenta creada sin contraseña temporal en la respuesta.', 'err');
+        }
+      } catch (err) {
+        toast(err.mensaje || err.message || 'No se pudo crear la cuenta.', 'err');
+      }
+    });
+  }, true);
+
+  const act73AccionesUsuario = new Set([
+    'act73UserBloqueo',
+    'act73UserClave',
+    'act73UserMfa',
+    'act73UserRol'
+  ]);
+
+  document.addEventListener('click', e => {
+    const boton = e.target.closest('[data-act]');
+    if (!boton || !act73AccionesUsuario.has(boton.dataset.act)) return;
+
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    if (ocupado || !act73AdminPermitido()) return;
+
+    const user = act73Usuarios.find(u => u.id_usuario === boton.dataset.id);
+
+    if (!user) {
+      return toast('La cuenta ya no está disponible. Actualiza el listado.', 'err');
+    }
+
+    if (S.role !== 'Director' && user.nombre_rol === 'Director') {
+      return toast('No tienes permiso para administrar Director.', 'err');
+    }
+
+    const accion = boton.dataset.act;
+    const cuerpo =
+      accion === 'act73UserBloqueo' ? { activo: boton.dataset.activo === 'true' } :
+      accion === 'act73UserClave' ? { restablecer_password: true } :
+      accion === 'act73UserMfa' ? { reiniciar_mfa: true } :
+      { rol: boton.closest('tr')?.querySelector('select[data-act73-rol]')?.value };
+
+    if (
+      accion === 'act73UserRol' &&
+      (!act73Roles.includes(cuerpo.rol) || cuerpo.rol === user.nombre_rol)
+    ) {
+      return toast('Selecciona un rol diferente.', 'err');
+    }
+
+    const textoAccion =
+      accion === 'act73UserBloqueo' ? (cuerpo.activo ? 'activar' : 'bloquear') :
+      accion === 'act73UserClave' ? 'restablecer la contraseña de' :
+      accion === 'act73UserMfa' ? 'reiniciar el MFA de' :
+      'cambiar el rol de';
+
+    if (!confirm(`¿Confirmas ${textoAccion} ${user.correo}?`)) return;
+
+    conEspera(async () => {
+      try {
+        const actualizado = await api(
+          'PATCH',
+          '/usuarios/' + encodeURIComponent(user.id_usuario),
+          cuerpo
+        );
+
+        try {
+          await act73CargarUsuarios();
+          goProto(act73PantallaCuentas());
+        } catch (_) {
+          toast('Cambio aplicado; no se pudo actualizar el listado.', 'err');
+        }
+
+        if (actualizado.password_temporal) {
+          act73MostrarClave(user.correo, actualizado.password_temporal);
+        } else {
+          toast('Cambio aplicado en la API.', 'ok');
+        }
+      } catch (err) {
+        toast(err.mensaje || err.message || 'No se pudo actualizar la cuenta.', 'err');
+      }
+    });
+  }, true);
+
+  const act73CuentasGoAnterior = go;
+
+  go = function(id) {
+    if (id === 'a1') {
+      const salida = act73CuentasGoAnterior(id);
+
+      Promise.resolve(salida).then(() => {
+        if (!R2.token) {
+          act73Usuarios = [];
+          act73OcultarClave();
+        }
+      });
+
+      return salida;
+    }
+
+    if (!['e1', 'e2', 'e3'].includes(id)) {
+      return act73CuentasGoAnterior(id);
+    }
+
+    if (!act73AdminPermitido()) {
+      toast('Solo Director y Soporte pueden administrar cuentas.', 'err');
+      return;
+    }
+
+    if (id === 'e2') return goProto('e2');
+
+    return conEspera(async () => {
+      try {
+        await act73CargarUsuarios();
+        goProto(id);
+      } catch (err) {
+        toast(
+          err.mensaje || err.message || 'No se pudieron consultar las cuentas.',
+          'err'
+        );
+      }
+    });
+  };
+
+  // ---------- ACT73_ASIGNAR_ESTUDIO_REAL: asignación mínima de usuarios ----------
+  const act73AsigUuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  let act73AsigEstudio = null;
+  let act73AsigMiembros = [];
+
+  async function act73AsigConsultar(codigo) {
+    const id = uuidDe(codigo);
+    if (!id) throw new Error('Selecciona un estudio válido.');
+    const respuesta = await api(
+      'GET', '/estudios/' + encodeURIComponent(id) + '/membresias'
+    );
+    act73AsigMiembros = lista(respuesta);
+    act73AsigEstudio = codigo;
+  }
+
+  R.c4 = () => {
+    const codigo = act73AsigEstudio || S.ceId;
+    const estudio = STUDIES.find(s => s.id === codigo);
+
+    return shell('c1', `<div class="card wide">
+      <h2 class="t">Asignar usuario a un estudio</h2>
+      <p class="sub">Consulta las membresías reales y asigna una cuenta existente.
+        El servidor verifica los permisos del Investigador.</p>
+
+      <div class="fld" style="max-width:580px">
+        <label for="act73-asig-estudio">Estudio</label>
+        <select id="act73-asig-estudio">
+          ${STUDIES.map(s =>
+            `<option value="${h(s.id)}" ${s.id === codigo ? 'selected' : ''}>
+              ${h(s.id)} · ${h(s.n)}
+            </option>`
+          ).join('')}
+        </select>
+      </div>
+
+      ${estudio ? `<div class="msg info">
+        Estudio: <b>${h(estudio.id)} · ${h(estudio.n)}</b>
+      </div>` : ''}
+
+      <h3 style="font-size:16px;margin:18px 0 8px">Integrantes actuales</h3>
+      <div class="tw"><table>
+        <tr><th>Nombre</th><th>Rol</th><th>Consultar</th><th>Vence</th></tr>
+        ${act73AsigMiembros.map(m => `<tr>
+          <td>${h(m.nombre)}<div class="hint">${h(m.correo)}</div></td>
+          <td>${h(m.nombre_rol)}</td>
+          <td>${m.puede_consultar ? 'Sí' : 'No'}</td>
+          <td>${h(m.fecha_fin ? String(m.fecha_fin).slice(0, 10) : '—')}</td>
+        </tr>`).join('') ||
+        '<tr><td colspan="4">No hay membresías vigentes visibles.</td></tr>'}
+      </table></div>
+
+      <h3 style="font-size:16px;margin:20px 0 8px">Nueva asignación</h3>
+
+      <form id="act73-asig-form">
+        <div class="fld">
+          <label for="act73-asig-usuario">Identificador de la cuenta</label>
+          <input id="act73-asig-usuario" required maxlength="36"
+            autocomplete="off"
+            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+          <div class="hint">
+            Por ahora, la API exige este identificador para agregar a alguien.
+            Solicítalo al administrador de cuentas. No se muestra en los listados públicos.
+          </div>
+        </div>
+
+        <div class="fld">
+          <label for="act73-asig-fin">Acceso hasta (opcional)</label>
+          <input id="act73-asig-fin" type="date">
+        </div>
+
+        <div class="msg info">
+          La asignación otorgará solo el permiso <b>Consultar</b>.
+          Los demás permisos permanecerán desactivados.
+        </div>
+
+        <div class="acts">
+          ${btn('Volver', 'c3', 's')}
+          <button type="submit" class="btn p">
+            Asignar a este estudio
+          </button>
+        </div>
+      </form>
+    </div>`);
+  };
+
+  document.addEventListener('change', e => {
+    if (e.target?.id !== 'act73-asig-estudio' ||
+        ocupado || S.role !== 'Investigador') return;
+
+    const codigo = e.target.value;
+
+    conEspera(async () => {
+      try {
+        await act73AsigConsultar(codigo);
+        S.ceId = codigo;
+        goProto('c4');
+      } catch (err) {
+        toast(err.mensaje || err.message ||
+          'No fue posible cargar las membresías.', 'err');
+      }
+    });
+  });
+
+  document.addEventListener('submit', e => {
+    if (e.target?.id !== 'act73-asig-form') return;
+
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    if (ocupado || !R2.token || S.role !== 'Investigador' ||
+        R2.usuario?.debe_cambiar_password) return;
+
+    const usuario =
+      (document.getElementById('act73-asig-usuario')?.value || '').trim();
+    const fin =
+      document.getElementById('act73-asig-fin')?.value || '';
+
+    if (!act73AsigUuidRe.test(usuario)) {
+      return toast('Introduce un UUID válido.', 'err');
+    }
+
+    const idEstudio = uuidDe(act73AsigEstudio);
+
+    if (!idEstudio) {
+      return toast('Estudio no disponible.', 'err');
+    }
+
+    if (!confirm('¿Asignar este usuario al estudio con permiso de consulta?')) {
+      return;
+    }
+
+    conEspera(async () => {
+      try {
+        await api(
+          'POST',
+          '/estudios/' + encodeURIComponent(idEstudio) + '/membresias',
+          {
+            id_usuario: usuario,
+            puede_consultar: true,
+            ...(fin ? { fecha_fin: fin } : {})
+          }
+        );
+
+        await act73AsigConsultar(act73AsigEstudio);
+        goProto('c4');
+        toast('Usuario asignado al estudio correctamente.', 'ok');
+      } catch (err) {
+        toast(err.mensaje || err.message ||
+          'No se pudo asignar el usuario.', 'err');
+      }
+    });
+  }, true);
+
+  const act73AsigGoAnterior = go;
+
+  go = function(id) {
+    if (id === 'a1') {
+      const salida = act73AsigGoAnterior(id);
+
+      Promise.resolve(salida).then(() => {
+        if (!R2.token) {
+          act73AsigEstudio = null;
+          act73AsigMiembros = [];
+        }
+      });
+
+      return salida;
+    }
+
+    if (id !== 'c4') return act73AsigGoAnterior(id);
+
+    if (S.role !== 'Investigador' || !R2.token ||
+        R2.usuario?.debe_cambiar_password) {
+      toast('Solo el Investigador autorizado puede asignar usuarios.', 'err');
+      return;
+    }
+
+    return conEspera(async () => {
+      try {
+        await act73AsigConsultar(S.ceId || STUDIES[0]?.id);
+        goProto('c4');
+      } catch (err) {
+        toast(err.mensaje || err.message ||
+          'No se pudo consultar el equipo.', 'err');
+      }
+    });
+  };
+
   // Arranque: siempre desde el ingreso
   S.err = false; goProto('a1');
+  // Actividad 80: búsqueda y paginación de estudios desde el servidor.
+  // La API conserva una respuesta de lista para las peticiones sin "pagina".
+  const act80Helper = window.PlaGesAct80Estudios;
+  if (!act80Helper) throw new Error('Falta act80-estudios.js');
+
+  const act80Estado = {
+    q: '', estado: '', soloMios: false, orden: 'fecha',
+    pagina: 1, limite: 20, total: 0, datos: [],
+    modo: '', error: '', cargando: false, iniciado: false,
+    secuencia: 0, espera: null
+  };
+  let act80SesionAnterior = R2.token;
+
+  function act80Pintar() {
+    if (document.getElementById('buscaEst')) {
+      const activo = document.activeElement;
+      const recuperarFoco = activo && activo.id === 'buscaEst';
+      const inicio = recuperarFoco ? activo.selectionStart : null;
+      goProto('c1');
+      if (recuperarFoco) {
+        const nuevo = document.getElementById('buscaEst');
+        if (nuevo) {
+          nuevo.focus();
+          try {
+            if (inicio !== null) nuevo.setSelectionRange(inicio, inicio);
+          } catch (_) { /* Algunas entradas search no admiten selección. */ }
+        }
+      }
+    }
+  }
+
+  async function act80Consultar() {
+    const n = ++act80Estado.secuencia;
+    act80Estado.cargando = true;
+    act80Estado.error = '';
+    try {
+      const ruta = '/estudios?' + act80Helper.consulta(act80Estado);
+      const respuesta = await api('GET', ruta);
+      if (n !== act80Estado.secuencia) return;
+      const resultado = act80Helper.normalizar(respuesta, act80Estado);
+      act80Estado.datos = resultado.datos;
+      act80Estado.total = resultado.total;
+      act80Estado.pagina = resultado.pagina;
+      act80Estado.modo = resultado.modo;
+      R2.estudios = resultado.datos;
+      for (const e of resultado.datos) {
+        const codigo = e.codigo_estudio || e.codigo;
+        if (!codigo || !e.id_estudio) continue;
+        const anterior = STUDIES.find(s => s.id === codigo);
+        const info = {
+          id: codigo, n: e.nombre, e: ESTADO[e.estado] || e.estado,
+          cec: e.estado === 'activo' ? 'Estudio activo' : 'Pendiente de aprobación',
+          cecOk: e.estado === 'activo', _uuid: e.id_estudio
+        };
+        if (anterior) Object.assign(anterior, info);
+        else STUDIES.push({ ...info, p: '—' });
+      }
+    } catch (error) {
+      if (n !== act80Estado.secuencia) return;
+      act80Estado.error = error.mensaje || error.message || 'No se pudieron consultar los estudios.';
+      act80Estado.datos = [];
+      act80Estado.total = 0;
+    } finally {
+      if (n === act80Estado.secuencia) {
+        act80Estado.cargando = false;
+        act80Pintar();
+      }
+    }
+  }
+
+  function act80ReiniciarBusqueda() {
+    act80Estado.pagina = 1;
+    ++act80Estado.secuencia; // invalida respuestas anteriores
+    clearTimeout(act80Estado.espera);
+    act80Estado.espera = setTimeout(act80Consultar, 300);
+  }
+
+  function act80Esc(s) { return h(String(s == null ? '' : s)); }
+
+  function act80Tabla() {
+    const filas = act80Estado.datos.map(e => {
+      const codigo = e.codigo_estudio || e.codigo;
+      const previo = STUDIES.find(s => s.id === codigo) || {};
+      const nombre = e.nombre || previo.n || '—';
+      const estado = ESTADO[e.estado] || e.estado || '—';
+      const participantes = previo.p == null ? '—' : previo.p;
+      const esActivo = e.estado === 'activo';
+      const esCerrado = e.estado === 'cerrado';
+      const puedeEditar = S.role === 'Investigador' && !esCerrado;
+      const puedeCerrar = S.role === 'Director' && esActivo;
+      return `<tr><td><code>${act80Esc(codigo)}</code></td>` +
+        `<td>${act80Esc(nombre)}</td>` +
+        `<td><span class="pill ${esActivo ? 'ok' : esCerrado ? 'err' : 'n'}">${act80Esc(estado)}</span></td>` +
+        `<td>${esActivo ? 'Estudio activo' : 'Pendiente de aprobación'}</td>` +
+        `<td>${act80Esc(participantes)}</td><td>` +
+        (puedeEditar ? `<button class="lnk" data-act="stuEdit" data-id="${act80Esc(codigo)}">Editar</button> · ` : '') +
+        `<button class="lnk" data-act="stuVer" data-id="${act80Esc(codigo)}">Ver participantes</button>` +
+        (puedeCerrar ? ` · <button class="lnk" data-act="closeSel" data-id="${act80Esc(codigo)}">Cerrar</button>` : '') +
+        '</td></tr>';
+    }).join('');
+
+    const textoVacio = act80Estado.cargando ? 'Consultando estudios…' :
+      act80Estado.error ? 'No se pudieron cargar los resultados.' :
+      'No se encontraron estudios con estos filtros.';
+    return `<div class="tw"><table><thead><tr><th>Código</th><th>Estudio</th><th>Estado</th>` +
+      '<th>Comité de Ética</th><th>Participantes</th><th>Acciones</th></tr></thead>' +
+      `<tbody>${filas || `<tr><td colspan="6">${textoVacio}</td></tr>`}</tbody></table></div>`;
+  }
+
+  const act80C1Anterior = R.c1;
+  R.c1 = () => {
+    if (act80SesionAnterior !== R2.token) {
+      act80SesionAnterior = R2.token;
+      clearTimeout(act80Estado.espera);
+      ++act80Estado.secuencia;
+      Object.assign(act80Estado, { q: '', estado: '', soloMios: false, pagina: 1, total: 0, datos: [], modo: '', error: '', cargando: false, iniciado: false });
+    }
+    const html = act80C1Anterior();
+    const inputOriginal = /<div class="fld"><input id="buscaEst"[^>]*><\/div>/;
+    const tablaOriginal = /<div class="tw"><table>[\s\S]*?<\/table><\/div>/;
+    if (!inputOriginal.test(html) || !tablaOriginal.test(html)) {
+      return html; // No interrumpir otras pantallas ante cambios del prototipo.
+    }
+    const opciones = [['', 'Todos los estados'], ['activo', 'Activo'],
+      ['borrador', 'Borrador'], ['cerrado', 'Cerrado']];
+    const filtros = `<div class="grid2" style="margin:12px 0">` +
+      `<div class="fld"><label for="buscaEst">Buscar por código o nombre</label>` +
+      `<input id="buscaEst" type="search" value="${act80Esc(act80Estado.q)}" placeholder="Buscar estudios" autocomplete="off"></div>` +
+      `<div class="fld"><label for="act80Estado">Estado</label><select id="act80Estado">` +
+      opciones.map(([v, t]) => `<option value="${v}" ${act80Estado.estado === v ? 'selected' : ''}>${t}</option>`).join('') +
+      '</select></div></div>' +
+      `<div class="acts" style="flex-wrap:wrap;gap:12px">` +
+      `<label><input id="act80SoloMios" type="checkbox" ${act80Estado.soloMios ? 'checked' : ''}> Solo mis estudios</label>` +
+      `<button type="button" class="btn s" data-act="act80Limpiar">Borrar búsqueda</button></div>`;
+    const inicio = act80Estado.datos.length ? (act80Estado.pagina - 1) * act80Estado.limite + 1 : 0;
+    const fin = act80Estado.datos.length ? Math.min(act80Estado.pagina * act80Estado.limite, act80Estado.total) : 0;
+    const rango = act80Estado.total
+      ? `Mostrando ${inicio}–${fin} de ${act80Estado.total}`
+      : 'Mostrando 0 de 0';
+    const maxPaginas = Math.max(1, Math.ceil(act80Estado.total / act80Estado.limite));
+    const pie = `<div class="acts" style="justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:12px">` +
+      `<span aria-live="polite">${rango}${act80Estado.cargando ? ' · Cargando…' : ''}</span>` +
+      `<div><button type="button" class="btn s" data-act="act80Anterior" ${act80Estado.pagina <= 1 ? 'disabled' : ''}>Anterior</button> ` +
+      `<button type="button" class="btn s" data-act="act80Siguiente" ${act80Estado.pagina >= maxPaginas ? 'disabled' : ''}>Siguiente</button></div></div>` +
+      (act80Estado.modo === 'compatibilidad' ?
+        '<p class="hint">Modo temporal: el backend todavía devuelve una lista sin paginar. Los filtros se aplican localmente hasta que se integre la API de búsqueda.</p>' : '') +
+      (act80Estado.error ? `<div class="msg err" role="alert">${act80Esc(act80Estado.error)}</div>` : '');
+    if (!act80Estado.iniciado) {
+      act80Estado.iniciado = true;
+      Promise.resolve().then(act80Consultar);
+    }
+    return html.replace(inputOriginal, filtros).replace(tablaOriginal, act80Tabla() + pie);
+  };
+
+  // Interceptar antes del buscador local antiguo para evitar filtrados duplicados.
+  document.addEventListener('input', e => {
+    if (e.target && e.target.id === 'buscaEst') {
+      e.stopImmediatePropagation();
+      act80Estado.q = e.target.value;
+      act80ReiniciarBusqueda();
+    }
+  }, true);
+  document.addEventListener('change', e => {
+    if (!e.target) return;
+    if (e.target.id === 'act80Estado') {
+      act80Estado.estado = e.target.value;
+      act80ReiniciarBusqueda();
+    } else if (e.target.id === 'act80SoloMios') {
+      act80Estado.soloMios = e.target.checked;
+      act80ReiniciarBusqueda();
+    }
+  }, true);
+  document.addEventListener('click', e => {
+    const boton = e.target.closest('[data-act]');
+    if (!boton) return;
+    const accion = boton.dataset.act;
+    if (!['act80Anterior', 'act80Siguiente', 'act80Limpiar'].includes(accion)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (accion === 'act80Limpiar') {
+      act80Estado.q = '';
+      act80Estado.estado = '';
+      act80Estado.soloMios = false;
+      act80ReiniciarBusqueda();
+    } else {
+      const paginas = Math.max(1, Math.ceil(act80Estado.total / act80Estado.limite));
+      act80Estado.pagina = Math.max(1, Math.min(paginas,
+        act80Estado.pagina + (accion === 'act80Siguiente' ? 1 : -1)));
+      clearTimeout(act80Estado.espera);
+      act80Consultar();
+    }
+  }, true);
+
+  document.addEventListener('click', async (e) => {
+    const boton = e.target.closest('[data-act="act80ExpCopiarId"]');
+    if (!boton) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    try {
+      await navigator.clipboard.writeText(boton.dataset.id);
+      toast('Identificador copiado. Compártelo solo con personas autorizadas.', 'ok');
+    } catch (_) {
+      toast('No se pudo copiar. Usa un navegador que permita el portapapeles.', 'err');
+    }
+  }, true);
+
+  // ---------- Act80 jueves: busqueda y paginacion de participantes (C3) ----------
+  const act80Jueves = window.PlaGesAct80Jueves;
+  if (!act80Jueves) throw new Error('Falta Act80 jueves en flujo-real.js.');
+  const act80Part = {
+    estudio: null, token: null, q: '', estado: '', pagina: 1, limite: 20,
+    total: 0, datos: [], modo: '', error: '', cargando: false,
+    secuencia: 0, espera: null
+  };
+
+  function act80PartReiniciarEstudio() {
+    clearTimeout(act80Part.espera);
+    ++act80Part.secuencia;
+    Object.assign(act80Part, {
+      estudio: S.ceId, token: R2.token, q: '', estado: '', pagina: 1,
+      total: 0, datos: [], modo: '', error: '', cargando: false
+    });
+  }
+
+  function act80PartPintar() {
+    if (cur !== 'c3' || S.tab === 's' ||
+        !document.getElementById('act80PartBuscar')) return;
+    const actual = document.activeElement;
+    const foco = actual?.id === 'act80PartBuscar';
+    const pos = foco ? actual.selectionStart : null;
+    goProto('c3');
+    if (foco) {
+      const nuevo = document.getElementById('act80PartBuscar');
+      nuevo?.focus();
+      if (pos !== null) {
+        try { nuevo?.setSelectionRange(pos, pos); } catch (_) { /* search */ }
+      }
+    }
+  }
+
+  async function act80PartConsultar() {
+    const n = ++act80Part.secuencia;
+    const estudioSolicitado = S.ceId;
+    const tokenSolicitado = R2.token;
+    const uuid = uuidDe(estudioSolicitado);
+    if (!uuid) {
+      act80Part.error = 'No se pudo identificar el estudio seleccionado.';
+      act80Part.datos = [];
+      act80Part.total = 0;
+      PARTS.length = 0;
+      act80PartPintar();
+      return;
+    }
+    act80Part.cargando = true;
+    act80Part.error = '';
+    try {
+      const url = '/estudios/' + encodeURIComponent(uuid) + '/participaciones?' +
+        act80Jueves.consultaParticipantes(act80Part);
+      const resultado = act80Jueves.normalizarParticipantes(
+        await api('GET', url), act80Part);
+      if (n !== act80Part.secuencia || estudioSolicitado !== S.ceId ||
+          tokenSolicitado !== R2.token) return;
+      Object.assign(act80Part, {
+        datos: resultado.datos, total: resultado.total,
+        pagina: resultado.pagina, limite: resultado.limite, modo: resultado.modo
+      });
+      PARTS.length = 0;
+      for (const p of resultado.datos) {
+        if (!p.codigo_seudonimo) continue;
+        if (p.id_participacion) {
+          R2.participaciones.set(p.codigo_seudonimo, p.id_participacion);
+          R2.estudioParticipacion.set(p.codigo_seudonimo, estudioSolicitado);
+        }
+        PARTS.push([p.codigo_seudonimo, p.estado === 'activo' ? 'Activo' : 'Retirado',
+          p.estado === 'activo' ? 'ok' : 'err', FECHA(p.fecha_inicio),
+          p.es_menor_al_enrolar ? 'Sí' : 'No']);
+      }
+    } catch (err) {
+      if (n !== act80Part.secuencia || estudioSolicitado !== S.ceId ||
+          tokenSolicitado !== R2.token) return;
+      act80Part.error = err.mensaje || err.message || 'No fue posible consultar participantes.';
+      act80Part.datos = [];
+      act80Part.total = 0;
+      PARTS.length = 0;
+    } finally {
+      if (n === act80Part.secuencia) {
+        act80Part.cargando = false;
+        act80PartPintar();
+      }
+    }
+  }
+
+  function act80PartReiniciarBusqueda() {
+    act80Part.pagina = 1;
+    ++act80Part.secuencia;
+    clearTimeout(act80Part.espera);
+    act80Part.espera = setTimeout(act80PartConsultar, 300);
+  }
+
+  const act80C3Original = R.c3;
+  R.c3 = () => {
+    const html = act80C3Original();
+    if (S.tab === 's') return html;
+    const tablaRe = /<div class="tw"><table><tr><th>Código<\/th><th>Estado<\/th>[\s\S]*?<\/table><\/div>/;
+    if (!tablaRe.test(html)) return html; // p.ej. bloqueo por etica.
+    const opciones = [['', 'Todos los estados'], ['activo', 'Activo'], ['retirado', 'Retirado']];
+    const filtros = `<div id="act80-part-filtros" class="grid2">` +
+      `<div class="fld"><label for="act80PartBuscar">Buscar por código P-</label>` +
+      `<input type="search" id="act80PartBuscar" value="${h(act80Part.q)}" placeholder="P-…" autocomplete="off"></div>` +
+      `<div class="fld"><label for="act80PartEstado">Estado</label>` +
+      `<select id="act80PartEstado">${opciones.map(([v,t]) =>
+        `<option value="${v}" ${act80Part.estado === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>` +
+      `</div><div class="acts"><button type="button" class="btn s" data-act="act80PartLimpiar">Limpiar filtros</button></div>`;
+    const inicio = act80Part.datos.length ? (act80Part.pagina - 1) * act80Part.limite + 1 : 0;
+    const fin = act80Part.datos.length ?
+      Math.min(act80Part.pagina * act80Part.limite, act80Part.total) : 0;
+    const maxPagina = Math.max(1, Math.ceil(act80Part.total / act80Part.limite));
+    const pie = `<div class="acts" style="justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:12px">` +
+      `<span aria-live="polite">${act80Part.total ? `Mostrando ${inicio}–${fin} de ${act80Part.total}` : 'Mostrando 0 de 0'}${act80Part.cargando ? ' · Cargando…' : ''}</span>` +
+      `<div><button type="button" class="btn s" data-act="act80PartAnterior" ${act80Part.pagina <= 1 ? 'disabled' : ''}>Anterior</button> ` +
+      `<button type="button" class="btn s" data-act="act80PartSiguiente" ${act80Part.pagina >= maxPagina ? 'disabled' : ''}>Siguiente</button></div></div>` +
+      (act80Part.modo === 'compatibilidad' ?
+        '<p class="hint">Modo temporal: los participantes se filtran localmente hasta integrar la paginación del backend.</p>' : '') +
+      (act80Part.error ? `<div class="msg err" role="alert">${h(act80Part.error)}</div>` : '');
+    const columnas = ['Investigador', 'Asistente', 'Director'].includes(S.role) ? 5 : 4;
+    return html.replace(tablaRe, tabla => {
+      const vacio = !act80Part.datos.length ?
+        `<tr><td colspan="${columnas}">${act80Part.error ? 'No se pudo cargar la lista.' :
+        'No hay participantes que coincidan con estos filtros.'}</td></tr>` : '';
+      return filtros + tabla.replace('</table>', vacio + '</table>') + pie;
+    });
+  };
+
+  const act80GoJuevesAnterior = go;
+  go = function (id) {
+    if (id === 'a1' && !R2.token) act80PartReiniciarEstudio();
+    if (id !== 'c3' || !R2.token || R2.usuario?.debe_cambiar_password ||
+        S.tab === 's') return act80GoJuevesAnterior(id);
+    if (act80Part.estudio !== S.ceId || act80Part.token !== R2.token) {
+      act80PartReiniciarEstudio();
+    }
+    return conEspera(async () => {
+      await act80PartConsultar();
+      goProto('c3');
+    });
+  };
+
+  document.addEventListener('input', e => {
+    if (e.target?.id !== 'act80PartBuscar') return;
+    act80Part.q = e.target.value;
+    act80PartReiniciarBusqueda();
+  }, true);
+  document.addEventListener('change', e => {
+    if (e.target?.id !== 'act80PartEstado') return;
+    act80Part.estado = e.target.value;
+    act80PartReiniciarBusqueda();
+  }, true);
+  document.addEventListener('click', e => {
+    const boton = e.target.closest('[data-act]');
+    const accion = boton?.dataset.act;
+    if (!['act80PartLimpiar','act80PartAnterior','act80PartSiguiente'].includes(accion)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (accion === 'act80PartLimpiar') {
+      act80Part.q = '';
+      act80Part.estado = '';
+      act80PartReiniciarBusqueda();
+      // Reflejar limpieza inmediatamente en los controles sin borrar resultados antes de consultar.
+      const input = document.getElementById('act80PartBuscar');
+      const select = document.getElementById('act80PartEstado');
+      if (input) input.value = '';
+      if (select) select.value = '';
+    } else {
+      const ultima = Math.max(1, Math.ceil(act80Part.total / act80Part.limite));
+      act80Part.pagina = Math.max(1, Math.min(ultima,
+        act80Part.pagina + (accion === 'act80PartSiguiente' ? 1 : -1)));
+      clearTimeout(act80Part.espera);
+      act80PartConsultar();
+    }
+  }, true);
+
+
+  // H-05: Enter avanza como si se presionara el botón de la pantalla.
+  // Orden: el botón junto al campo (ej. «Buscar»), el marcado con data-enter y el botón principal.
+  // Dentro de un <form> no hace nada: ahí el navegador ya envía con Enter.
+  function botonVisible(zona, selector) {
+    return [...zona.querySelectorAll(selector)].find((b) => !b.disabled && b.offsetParent !== null) || null;
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || e.isComposing || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+    let campo = e.target;
+    // En las pantallas de elegir una opción (estudio, acepta o niega) o de leer el documento,
+    // el foco suele quedar fuera de un campo: Enter igual sigue con el botón principal.
+    if (campo === document.body) {
+      const tarjeta = document.querySelector('.card');
+      if (!tarjeta || !tarjeta.querySelector('.opt, .reader')) return;
+      campo = tarjeta;
+    }
+    if (!(campo instanceof HTMLElement) || campo.closest('form')) return;
+    // En una opción ya marcada, Enter sigue; en una sin marcar, Enter la marca (comportamiento normal).
+    if (campo.matches('.opt') && campo.getAttribute('aria-pressed') !== 'true') return;
+    if (campo.matches('button:not(.opt), a, textarea, [contenteditable]')) return;
+        if (campo instanceof HTMLInputElement &&
+        ['checkbox', 'radio', 'button', 'submit', 'reset', 'search'].includes(campo.type)) return;
+    // En un campo de archivo vacío, Enter abre el explorador; si ya tiene archivo, sigue.
+    if (campo instanceof HTMLInputElement && campo.type === 'file' && !campo.files.length) return;
+    const zona = campo.closest('.card, .box');
+    if (!zona) return;
+    const vecino = [campo.closest('.fld'), campo.closest('.grid2')]
+      .filter((z) => z && z !== zona && zona.contains(z))
+      .map((z) => botonVisible(z, 'button.btn')).find(Boolean);
+    const boton = vecino || botonVisible(zona, '[data-enter]') || botonVisible(zona, '.btn.p');
+    if (!boton) return;
+    e.preventDefault();
+    boton.click();
+  });
+  
 })();

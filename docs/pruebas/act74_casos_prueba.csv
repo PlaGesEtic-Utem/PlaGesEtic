@@ -1,0 +1,10 @@
+ID,Prueba,Comando,Resultado esperado,Resultado obtenido,Estado
+S-01,Cabeceras de seguridad en /salud,curl -sI http://localhost:3000/salud,X-Content-Type-Options nosniff + X-Frame-Options DENY + Referrer-Policy + CSP,Todas presentes,OK
+S-02,Cabeceras en endpoint protegido,curl -sI http://localhost:3000/estudios,Mismas cabeceras incluso en 401,Todas presentes,OK
+S-03,CORS desde origen no autorizado (evil.com),curl -sI -H "Origin: https://evil.com" http://localhost:3000/salud,Sin Access-Control-Allow-Origin,Sin header CORS,OK
+S-04,CORS desde origen permitido (localhost:5173),curl -sI -H "Origin: http://localhost:5173" http://localhost:3000/salud,Access-Control-Allow-Origin http://localhost:5173,Sin header CORS (frontend se sirve con file:// en dev),OBSERVACION O-01
+S-05,Contrasena corta (123),POST /auth/login password=123,400 o 401,401 CREDENCIALES_INVALIDAS,OK
+S-06,MFA con codigo incorrecto (000000),POST /auth/login/mfa codigo=000000,401,401 CODIGO_INVALIDO,OK
+S-07,Metodo DELETE no permitido en /estudios,DELETE /estudios sin auth,401 o 405,401 NO_AUTENTICADO,OK
+S-08,Metodo PUT no permitido en /auditoria,PUT /auditoria sin auth,401 o 405,401 NO_AUTENTICADO,OK
+S-09,npm audit - vulnerabilidad adm-zip,npm audit,Vulnerabilidades corregidas,1 high (adm-zip 8 CVEs),RIESGO ACEPTADO H-25

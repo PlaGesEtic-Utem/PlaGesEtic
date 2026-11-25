@@ -1,0 +1,171 @@
+# =====================================================================
+# plaGesEtic · Administración de cuentas y membresías (Actividad 73)
+# Requiere la extensión «REST Client» de Visual Studio Code.
+#
+# Antes (una vez): cargar db/dev/datos_prueba.sql y pegar abajo los tokens de
+#   node scripts/sesion-prueba.js <correo>
+# Los casos 3 y 13 crean cuentas: si los repites, cambia el correo o recarga datos_prueba.sql.
+# =====================================================================
+
+@base = http://localhost:3000
+@tokenDirector     = PEGA_AQUI_EL_TOKEN_DE_test_director@uxlab.test
+@tokenSoporte      = PEGA_AQUI_EL_TOKEN_DE_test_soporte@uxlab.test
+@tokenInvestigador = PEGA_AQUI_EL_TOKEN_DE_test_investigador@uxlab.test
+@tokenAsistente    = PEGA_AQUI_EL_TOKEN_DE_test_asistente@uxlab.test
+
+@est01        = 82bbf931-bc9f-594d-8203-77dc4608f2cc
+@director     = f4c13880-ed8a-5b4c-8ce7-f6ddfd84d063
+@soporte      = 7cc7cad1-b65d-5c2b-8fca-b1ebb49c71ab
+@investigador = f709e3ea-c031-5ded-9a0e-9b6188d3eb90
+@membresiaDelResponsable = 71f086a1-98a4-58d7-b4db-a1e2be78dce2
+
+# Pega aquí los id que devuelven los casos 3, 13 y 17
+@nuevoUsuario    = PEGA_AQUI_EL_id_usuario_DEL_CASO_3
+@nuevoEstudiante = PEGA_AQUI_EL_id_usuario_DEL_CASO_13
+@nuevaMembresia  = PEGA_AQUI_EL_id_membresia_DEL_CASO_17
+
+### 1. Soporte lista las cuentas activas → 200 (sin hash_password ni mfa_secret)
+GET {{base}}/usuarios?activo=true
+Authorization: Bearer {{tokenSoporte}}
+
+### 2. Investigador intenta listar cuentas → 403 SIN_PERMISO
+GET {{base}}/usuarios
+Authorization: Bearer {{tokenInvestigador}}
+
+### 3. Soporte crea un Investigador → 201 con password_temporal (se ve una sola vez), debe_cambiar_password=true, mfa_activo=false
+POST {{base}}/usuarios
+Authorization: Bearer {{tokenSoporte}}
+Content-Type: application/json
+
+{ "nombre": "Rosa Prueba", "correo": "rosa.prueba@uxlab.test", "rol": "Investigador" }
+
+### 4. Mismo correo otra vez (mayúsculas no cuentan) → 409 CORREO_DUPLICADO
+POST {{base}}/usuarios
+Authorization: Bearer {{tokenSoporte}}
+Content-Type: application/json
+
+{ "nombre": "Otra", "correo": "Rosa.Prueba@UXLAB.test", "rol": "Investigador" }
+
+### 5. Soporte intenta crear un Director → 403
+POST {{base}}/usuarios
+Authorization: Bearer {{tokenSoporte}}
+Content-Type: application/json
+
+{ "nombre": "Jefe", "correo": "jefe@uxlab.test", "rol": "Director" }
+
+### 6. Estudiante sin fecha de término → 400
+POST {{base}}/usuarios
+Authorization: Bearer {{tokenDirector}}
+Content-Type: application/json
+
+{ "nombre": "Estudiante Temporal", "correo": "est.temp@uxlab.test", "rol": "Estudiante" }
+
+### 7. Ficha de un usuario con sus membresías vigentes → 200
+GET {{base}}/usuarios/{{investigador}}
+Authorization: Bearer {{tokenDirector}}
+
+### 8. Soporte intenta bloquear al Director → 403
+PATCH {{base}}/usuarios/{{director}}
+Authorization: Bearer {{tokenSoporte}}
+Content-Type: application/json
+
+{ "activo": false }
+
+### 9. Soporte intenta bloquearse a sí mismo → 409 CAMBIO_PROPIO
+PATCH {{base}}/usuarios/{{soporte}}
+Authorization: Bearer {{tokenSoporte}}
+Content-Type: application/json
+
+{ "activo": false }
+
+### 10. Soporte restablece contraseña y reinicia el MFA → 200 con password_temporal nueva; se cierran sus sesiones
+PATCH {{base}}/usuarios/{{nuevoUsuario}}
+Authorization: Bearer {{tokenSoporte}}
+Content-Type: application/json
+
+{ "restablecer_password": true, "reiniciar_mfa": true }
+
+### 11. Bloquear una cuenta → 200 activo=false; sus sesiones abiertas quedan cerradas (su token da 401)
+PATCH {{base}}/usuarios/{{nuevoUsuario}}
+Authorization: Bearer {{tokenSoporte}}
+Content-Type: application/json
+
+{ "activo": false }
+
+### 12. Desbloquear → 200 activo=true
+PATCH {{base}}/usuarios/{{nuevoUsuario}}
+Authorization: Bearer {{tokenSoporte}}
+Content-Type: application/json
+
+{ "activo": true }
+
+### 13. Director crea un Estudiante con fecha de término → 201
+POST {{base}}/usuarios
+Authorization: Bearer {{tokenDirector}}
+Content-Type: application/json
+
+{ "nombre": "Estudiante Temporal", "correo": "est.temp@uxlab.test", "rol": "Estudiante", "fecha_expiracion": "2026-12-20" }
+
+# ---------------------------- Membresías ----------------------------
+
+### 14. Investigador (responsable) lista las membresías vigentes de EST-01 → 200
+GET {{base}}/estudios/{{est01}}/membresias
+Authorization: Bearer {{tokenInvestigador}}
+
+### 15. Director intenta dar una membresía → 403 (el Director solo las consulta)
+POST {{base}}/estudios/{{est01}}/membresias
+Authorization: Bearer {{tokenDirector}}
+Content-Type: application/json
+
+{ "id_usuario": "{{nuevoEstudiante}}" }
+
+### 16. Dar membresía a Soporte → 400 (Soporte no recibe membresías)
+POST {{base}}/estudios/{{est01}}/membresias
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "id_usuario": "{{soporte}}" }
+
+### 17. Dar membresía al Estudiante hasta 2027-06-30 → 201, pero fecha_fin queda en 2026-12-20 (no dura más que la cuenta)
+POST {{base}}/estudios/{{est01}}/membresias
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "id_usuario": "{{nuevoEstudiante}}", "fecha_fin": "2027-06-30" }
+
+### 18. Repetir → 409 MEMBRESIA_EXISTENTE
+POST {{base}}/estudios/{{est01}}/membresias
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "id_usuario": "{{nuevoEstudiante}}" }
+
+### 19. Asistente sin puede_modificar intenta dar membresías → 403
+POST {{base}}/estudios/{{est01}}/membresias
+Authorization: Bearer {{tokenAsistente}}
+Content-Type: application/json
+
+{ "id_usuario": "{{nuevoEstudiante}}" }
+
+### 20. Revocar la membresía del caso 17 → 200 vigente=false
+DELETE {{base}}/estudios/{{est01}}/membresias/{{nuevaMembresia}}
+Authorization: Bearer {{tokenInvestigador}}
+
+### 21. Revocar otra vez → 409 MEMBRESIA_NO_VIGENTE
+DELETE {{base}}/estudios/{{est01}}/membresias/{{nuevaMembresia}}
+Authorization: Bearer {{tokenInvestigador}}
+
+### 22. Revocar la membresía del responsable del estudio → 409 RESPONSABLE_DEL_ESTUDIO
+DELETE {{base}}/estudios/{{est01}}/membresias/{{membresiaDelResponsable}}
+Authorization: Bearer {{tokenInvestigador}}
+
+### 23. Volver a darle membresía al Estudiante → 201 (reactiva la misma fila)
+POST {{base}}/estudios/{{est01}}/membresias
+Authorization: Bearer {{tokenInvestigador}}
+Content-Type: application/json
+
+{ "id_usuario": "{{nuevoEstudiante}}", "puede_cargar": true }
+
+### 24. Ver también las vencidas o revocadas → 200
+GET {{base}}/estudios/{{est01}}/membresias?todas=true
+Authorization: Bearer {{tokenInvestigador}}

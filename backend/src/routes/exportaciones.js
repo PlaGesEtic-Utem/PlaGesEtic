@@ -16,6 +16,8 @@ function porEstudio() {
   const r = Router({ mergeParams: true });
   r.post('/', marcarAuditoria('exportacion', 'crear'),
     requierePermiso({ recurso: 'exportacion', accion: 'crear', permisoEstudio: 'puede_exportar' }), c.solicitar);
+  r.get('/', marcarAuditoria('exportacion', 'leer'),
+    requierePermiso({ recurso: 'exportacion', accion: 'leer', permisoEstudio: 'puede_consultar' }), c.listar);
   return r;
 }
 

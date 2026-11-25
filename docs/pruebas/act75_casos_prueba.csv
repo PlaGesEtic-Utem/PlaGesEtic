@@ -1,0 +1,6 @@
+ID,Caso,Precondicion,Entrada,Resultado esperado,Resultado obtenido,Estado
+RUTA-1,Consentimiento en participacion retirada,Participacion en estado retirado,POST /participaciones/{id}/consentimientos,409 PARTICIPACION_RETIRADA,409 PARTICIPACION_RETIRADA,OK
+RUTA-2,Contacto con motivo incorrecto en retirada,Participacion en estado retirado,POST /participaciones/{id}/contacto {motivo:"coordinar_sesion"},409 PARTICIPACION_RETIRADA,409 PARTICIPACION_RETIRADA,OK
+RUTA-3,Crear exportacion con participante retirado,Participacion en estado retirado,POST /estudios/{id}/exportaciones,201 (la revalidacion ocurre al descargar),201 con codigo_exportacion,OK
+RUTA-4,Cargar registro de datos (NO EXISTE),Participacion en estado retirado,POST /participaciones/{id}/registros,404 NO_ENCONTRADO (ruta no implementada),404 NO_ENCONTRADO,OK (ruta no existe en backend)
+RUTA-5,Programar sesion de investigacion (NO EXISTE),Participacion en estado retirado,POST /participaciones/{id}/sesiones,404 NO_ENCONTRADO (ruta no implementada),404 NO_ENCONTRADO,OK (ruta no existe en backend)

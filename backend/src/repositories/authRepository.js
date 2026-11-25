@@ -71,7 +71,39 @@ async function cambiarPassword(idUsuario, hash) {
     [idUsuario, hash]);
 }
 
+/** Guardar el secreto del QR todavia inactivo: se activa recien cuando la persona confirma el primer codigo */
+async function guardarSecretoPendiente(idUsuario, secretoCifrado)
+{
+  await query(
+    `UPDATE security_schema.usuario SET mfa_secret = $2
+      WHERE id_usuario = $1 AND mfa_activo = false`,
+    [idUsuario, secretoCifrado]);
+}
+
+/** activa el MFA */
+async function activarMFA(idUsuario, hashesRecuperacion) {
+  const cliente = await obtenerPool().connect();
+  try {
+    await cliente.query('BEGIN');
+    await cliente.query(
+      'UPDATE security_schema.usuario SET mfa_activo = true WHERE id_usuario = $1', [idUsuario]);
+    await cliente.query(
+      'DELETE FROM security_schema.mfa_codigo_recuperacion WHERE id_usuario = $1', [idUsuario]);
+    for (const hash of hashesRecuperacion) {
+      await cliente.query(
+        `INSERT INTO security_schema.mfa_codigo_recuperacion (id_usuario, codigo_hash, usado)
+        VALUES ($1, $2, false)`, [idUsuario, hash]);
+    }
+    await cliente.query('COMMIT');
+  } catch (err) {
+    await cliente.query('ROLLBACK');
+    throw err;
+  } finally {
+    cliente.release();
+  }
+}
 module.exports = {
   usuarioPorCorreo, usuarioPorId, contarFallosPorCorreo, contarFallosPorUsuario,
   crearSesion, cerrarSesion, consumirCodigoRecuperacion, cambiarPassword,
+  guardarSecretoPendiente, activarMFA,
 };
