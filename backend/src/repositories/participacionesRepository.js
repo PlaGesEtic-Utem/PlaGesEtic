@@ -43,6 +43,14 @@ async function crearParticipanteConVinculo(cliente, idIdentidad) {
   return idParticipante;
 }
 
+/** Estados de las participaciones anteriores de la persona en el estudio (bloqueadas mientras se inscribe). */
+async function participacionesPrevias(cliente, idParticipante, idEstudio) {
+  const { rows } = await cliente.query(
+    `SELECT estado FROM research_schema.participacion
+      WHERE id_participante = $1 AND id_estudio = $2 FOR UPDATE`, [idParticipante, idEstudio]);
+  return rows.map((r) => r.estado);
+}
+
 async function crearParticipacion(cliente, f) {
   const { rows } = await cliente.query(
     `INSERT INTO research_schema.participacion
@@ -69,7 +77,7 @@ async function listarPorEstudio(idEstudio, estado) {
 
 module.exports = {
   estadoEstudio, identidadPorUxLabId, participanteDeIdentidad, crearParticipanteConVinculo,
-  crearParticipacion, existeEstudio, listarPorEstudio, representacionVigente,
+  crearParticipacion, participacionesPrevias, existeEstudio, listarPorEstudio, representacionVigente,
 };
 
 

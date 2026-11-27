@@ -41,7 +41,8 @@ ALTER TABLE identity_schema.representante_legal ADD CONSTRAINT uq_representante_
 ALTER TABLE ethics_schema.protocolo_version ADD CONSTRAINT uq_protocolo_version_estudio_version UNIQUE (id_estudio, version);
 ALTER TABLE ethics_schema.documento_consentimiento ADD CONSTRAINT uq_documento_consentimiento_estudio_tipo_version UNIQUE (id_estudio, tipo, version);
 ALTER TABLE ethics_schema.consentimiento ADD CONSTRAINT uq_consentimiento_participacion_tipo UNIQUE (id_participacion, tipo);
-ALTER TABLE research_schema.participacion ADD CONSTRAINT uq_participacion_participante_estudio UNIQUE (id_participante, id_estudio);
+-- D11: una persona puede volver a un estudio después de retirarse; solo puede tener una participación activa.
+CREATE UNIQUE INDEX uq_participacion_participante_estudio_activa ON research_schema.participacion (id_participante, id_estudio) WHERE estado = 'activo';
 ALTER TABLE research_schema.exportacion_participacion ADD CONSTRAINT uq_exportacion_participacion_exportacion_codigo_en_exportacion UNIQUE (id_exportacion, codigo_en_exportacion);
 ALTER TABLE security_schema.permiso ADD CONSTRAINT uq_permiso_rol_recurso_accion UNIQUE (id_rol, recurso, accion);
 ALTER TABLE security_schema.membresia_estudio ADD CONSTRAINT uq_membresia_estudio_usuario_estudio UNIQUE (id_usuario, id_estudio);

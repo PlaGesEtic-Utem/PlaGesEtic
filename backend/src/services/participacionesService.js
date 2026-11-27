@@ -169,7 +169,21 @@ async function inscribir(idEstudio, cuerpo = {}) {
               identidad.id_identidad
             );
 
-          return repo.crearParticipacion(c, {
+                      // D11: si ya se retiró del estudio, vuelve con una inscripción nueva y la anterior no se toca.
+          const previas = await repo.participacionesPrevias(
+            c,
+            idParticipante,
+            idEstudio
+          );
+
+          if (previas.includes('activo')) {
+            throw conflicto(
+              'YA_PARTICIPA',
+              'Esta persona ya tiene una participación activa en este estudio.'
+            );
+          }
+
+          const nueva = await repo.crearParticipacion(c, {
             id_participante: idParticipante,
             id_estudio: idEstudio,
             codigo_seudonimo: generarCodigoSeudonimo(),
@@ -177,6 +191,8 @@ async function inscribir(idEstudio, cuerpo = {}) {
               identidad.fecha_nacimiento
             ),
           });
+
+          return { ...nueva, reinscripcion: previas.length > 0 };
         })
       );
     } catch (err) {
@@ -188,7 +204,7 @@ async function inscribir(idEstudio, cuerpo = {}) {
       ) {
         throw conflicto(
           'YA_PARTICIPA',
-          'Esta persona ya está inscrita en este estudio.'
+                    'Esta persona ya tiene una participación activa en este estudio.'
         );
       }
 

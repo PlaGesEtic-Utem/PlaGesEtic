@@ -94,20 +94,23 @@ function validarEntrada(c) {
     );
   }
 
-  let rut = null;
-
+  // D26: el RUT es obligatorio y se valida su dígito verificador.
   if (
-    c.rut !== undefined &&
-    c.rut !== null &&
-    c.rut !== ''
+    c.rut === undefined ||
+    c.rut === null ||
+    String(c.rut).trim() === ''
   ) {
-    rut = validarRut(String(c.rut));
+    throw errores.solicitudInvalida(
+      'Falta el campo obligatorio «rut».'
+    );
+  }
 
-    if (!rut) {
-      throw errores.solicitudInvalida(
-        'El RUT no es válido (revisa el dígito verificador).'
-      );
-    }
+  const rut = validarRut(String(c.rut));
+
+  if (!rut) {
+    throw errores.solicitudInvalida(
+      'El RUT no es válido (revisa el dígito verificador).'
+    );
   }
 
   if (
