@@ -597,7 +597,11 @@
           return id;
         }
       },
-      inscribir: (uxLabId) => api('POST', '/estudios/' + estudio + '/participaciones', { ux_lab_id: uxLabId }),
+            inscribir: async (uxLabId) => {
+        const alta = await api('POST', '/estudios/' + estudio + '/participaciones', { ux_lab_id: uxLabId });
+        R2.reinscripcion = !!(alta && alta.reinscripcion);
+        return alta;
+      },
       registrar: (idParticipacion) => {
         const form = new FormData();
         form.append('tipo', 'consentimiento');
@@ -1044,11 +1048,14 @@
       return conEspera(async () => {
         try {
           await registrarAlta();
-          toast('Participación y consentimiento registrados correctamente.', 'ok');
+                    toast(R2.reinscripcion
+            ? 'La persona ya había participado en este estudio y se retiró. Quedó inscrita de nuevo, con un código nuevo.'
+            : 'Participación y consentimiento registrados correctamente.', 'ok');
+          R2.reinscripcion = false;
           goProto('b5');
         } catch (e) {
           const detalle = e.mensaje || e.message || 'No se pudo registrar el consentimiento.';
-          toast(e.codigo === 'YA_PARTICIPA' ? 'La persona ya está inscrita. Revisa su ficha antes de intentar otra alta.' : detalle, 'err');
+          toast(e.codigo === 'YA_PARTICIPA' ? 'La persona ya tiene una participación activa en este estudio. Revisa su ficha antes de intentar otra alta.': detalle, 'err');
         }
       });
     }
